@@ -48,35 +48,24 @@ enum SolverRes {
 };
 
 namespace Model {
-enum MechUnitType {  ///< TODO 把robot_model　和　lircos/mechanical_unit中的定义干掉
-    // INDUSTRYROBOT,        //机器人,这个是为了保留对以前代码的支持，lircos的robot用到了
-    // SIX_AXIS_SERIES = 1,  //传统六轴串联，XB
-    // UR,                   // UR构型机器人
-    // FOUR_AXIS_SERIES,     //标准四轴串联
-    // SCARA,                // scara
-    // DELTA,                // delta
-    // TRACK,                //导轨
-    // POSITIONER,           //变位机	one/two axis
-    // CONVEYOR,             //传送带	linear,indexed,circle...
-    // XMATE_7,              // xMate 7轴
-    // XMATE_6,              // xMate 6轴
-    // RS,                   //第一轴为移动轴的scara类机械臂
-    // XS,
-    // CB_SCARA_3,      //精雕机三轴
-    // PCB_THREE_AXIS,  // PCB三轴
-    // PCB_FOUR_AXIS,   // PCB四轴
-    // XMATECR_6,       // xMateCR 6轴
-    //新增
+enum MechUnitType {
+    UNKNOWN,
     SR3_C,  // XMS3-R580-W4G3B1C
-    SR4_C,  // XMS4-R800-B4G1A4C
-    SR5_C
 };
 struct ModelParams {
     struct Link_Inertial {
         double mass;            //质量,单位kg
-        double centroid[3];     //质心,单位mm
-        double moment[6];       //总惯量，单位kg.mm^2
-        double moment_link[6];  //连杆惯量，单位kg.mm^2
+        std::vector<double> centroid;     //质心,单位mm
+        std::vector<double> moment;       //总惯量，单位kg.mm^2
+        std::vector<double> moment_link;  //连杆惯量，单位kg.mm^2
+
+        Link_Inertial() : mass(0.0), centroid(3, 0.0), moment(6, 0.0), moment_link(6, 0.0){};
+        void SetZero() {
+            this->mass = 0.0;
+            this->centroid.assign(3, 0.0);
+            this->moment.assign(6, 0.0);
+            this->moment_link.assign(6, 0.0);
+        }
     };
 
     enum Rot_Axis { ROT_NONE, ROT_X, ROT_Y, ROT_Z };
@@ -115,6 +104,7 @@ struct ModelParams {
         // 添加RobDimensions的默认构造函数
         RobDimensions() {}
         RobDimensions(std::vector<double> rd) {
+            int joint_num_temp = rd.size() / 3;
             L01x = rd[0];
             L01y = rd[1];
             L01z = rd[2];
@@ -127,32 +117,44 @@ struct ModelParams {
             L34x = rd[9];
             L34y = rd[10];
             L34z = rd[11];
-            L45x = rd[12];
-            L45y = rd[13];
-            L45z = rd[14];
-            L56x = rd[15];
-            L56y = rd[16];
-            L56z = rd[17];
-            L67x = rd[18];
-            L67y = rd[19];
-            L67z = rd[20];
+            if (joint_num_temp >= 4) {
+                L45x = rd[12];
+                L45y = rd[13];
+                L45z = rd[14];
+                if (joint_num_temp >= 5) {
+                    L56x = rd[15];
+                    L56y = rd[16];
+                    L56z = rd[17];
+                    if (joint_num_temp >= 6) {
+                        L67x = rd[18];
+                        L67y = rd[19];
+                        L67z = rd[20];
+                        if (joint_num_temp >= 7) {
+                            L78x = rd[21];
+                            L78y = rd[22];
+                            L78z = rd[23];
+                        }
+                    }
+                }
+            }
         }
     };
     unsigned int axis_num;
     std::vector<Link_Inertial> link_inertia;
     std::vector<KDL::Joint::JointType> joint_type;
     std::vector<Coord_Orientation> coor_orient;
-    MechUnitType mech_type;
     RobDimensions rob_dimensions;
     std::vector<double> joint_range_min;  //软限位
     std::vector<double> joint_range_max;
     std::vector<double> joint_range_min_new;  //硬限位
     std::vector<double> joint_range_max_new;
-
     double max_load;
-    ModelParams(unsigned int segments_cnt) : joint_type(segments_cnt), coor_orient(segments_cnt), link_inertia(segments_cnt){};
+    // ModelParams(){this->Resize(DEFAULT_SEGMENT);};
+    ModelParams(unsigned int segments_cnt) { this->Resize(segments_cnt); };
 
     void Resize(unsigned int segments_cnt) {
+        max_load = 0.0;
+        axis_num = segments_cnt - 1;
         joint_type.resize(segments_cnt);
         coor_orient.resize(segments_cnt);
         link_inertia.resize(segments_cnt);
@@ -177,9 +179,10 @@ struct MechanicalParams {
     std::vector<double> sensor_amplify;
     //电机
     std::vector<double> rated_torque;
-    MechanicalParams(unsigned int jnt_num) { Risize(jnt_num + 1); }
+    // MechanicalParams() { this->Resize(6); }  //默认6轴构造
+    MechanicalParams(unsigned int jnt_num) { Resize(jnt_num); }
 
-    void Risize(unsigned int jnt_num) {
+    void Resize(unsigned int jnt_num) {
         encoder_offset.resize(jnt_num);
         encoder_resolution.resize(jnt_num);
         decel_ratio_high.resize(jnt_num);
@@ -418,6 +421,7 @@ struct GainParams {
 struct ControlParams {
     ProtectParams m_protect_params;
     GainParams m_gain_params;
+    // ControlParams() { this->Resize(6); }
     ControlParams(unsigned int jnt_num) {
         m_protect_params.InitProtectParams(jnt_num);
         m_gain_params.InitGainParams(jnt_num);

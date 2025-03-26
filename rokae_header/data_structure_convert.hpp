@@ -13,18 +13,17 @@
 
 #ifndef DATA_STRUCTURE_CONVERT_H
 #define DATA_STRUCTURE_CONVERT_H
-#include <iostream>
 #include <../3rd/kdl/jntarray.hpp>
 #include <../3rd/kdl/rigidbodyinertia.hpp>
+#include <algorithm>
+#include <iostream>
 #include <vector>
 
-#include "data_structure_define.hpp"
-
-using namespace RokaeApi::Model;
+#include "robot_config.hpp"
 
 namespace RokaeApi {
 
-inline KDL::RigidBodyInertia GetKDLloadFromRokaeLoad(const LoadInertia& in) {
+inline KDL::RigidBodyInertia GetKDLloadFromRokaeLoad(const Model::LoadInertia& in) {
     return KDL::RigidBodyInertia(in.m, in.GetCOG(),
                                  KDL::RotationalInertia(in.inertia[0], in.inertia[1], in.inertia[2], in.inertia[3], in.inertia[4], in.inertia[5]));
 }
@@ -44,5 +43,84 @@ inline int JntArrayToVector(const KDL::JntArray& in, std::vector<double>& out) {
     }
     return 0;
 }
+
+inline void VectorToRD(const std::vector<double>& in, Model::ModelParams::RobDimensions& out) {
+    int joint_num = in.size() / 3;
+    std::array<double*, 24> out_pointers = {&out.L01x, &out.L01y, &out.L01z, &out.L12x, &out.L12y, &out.L12z,
+                                            &out.L23x, &out.L23y, &out.L23z, &out.L34x, &out.L34y, &out.L34z,
+                                            &out.L45x, &out.L45y, &out.L45z, &out.L56x, &out.L56y, &out.L56z,
+                                            &out.L67x, &out.L67y, &out.L67z, &out.L78x, &out.L78y, &out.L78z};
+    // Note:目前固定RD参数长度为24，也就是最大只支持7轴机器人
+    for (int i = 0; i < std::min(joint_num * 3, static_cast<int>(out_pointers.size())); ++i) {
+        *out_pointers[i] = in[i] / 1000.0;
+    }
+}
+
+inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model::ModelParams& model_out,
+                                      Model::MechanicalParams& mec_out, Control::ControlParams& control_out) {
+    //判断参数是否可转换(TODO:先简单判断下，后续再优化)
+    if (in.model_config_params.AXIS_NUM != model_out.axis_num ||
+        in.mechanical_config_params.ENCODER_OFFESET.size() != mec_out.encoder_offset.size() ||
+        in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC.size() != control_out.m_gain_params.joint_gain_kp.size())
+        return SIZE_ERROR;
+
+    // 1.0模型参数
+    for (unsigned int i = 0; i < model_out.axis_num + 1; i++) {
+        model_out.joint_type[i] = static_cast<KDL::Joint::JointType>(in.model_config_params.JOINT_TYPE[i]);
+        model_out.coor_orient[i].rot_axis = static_cast<Model::ModelParams::Rot_Axis>(in.model_config_params.ROT_AXIS[i]);
+        model_out.coor_orient[i].rot_angle = in.model_config_params.ROT_ANGLE[i];
+    }
+    // 1.1惯量参数
+    model_out.link_inertia.at(0).mass = 0.0;
+    model_out.link_inertia.at(0).centroid.assign(3, 0.0);
+    model_out.link_inertia.at(0).moment.assign(6, 0.0);
+    model_out.link_inertia.at(0).moment_link.assign(6, 0.0);
+    for (unsigned int i = 1; i < model_out.axis_num + 1; i++) {
+        unsigned int t = i - 1;
+        model_out.link_inertia[i].mass = in.model_config_params.LINK_MASS[t];
+        for (unsigned int j = 0; j < 3; j++) {
+            model_out.link_inertia[i].centroid[j] = in.model_config_params.LINK_CENTROID[3 * t + j];
+        }
+        for (unsigned int k = 0; k < 6; k++) {
+            model_out.link_inertia[i].moment[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA[3 * i + k];
+            model_out.link_inertia[i].moment_link[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA_LOW[3 * i + k];
+        }
+    }
+    // 1.2 RD参数
+    VectorToRD(in.model_config_params.ROBOT_DIMENSIONS, model_out.rob_dimensions);
+
+    // 1.3 其他模型参数
+    for (unsigned int i = 0; i < model_out.axis_num; i++) {
+        model_out.joint_range_min[i] = in.model_config_params.JOINT_RANGE_MIN_CUSTOMIZE[i];
+        model_out.joint_range_max[i] = in.model_config_params.JOINT_RANGE_MAX_CUSTOMIZE[i];
+        model_out.joint_range_min_new[i] = in.model_config_params.JOINT_RANGE_MIN_NEW[i];
+        model_out.joint_range_max_new[i] = in.model_config_params.JOINT_RANGE_MAX_NEW[i];
+    }
+    model_out.axis_num = in.model_config_params.AXIS_NUM;
+    model_out.max_load = in.model_config_params.MAX_LOAD;
+
+    // 2.机械参数
+    for (unsigned int i = 0; i < mec_out.encoder_offset.size(); i++) {
+        mec_out.encoder_offset[i] = in.mechanical_config_params.ENCODER_OFFESET[i];
+        mec_out.encoder_resolution[i] = in.mechanical_config_params.ENCODER_RESOLUTION[i];
+        mec_out.decel_ratio_high[i] = in.mechanical_config_params.REDUCTION_RATIO_NUMERATOR[i];
+        mec_out.decel_ratio_low[i] = in.mechanical_config_params.REDUCTION_RATIO_DENOMINATOR[i];
+        mec_out.analog2trq_high[i] = in.mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH[i];
+        mec_out.analog2trq_low[i] = in.mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_LOW[i];
+        mec_out.analog_bias[i] = in.mechanical_config_params.SENSOR_BIAS[i];
+        mec_out.sensor_amplify[i] = in.mechanical_config_params.SENSOR_AMPLIFY[i];
+        mec_out.rated_torque[i] = in.mechanical_config_params.RATED_TORQUE[i];
+    }
+
+    // 3.控制参数&保护参数
+    for (unsigned int i = 0; i < control_out.m_gain_params.joint_gain_kp.size(); i++) {
+        control_out.m_gain_params.joint_gain_kp[i] = in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC[i];
+        control_out.m_gain_params.joint_damp_zeta[i] = in.control_config_params.CTRL_ZETA_SERVO_EXEC[i];
+        control_out.m_gain_params.friction_cof_servo[i] = in.control_config_params.FRICTION_COF_DRAG[i];
+        control_out.m_protect_params.max_mode_switch_trq[i] = in.protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL[i];
+    }
+    return SOLVE_NOERROR;
+}
+
 }  // namespace RokaeApi
 #endif
