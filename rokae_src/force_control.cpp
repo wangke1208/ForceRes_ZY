@@ -21,20 +21,25 @@ using namespace std;
 
 namespace RokaeApi {
 namespace Control {
-ForceControl::ForceControl(InitRobot* init_robot_ptr) : m_init_robot_ptr(init_robot_ptr) {
-    m_jnt_num = m_init_robot_ptr->GetJntNum();
-    m_chain = m_init_robot_ptr->GetChain();
-
+ForceControl::ForceControl(InitRobot* init_robot_ptr)
+    : m_init_robot_ptr(init_robot_ptr),
+      m_jnt_num(m_init_robot_ptr->GetJntNum()),
+      m_chain(init_robot_ptr->GetChain()),
+      m_fc_status_inner(init_robot_ptr->GetJntNum()),
+      m_servo_data_fc_inner(init_robot_ptr->GetJntNum()) {
     //初始化一些求解器
     m_force_protect_ptr = new Protect::ForceProtect(m_jnt_num);
     m_axis_convert_ptr = new Axis_Convert(m_jnt_num, m_init_robot_ptr->GetMechanicalParams());
     m_dynamicsolver_ptr = new DynamicSolver(m_chain, m_init_robot_ptr->GetGravity());
-    m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr);
-    
+    m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(m_chain);
+    m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr, &m_fc_status_inner);
+    m_servo_fc_convert_ptr = new Servo_Fc_Convert(m_jnt_num);
     //初始化信息
     m_load.SetZero();
     m_drag_type = DragType::DRAG_JOINT;
     m_enable_drag = false;
+    m_is_first_drag = true;
+    m_servo_data_fc_inner.Resize(m_jnt_num);
     //初始化参数
     m_encoder_offset_inner.resize(m_jnt_num);  
     m_analog_bias_inner.resize(m_jnt_num);      
@@ -69,16 +74,19 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr) : m_init_robot_ptr(init_ro
     m_analog_average.resize(m_jnt_num);
     m_sensor_trq.resize(m_jnt_num);
 
-    m_jnt_pos.resize(m_jnt_num);
-    m_jnt_vel_abs.resize(m_jnt_num);
-    m_jnt_vel_real.resize(m_jnt_num);
+    m_jnt_current_pos.resize(m_jnt_num);
+    // m_jnt_vel_abs.resize(m_jnt_num);
+    // m_jnt_vel_real.resize(m_jnt_num);
 
     m_trq_error.resize(m_jnt_num);
 }
 
 ForceControl::~ForceControl() {
-    delete m_init_robot_ptr;
     delete m_force_protect_ptr;
+    delete m_axis_convert_ptr;
+    delete m_dynamicsolver_ptr;
+    delete m_fc_status_tracker_ptr;
+    delete m_servo_fc_convert_ptr;
 }
 
 int ForceControl::Fcinit() {
@@ -110,37 +118,62 @@ int ForceControl::Fcinit() {
     return SOLVE_NOERROR;
 }
 
-void ForceControl::SetFcCommand() {
-    switch (m_fc_status.force_type) {
-    case ForceType::DRAG:
-        // Set Feedback As Cmd
-        m_fc_status.jnt_pos_command = m_fc_status.jnt_pos_measure;
+void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
+    // 1.计算当前关节位置
+    m_axis_convert_ptr->GetAxisPos(servo_data_fc_inner.pos_feedback, m_fc_status_inner.jnt_pos_measure);
+    //计算实际位置
+    switch (m_drag_type) {
+    case DragType::DRAG_JOINT:
+        if (m_is_first_drag) {
+            m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
+            m_fc_status_inner.jnt_vel_command.data.setZero();  //速度指令给0
+            m_is_first_drag = false;
+        }
+        m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_measure;
+        m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
+
         break;
 
-    case ForceType::IMPEDANCE:
-        // Set Reference As Cmd
-        //暂时不开发
+    case DragType::DRAG_CART_TRANS:
+    case DragType::DRAG_CART_ROT:
+    case DragType::DRAG_CART_FREE:
+        if (m_is_first_drag) {
+            m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_measure;
+            m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
+            m_fc_status_inner.jnt_vel_command.data.setZero();
+            m_is_first_drag = false;
+        }
+        m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
+
         break;
     }
 }
 
-int ForceControl::FcUpdate(const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
-                           const std::vector<int16_t>& trq_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
-                            std::vector<int16_t>& trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
-                            std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
-                            std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo
-                            ) {
+int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
+                           const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
+                           const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
+                           std::vector<int16_t>& trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
+                           std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
+                           std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
+                           std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo) {
     // 1.判断是否进行了drag_config
-    if(!m_enable_drag) {
+    if (!m_enable_drag) {
         return ERROR_DRAG_ENABLE;
-    }    
+    }
     // 2.读取伺服数据并转换为Fc内部变量
+    m_servo_fc_convert_ptr->ServoData2FcInner(servo_mode_from_servo, pdo_analog_ch1, pdo_analog_ch2, trq_encoder_from_servo,
+                                              pos_encoder_from_servo, vel_encoder_from_servo, m_servo_data_fc_inner);
 
-    // 3.力控模块功能力计算
+    // 3.更新指令和反馈
+    SetFcCommand(m_servo_data_fc_inner);
 
-    // 4.将Fc内部数据转换为下发给伺服数据
+    // 3.力控数据流计算
+        
+    // 4.力控模块功能力计算
 
-    // 5.判断当前伺服模式是否为力矩模式，处于力矩模式允许下发力控相关指令
+    // 5.将Fc内部数据转换为下发给伺服数据
+
+    // 6.判断当前伺服模式是否为力矩模式，处于力矩模式允许下发力控相关指令
 }
 
 int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
@@ -148,7 +181,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     //0.初始化标志位
     int res = SOLVE_NOERROR;
     m_enable_drag = false;
-
+    m_is_first_drag = true;
     // 1.判断是否允许进行Drag设置
     // 1.1 处于位置模式下
     if (std::any_of(pos_encoder_from_servo.cbegin(), pos_encoder_from_servo.cend(),
@@ -161,7 +194,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
 
     // 1.3 力矩偏差在合理范围
     std::vector<double> sensor_trq_temp(m_jnt_num);
-    auto model_trq_temp = m_dynamicsolver_ptr->GetGravity(m_load, VectorToJntArray(jnt_pos_rad_temp));
+    auto model_trq_temp = m_dynamicsolver_ptr->GetGraTorque(m_load, VectorToJntArray(jnt_pos_rad_temp));
     m_axis_convert_ptr->GetCobotTrq(analog_ch1, analog_ch2, sensor_trq_temp);
     res = m_force_protect_ptr->TrqErrorProtect(sensor_trq_temp, JntArrayToVector(model_trq_temp), m_trq_error_threshold_inner);
     if (res != SOLVE_NOERROR) return res;
@@ -491,6 +524,7 @@ int ForceControl::StopDrag(const int8_t param_0x6061[6]) {
         }
     }
     m_enable_drag = false;
+    m_is_first_drag = true;
     return SOLVE_NOERROR;
 }
 //************************************************************************************************
@@ -599,7 +633,7 @@ int ForceControl::CalibrateTrqSensor(const int32_t param_0x6064[6], const LoadIn
     }
 
     //计算当前位置模型力矩
-    trq_gra_jntarray = m_fc_dynamic_solver->GetGravity(load_params_in, q_in_jntarray);
+    trq_gra_jntarray = m_fc_dynamic_solver->GetGraTorque(load_params_in, q_in_jntarray);
 
     //计算200次读取传感器电压的平均值
     for (unsigned int i = 0; i < m_jnt_num; i++) {
@@ -644,7 +678,7 @@ int ForceControl::CalibrateTrqSensorAxis(const int32_t param_0x6064[6], const Lo
     }
 
     //计算当前位置模型力矩
-    trq_gra_jntarray = m_fc_dynamic_solver->GetGravity(load_params_in, q_in_jntarray);
+    trq_gra_jntarray = m_fc_dynamic_solver->GetGraTorque(load_params_in, q_in_jntarray);
 
     //计算200次读取传感器电压的平均值
     for (unsigned int i = 0; i < 200; i++) {

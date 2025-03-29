@@ -13,21 +13,23 @@
 #ifndef DYNAMIC_SOLVER_H
 #define DYNAMIC_SOLVER_H
 
-#include <../3rd/kdl/chain.hpp>
-#include <../3rd/kdl/chaindynparam.hpp>
-#include <../3rd/kdl/chainfksolverpos_recursive.hpp>
-#include <../3rd/kdl/chainidsolver_recursive_newton_euler.hpp>
-#include <../3rd/kdl/jntarray.hpp>
-#include <../3rd/kdl/jntspaceinertiamatrix.hpp>
+#include <3rd/kdl/chain.hpp>
+#include <3rd/kdl/chaindynparam.hpp>
+#include <3rd/kdl/chainfksolverpos_recursive.hpp>
+#include <3rd/kdl/chainidsolver_recursive_newton_euler.hpp>
+#include <3rd/kdl/chainjnttojacsolver.hpp>
+#include <3rd/kdl/jntarray.hpp>
+#include <3rd/kdl/jntspaceinertiamatrix.hpp>
+#include <Eigen/SVD>
 
 #include "data_structure_convert.hpp"
 #include "data_structure_define.hpp"
+#include "initialize.hpp"
 
 
 using namespace KDL;
 namespace RokaeApi {
 namespace Model {
-
 class DynamicSolver {
    public:
     DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity);
@@ -64,7 +66,14 @@ class DynamicSolver {
      *
      * @return 重力矩(KDL::JntArray)
      */
-    const KDL::JntArray& GetGravity(const LoadInertia& load_params, const KDL::JntArray& q);
+    const KDL::JntArray& GetGraTorque(const LoadInertia& load_params, const KDL::JntArray& q);
+    const KDL::JntArray& GetInertTorque(const LoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq);
+    const KDL::JntArray& GetColioTorque(const LoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq);
+
+    void GetJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian);                     //计算雅可比矩阵
+    void GetJacobianTrans(const KDL::Jacobian& jacobian, Jacobian_trans& jacobian_trans);  //计算雅可比矩阵的转置
+    void GetJacobianTransInverse(KDL::Jacobian& jacobian, Jacobian_trans_inv& jacobian_trans_inv);  //计算雅可比矩阵转置的逆
+    double GetManipulate(const KDL::Jacobian& jacobian);                                            //计算可操作度
 
    private:
     KDL::Chain m_chain;
@@ -82,6 +91,18 @@ class DynamicSolver {
     KDL::JntArray m_trq_inertia;   //惯性力矩
     KDL::JntArray m_trq_coriolis;  //科式力矩
     KDL::JntArray m_trq_total;     //全力矩
+
+   private:
+    //雅可比矩阵相关
+    double m_manipulate;  //可操作度
+    int m_singular_num;
+    double m_tolerance;
+    Eigen::VectorXd m_singular_values;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> m_singular_values_inv_mat;
+    KDL::ChainJntToJacSolver* m_jnt_to_jac_solver;  // KDL雅可比求解器
+    KDL::Jacobian m_jacobian;                       //雅可比矩阵
+    Jacobian_trans m_jacobian_trans;                //雅可比矩阵转置
+    Eigen::JacobiSVD<Eigen::MatrixXd>* m_svd_ptr;
 };
 
 }  // namespace Model

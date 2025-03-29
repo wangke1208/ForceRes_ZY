@@ -26,6 +26,7 @@ class Axis_Convert {
 
     int GetEncoderValue(const std::vector<double>& jnt_pos_rad, std::vector<int>& encoder_value);
     int GetAxisPos(const std::vector<int>& encoder_value, std::vector<double>& jnt_pos_rad);
+    int GetAxisPos(const std::vector<int>& encoder_value, KDL::JntArray& jnt_pos_rad);
     int SetEncoderBias(const std::vector<int>& encoder_bias_set);
     int GetVelRegValueForServo(const std::vector<double>& axis_vel_rad, std::vector<int16_t>& vel_reg_value);
     int GetAxisVel(const std::vector<int>& encoder_vel_value, std::vector<double>& jnt_vel_rad);
@@ -55,6 +56,21 @@ class Axis_Convert {
     std::vector<double> m_analog_bias;      //传感器偏移量(零点)
     std::vector<double> m_sensor_amplify;   //放大系数(目前均默认为1)
     std::vector<double> m_sensor_trq;       //转换后的力矩值
+};
+
+class Servo_Fc_Convert  {
+
+   public:
+    Servo_Fc_Convert(){};
+    ~Servo_Fc_Convert(){};
+    Servo_Fc_Convert(unsigned int axis_num){};
+
+    int ServoData2FcInner(const std::vector<int8_t>& pdo_mode_operation_0x6061, const std::vector<int16_t>& pdo_analog_ch1_0x2401,
+                         const std::vector<int16_t>& pdo_analog_ch2_0x2402, const std::vector<int16_t>& pdo_trq_feedback_0x2406,
+                         const std::vector<int32_t>& pdo_pos_feedback_0x6064, const std::vector<int32_t>& pdo_vel_feedback_0x606C,
+                         Control::Servo_To_FcInner& servo_data_fcinner);
+    private:
+    unsigned int m_axis_num;  //轴数
 };
 
 }  // namespace RokaeApi

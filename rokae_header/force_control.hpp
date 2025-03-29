@@ -18,7 +18,6 @@
 #include "data_structure_define.hpp"
 #include "dynamic_solver.hpp"
 #include "fc_data_computation.hpp"
-#include "force_planner.hpp"
 #include "force_protect.hpp"
 #include "initialize.hpp"
 
@@ -143,7 +142,7 @@ class ForceControl {
      *
      * @return 无
      */
-    void SetFcCommand();
+    void SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner);
 
     /**
      * @brief 力控模块相关指令计算，包括期望力、阻抗力、搜索运动、虚拟器、保护力、动力学补偿等，目前拖动只进行动力学补偿
@@ -317,8 +316,9 @@ class ForceControl {
    public:
     int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
                    const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const DragType& drag_type);
-    int FcUpdate(const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
-                 const std::vector<int16_t>& trq_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
+    int FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
+                 const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
+                 const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
                  std::vector<int16_t>& trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
                  std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
                  std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
@@ -369,26 +369,31 @@ class ForceControl {
     std::vector<double> m_sensor_trq;       //传感器反馈力矩
 
     // 5.模型基础信息及负载
+    InitRobot* m_init_robot_ptr;
     unsigned int m_jnt_num;
     KDL::Chain m_chain;
-    InitRobot* m_init_robot_ptr;
     LoadInertia m_load;
-    std::vector<double> m_jnt_pos;
-    std::vector<double> m_jnt_vel_abs;
-    std::vector<double> m_jnt_vel_real;
+    std::vector<double> m_jnt_current_pos;
+    // std::vector<double> m_jnt_vel_abs;
+    // std::vector<double> m_jnt_vel_real;
 
     // 6.其他参数
     std::vector<double> m_trq_error;  //重力矩与传感器反馈之差
     bool m_enable_drag;
     DragType m_drag_type;
+    bool m_is_first_drag;
 
+    // 7.内部数据流
+    Servo_To_FcInner m_servo_data_fc_inner;
+    FcStatusInner m_fc_status_inner;
 
-    // 7.一些求解器
+    // 8.一些求解器
     Protect::ForceProtect* m_force_protect_ptr;
     Axis_Convert* m_axis_convert_ptr;
     DynamicSolver* m_dynamicsolver_ptr;
+    KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;
     FcStatusTracker* m_fc_status_tracker_ptr;
-
+    Servo_Fc_Convert* m_servo_fc_convert_ptr;
 };
 
 }  // namespace Control

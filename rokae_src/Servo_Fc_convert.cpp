@@ -93,6 +93,18 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, std::vector<
     return SOLVE_NOERROR;
 }
 
+int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, KDL::JntArray& jnt_pos_rad) {
+    if (encoder_value.size() != m_axis_num) {
+        return SIZE_ERROR;
+    }
+    //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
+    for (unsigned i = 0; i < m_axis_num; i++) {
+        jnt_pos_rad(i) =
+            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_retio[i]);
+    }
+    return SOLVE_NOERROR;
+}
+
 int Axis_Convert::GetVelRegValueForServo(const std::vector<double>& axis_vel_rad, std::vector<int16_t>& vel_reg_value) {
     if (axis_vel_rad.size() != m_axis_num) {
         return SIZE_ERROR;
@@ -153,6 +165,32 @@ int Axis_Convert::SetSensorLinearity(const std::vector<double>& analog_low_set) 
     //设置线性度后需要重新设置m_analog2trq
     std::transform(m_analog2trq_high.cbegin(), m_analog2trq_high.cend(), m_analog2trq_low.cbegin(), m_analog2trq.begin(),
                    [](double high, double low) { return high / low; });
+
+    return SOLVE_NOERROR;
+}
+
+Servo_Fc_Convert::Servo_Fc_Convert(unsigned int axis_num) : m_axis_num(axis_num){};
+
+int Servo_Fc_Convert::ServoData2FcInner(const std::vector<int8_t>& pdo_mode_operation_0x6061,
+                                        const std::vector<int16_t>& pdo_analog_ch1_0x2401,
+                                        const std::vector<int16_t>& pdo_analog_ch2_0x2402,
+                                        const std::vector<int16_t>& pdo_trq_feedback_0x2406,
+                                        const std::vector<int32_t>& pdo_pos_feedback_0x6064,
+                                        const std::vector<int32_t>& pdo_vel_feedback_0x606C,
+                                        Control::Servo_To_FcInner& servo_data_fcinner) {
+    //检查输入数据是否符合要求
+    if (pdo_mode_operation_0x6061.size() != m_axis_num || pdo_analog_ch1_0x2401.size() != m_axis_num ||
+        pdo_analog_ch2_0x2402.size() != m_axis_num || pdo_trq_feedback_0x2406.size() != m_axis_num ||
+        pdo_pos_feedback_0x6064.size() != m_axis_num || pdo_vel_feedback_0x606C.size() != m_axis_num) {
+        return SIZE_ERROR;
+    }
+    //将伺服的PDO数据转换为FcInner数据
+    std::copy(pdo_mode_operation_0x6061.cbegin(), pdo_mode_operation_0x6061.cend(), servo_data_fcinner.mode_operation.begin());
+    std::copy(pdo_analog_ch1_0x2401.cbegin(), pdo_analog_ch1_0x2401.cend(), servo_data_fcinner.analog_ch1.begin());
+    std::copy(pdo_analog_ch2_0x2402.cbegin(), pdo_analog_ch2_0x2402.cend(), servo_data_fcinner.analog_ch2.begin());
+    std::copy(pdo_trq_feedback_0x2406.cbegin(), pdo_trq_feedback_0x2406.cend(), servo_data_fcinner.trq_feedback.begin());
+    std::copy(pdo_pos_feedback_0x6064.cbegin(), pdo_pos_feedback_0x6064.cend(), servo_data_fcinner.pos_feedback.begin());
+    std::copy(pdo_vel_feedback_0x606C.cbegin(), pdo_vel_feedback_0x606C.cend(), servo_data_fcinner.vel_feedback.begin());
 
     return SOLVE_NOERROR;
 }

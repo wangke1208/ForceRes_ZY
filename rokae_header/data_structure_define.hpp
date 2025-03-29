@@ -31,6 +31,28 @@ using namespace KDL;
 
 namespace RokaeApi {
 
+typedef Eigen::Matrix<double, Eigen::Dynamic, 6> Jacobian_trans;
+typedef Eigen::Matrix<double, Eigen::Dynamic, 6> Jacobian_inv;
+typedef Eigen::Matrix<double, 6, Eigen::Dynamic> Jacobian_trans_inv;
+
+//精度
+const float EPSILON16 = 0.000000000000001;
+const float EPSILON15 = 0.00000000000001;
+const float EPSILON14 = 0.0000000000001;
+const float EPSILON13 = 0.000000000001;
+const float EPSILON12 = 0.00000000001;
+const float EPSILON11 = 0.0000000001;
+const float EPSILON = 0.0000000001;
+const float EPSILON9 = 0.000000001;
+const float EPSILON8 = 0.00000001;
+const float EPSILON7 = 0.0000001;
+const float EPSILON6 = 0.000001;
+const float EPSILON5 = 0.00001;
+const float EPSILON4 = 0.0001;
+const float EPSILON3 = 0.001;
+const float EPSILON2 = 0.01;
+const float EPSILON1 = 0.1;
+
 enum SolverRes {
     SOLVE_NOERROR = 0,
     ROBOTTYPE_ERROR = -1,
@@ -45,7 +67,8 @@ enum SolverRes {
     STARTDRAG_POS_OVER_LIMIT = -10,
     AXIS_NUM_ERROR = -11,
     GAIN_VALUE_ERROR = -12,
-    SENSOR_LINERALITY_ERROR = -13
+    SENSOR_LINERALITY_ERROR = -13,
+    ERROR_RPY_CAL = -14
 };
 
 enum ServoMode { SERVO_MODE_POS = 8, SERVO_MODE_TORQUE = 10 };
@@ -367,10 +390,6 @@ enum ServoType {
     UNKNOWN
 };
 
-enum ForceType {
-    DRAG,      //拖动(暂时只有拖动)
-    IMPEDANCE  //阻抗
-};
 struct ProtectParams {
     unsigned int m_jnt_num;
     //轴空间
@@ -436,87 +455,23 @@ struct ControlParams {
     ~ControlParams(){};
 };
 
-struct FcStatusInfo {
-    //关节指令
-    KDL::JntArray jnt_pos_command;
-    KDL::JntArray jnt_vel_command;
-    KDL::JntArray jnt_trq_gra_command;
-    //暂时不添加
-    // KDL::JntArray jnt_trq_desire;
-    // KDL::JntArray jnt_acc_command;
+struct Servo_To_FcInner {
+    std::vector<int32_t> pos_feedback;
+    std::vector<int32_t> vel_feedback;
+    std::vector<int16_t> trq_feedback;
+    std::vector<int16_t> analog_ch1;
+    std::vector<int16_t> analog_ch2;
+    std::vector<int8_t> mode_operation;
 
-    //笛卡尔指令（暂不添加）
-
-    //关节反馈
-    KDL::JntArray jnt_pos_measure;
-    KDL::JntArray jnt_vel_measure;
-    KDL::JntArray jnt_vel_measure_abs;
-    KDL::JntArray jnt_trq_gra_measure;
-    KDL::JntArray jnt_trq_sensor_measure;//根据传感器双通道计算的传感器反馈
-    KDL::JntArray jnt_pos_following_error;
-    KDL::JntSpaceInertiaMatrix jnt_inertia_matrix_measure;
-    // KDL::JntArray jnt_acc_measure;
-
-    //滤波后
-    KDL::JntArray jnt_vel_measure_filter;
-
-    //笛卡尔反馈（暂不添加）
-
-    //一些状态标志
-    DragType drag_type;
-    ForceType force_type;
-    std::vector<ServoType> servo_type;
-
-    FcStatusInfo(unsigned int jnt_num) {
-        jnt_pos_command.resize(jnt_num);
-        jnt_vel_command.resize(jnt_num);
-        jnt_trq_gra_command.resize(jnt_num);
-        jnt_pos_measure.resize(jnt_num);
-        jnt_vel_measure.resize(jnt_num);
-        jnt_vel_measure_abs.resize(jnt_num);
-        jnt_vel_measure_filter.resize(jnt_num);
-        jnt_trq_gra_measure.resize(jnt_num);
-        jnt_trq_sensor_measure.resize(jnt_num);
-        jnt_pos_following_error.resize(jnt_num);
-        jnt_inertia_matrix_measure.resize(jnt_num);
-        servo_type.resize(jnt_num);
-        drag_type = DragType::DRAG_JOINT;
-        force_type = ForceType::DRAG;
-    }
-
-#define SET_FC_STATUS_INFO(name) this->name = fc_status_info.name
-    FcStatusInfo& operator=(const FcStatusInfo fc_status_info) {
-        SET_FC_STATUS_INFO(jnt_pos_command);
-        SET_FC_STATUS_INFO(jnt_vel_command);
-        SET_FC_STATUS_INFO(jnt_pos_measure);
-        SET_FC_STATUS_INFO(jnt_vel_measure);
-        SET_FC_STATUS_INFO(jnt_vel_measure_abs);
-        SET_FC_STATUS_INFO(jnt_vel_measure_filter);
-        SET_FC_STATUS_INFO(jnt_trq_sensor_measure);
-        SET_FC_STATUS_INFO(jnt_inertia_matrix_measure);
-        SET_FC_STATUS_INFO(drag_type);
-        SET_FC_STATUS_INFO(servo_type);
-        return *this;
-    }
-};
-
-struct ServoToFc {
-    std::vector<int32_t> pos_feedback_0x6064;
-    std::vector<int32_t> vel_feedback_0x606C;
-    std::vector<int16_t> trq_feedback_0x2406;
-    std::vector<int16_t> analog_ch1_0x2401;
-    std::vector<int16_t> analog_ch2_0x2402;
-    std::vector<int8_t> mode_operation_0x6061;
-
-    ServoToFc(unsigned int jnt_num) { Resize(jnt_num); }
+    Servo_To_FcInner(unsigned int jnt_num) { Resize(jnt_num); }
 
     void Resize(unsigned int jnt_num) {
-        pos_feedback_0x6064.resize(jnt_num, 0);
-        vel_feedback_0x606C.resize(jnt_num, 0);
-        trq_feedback_0x2406.resize(jnt_num, 0);
-        analog_ch1_0x2401.resize(jnt_num, 0);
-        analog_ch2_0x2402.resize(jnt_num, 0);
-        mode_operation_0x6061.resize(jnt_num, 0);
+        pos_feedback.resize(jnt_num, 0);
+        vel_feedback.resize(jnt_num, 0);
+        trq_feedback.resize(jnt_num, 0);
+        analog_ch1.resize(jnt_num, 0);
+        analog_ch2.resize(jnt_num, 0);
+        mode_operation.resize(jnt_num, 0);
     }
 };
 
@@ -534,7 +489,7 @@ struct FcToServo {
 
     void Resize(unsigned int jnt_num) {
         trq_cmd.resize(jnt_num, 0);
-        trq_feedforward.resize(jnt_num,0);
+        trq_feedforward.resize(jnt_num, 0);
         k_p.resize(jnt_num, 2000);
         k_d.resize(jnt_num, 70);
         edb_cof.resize(jnt_num, 100);
@@ -549,7 +504,7 @@ struct FcToServo {
 
     void SetZero() {
         std::fill(trq_cmd.begin(), trq_cmd.end(), 0);
-        std::fill(trq_feedforward.begin(),trq_feedforward.end(),0);
+        std::fill(trq_feedforward.begin(), trq_feedforward.end(), 0);
         std::fill(k_p.begin(), k_p.end(), 0);
         std::fill(k_d.begin(), k_d.end(), 0);
         std::fill(edb_cof.begin(), edb_cof.end(), 0);
@@ -558,6 +513,119 @@ struct FcToServo {
         std::fill(jnt_inertia.begin(), jnt_inertia.end(), 0);
     }
 };
+
+struct FcStatusInner {
+    //关节指令
+    KDL::JntArray jnt_pos_command;
+    KDL::JntArray jnt_vel_command;
+    KDL::JntArray jnt_acc_command;
+
+    //笛卡尔指令
+    KDL::Frame cart_pos_command_flan_in_base;  //旋转指令flan_in_base
+    KDL::Frame cart_pos_command_tcp_in_base;   //旋转指令tcp_in_base
+    KDL::JntArray cart_pos_jnt_command;
+    KDL::Twist cart_pos_following_error_tcp_in_base;  //位置+旋转误差 tcp_in_base
+
+    //动力学指令
+    KDL::JntArray jnt_trq_gra_command;
+
+    //关节反馈
+    KDL::JntArray jnt_pos_measure;
+    KDL::JntArray jnt_vel_measure;
+    KDL::JntArray jnt_acc_measure;
+    KDL::JntArray jnt_trq_sensor_measure;  //根据传感器双通道计算的传感器反馈
+    KDL::JntArray jnt_pos_following_error;
+
+    //动力学反馈
+    KDL::JntArray jnt_ineria_trq_measure;
+    KDL::JntArray jnt_corlios_trq_measure;
+    KDL::JntArray jnt_gravity_trq_measure;
+    KDL::JntArray jnt_trq_measure_all;  //计算得到的总力矩
+    KDL::JntSpaceInertiaMatrix jnt_inertia_matrix_measure;
+
+    //笛卡尔反馈
+    KDL::Frame cart_pos_measure_flan_in_base;
+    KDL::Frame cart_pos_measure_tcp_in_base;
+    KDL::Vector cart_pos_following_error_flan_in_base_pos;
+    KDL::Vector cart_pos_following_error_tcp_in_base_pos;
+    KDL::Rotation cart_tcp_rot_between_command_and_measure;
+    //反馈力雅可比
+    KDL::Jacobian jac_measure_flan_in_base;
+    KDL::Jacobian jac_measure_tcp_in_base;
+    Jacobian_trans jac_trans_measure_flan_in_base;
+    Jacobian_trans jac_trans_measure_tcp_in_base;
+    Jacobian_inv jac_inv_measure_flan_in_base;
+    Jacobian_trans_inv jac_trans_inv_measure_flan_in_base;
+    double mani_measure;
+
+    FcStatusInner(unsigned int jnt_num)
+        : jnt_pos_command(jnt_num),
+          jnt_vel_command(jnt_num),
+          jnt_acc_command(jnt_num),
+          cart_pos_command_flan_in_base(KDL::Frame::Identity()),
+          cart_pos_command_tcp_in_base(KDL::Frame::Identity()),
+          cart_pos_jnt_command(jnt_num),
+          cart_pos_following_error_tcp_in_base(KDL::Twist::Zero()),
+          jnt_trq_gra_command(jnt_num),
+          jnt_pos_measure(jnt_num),
+          jnt_vel_measure(jnt_num),
+          jnt_acc_measure(jnt_num),
+          jnt_trq_sensor_measure(jnt_num),
+          jnt_pos_following_error(jnt_num),
+          jnt_ineria_trq_measure(jnt_num),
+          jnt_corlios_trq_measure(jnt_num),
+          jnt_gravity_trq_measure(jnt_num),
+          jnt_trq_measure_all(jnt_num),
+          jnt_inertia_matrix_measure(jnt_num),
+          cart_pos_measure_flan_in_base(KDL::Frame::Identity()),
+          cart_pos_measure_tcp_in_base(KDL::Frame::Identity()),
+          cart_pos_following_error_flan_in_base_pos(KDL::Vector::Zero()),
+          cart_pos_following_error_tcp_in_base_pos(KDL::Vector::Zero()),
+          cart_tcp_rot_between_command_and_measure(KDL::Rotation::Identity()),
+          jac_measure_flan_in_base(jnt_num),
+          jac_measure_tcp_in_base(jnt_num),
+          jac_trans_measure_flan_in_base(jnt_num, 6),
+          jac_trans_measure_tcp_in_base(jnt_num, 6),
+          jac_inv_measure_flan_in_base(jnt_num, 6),
+          jac_trans_inv_measure_flan_in_base(6, jnt_num),
+          mani_measure(0.0) {}
+
+#define SET_FC_STATUS_INFO(name) this->name = fc_status_inner.name
+    FcStatusInner& operator=(const FcStatusInner fc_status_inner) {
+        SET_FC_STATUS_INFO(jnt_pos_command);
+        SET_FC_STATUS_INFO(jnt_vel_command);
+        SET_FC_STATUS_INFO(jnt_acc_command);
+        SET_FC_STATUS_INFO(cart_pos_command_flan_in_base);
+        SET_FC_STATUS_INFO(cart_pos_command_tcp_in_base);
+        SET_FC_STATUS_INFO(cart_pos_jnt_command);
+        SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_base);
+        SET_FC_STATUS_INFO(jnt_trq_gra_command);
+        SET_FC_STATUS_INFO(jnt_pos_measure);
+        SET_FC_STATUS_INFO(jnt_vel_measure);
+        SET_FC_STATUS_INFO(jnt_acc_measure);
+        SET_FC_STATUS_INFO(jnt_trq_sensor_measure);
+        SET_FC_STATUS_INFO(jnt_pos_following_error);
+        SET_FC_STATUS_INFO(jnt_ineria_trq_measure);
+        SET_FC_STATUS_INFO(jnt_corlios_trq_measure);
+        SET_FC_STATUS_INFO(jnt_gravity_trq_measure);
+        SET_FC_STATUS_INFO(jnt_trq_measure_all);
+        SET_FC_STATUS_INFO(jnt_inertia_matrix_measure);
+        SET_FC_STATUS_INFO(cart_pos_measure_flan_in_base);
+        SET_FC_STATUS_INFO(cart_pos_measure_tcp_in_base);
+        SET_FC_STATUS_INFO(cart_pos_following_error_flan_in_base_pos);
+        SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_base_pos);
+        SET_FC_STATUS_INFO(cart_tcp_rot_between_command_and_measure);
+        SET_FC_STATUS_INFO(jac_measure_flan_in_base);
+        SET_FC_STATUS_INFO(jac_measure_tcp_in_base);
+        SET_FC_STATUS_INFO(jac_trans_measure_flan_in_base);
+        SET_FC_STATUS_INFO(jac_trans_measure_tcp_in_base);
+        SET_FC_STATUS_INFO(jac_inv_measure_flan_in_base);
+        SET_FC_STATUS_INFO(jac_trans_inv_measure_flan_in_base);
+        SET_FC_STATUS_INFO(mani_measure);
+        return *this;
+    }
+};
+
 }  // namespace Control
 
 }  // namespace RokaeApi
