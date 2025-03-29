@@ -57,6 +57,11 @@ class InitRobot {
 
     const unsigned int& GetJntNum() { return m_jnt_num; }
 
+    const Model::ModelParams& GetModelParams() { return m_model_param; }
+
+    const Control::ControlParams& GetControlParams() { return m_control_param; }
+
+    const Model::MechanicalParams& GetMechanicalParams() { return m_mechanical_params; }
    private:
     Model::MechUnitType m_robot_type;
     Model::RobotConfiguration m_robot_config;     //从cfg读取的数据

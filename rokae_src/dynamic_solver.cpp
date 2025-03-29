@@ -10,7 +10,7 @@
  * @date: 2024/4/25
  * @brief: 动力学解算模块(纯连杆)
  */
-#include "../rokae_header/dynamic_solver.hpp"
+#include "rokae_header/dynamic_solver.hpp"
 
 namespace RokaeApi {
 namespace Model {

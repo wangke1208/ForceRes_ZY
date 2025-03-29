@@ -36,6 +36,14 @@ inline int VectorToJntArray(const std::vector<double>& in, KDL::JntArray& out) {
     return 0;
 }
 
+inline KDL::JntArray& VectorToJntArray(const std::vector<double>& in) {
+    KDL::JntArray out(in.size());
+    for (unsigned int i = 0; i < in.size(); i++) {
+        out(i) = in[i];
+    }
+    return out;
+}
+
 inline int JntArrayToVector(const KDL::JntArray& in, std::vector<double>& out) {
     if (out.size() != in.rows()) return -1;
     for (unsigned int i = 0; i < in.rows(); i++) {
@@ -44,6 +52,13 @@ inline int JntArrayToVector(const KDL::JntArray& in, std::vector<double>& out) {
     return 0;
 }
 
+inline std::vector<double>& JntArrayToVector(const KDL::JntArray& in) {
+    std::vector<double> out(in.rows());
+    for (unsigned int i = 0; i < in.rows(); i++) {
+        out[i] = in(i);
+    }
+    return out;
+}
 inline void VectorToRD(const std::vector<double>& in, Model::ModelParams::RobDimensions& out) {
     int joint_num = in.size() / 3;
     std::array<double*, 24> out_pointers = {&out.L01x, &out.L01y, &out.L01z, &out.L12x, &out.L12y, &out.L12z,

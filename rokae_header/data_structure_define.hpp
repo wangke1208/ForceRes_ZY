@@ -44,8 +44,11 @@ enum SolverRes {
     SOFT_LIMIT_PARAMS_ERROR = -9,
     STARTDRAG_POS_OVER_LIMIT = -10,
     AXIS_NUM_ERROR = -11,
-    GAIN_VALUE_ERROR = -12
+    GAIN_VALUE_ERROR = -12,
+    SENSOR_LINERALITY_ERROR = -13
 };
+
+enum ServoMode { SERVO_MODE_POS = 8, SERVO_MODE_TORQUE = 10 };
 
 namespace Model {
 enum MechUnitType {

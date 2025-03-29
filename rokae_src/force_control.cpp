@@ -14,151 +14,199 @@
 #include <cstddef>
 #include <iterator>
 
-#include "../rokae_header/forcecontrol.hpp"
+#include "rokae_header/force_control.hpp"
+
 
 using namespace std;
 
 namespace RokaeApi {
 namespace Control {
-ForceControl::ForceControl(InitRobot* init_robot_ptr)
-    : m_mechanical_params(init_robot_ptr->GetJntNum()),
-      m_fc_status(init_robot_ptr->GetJntNum()),
-      m_control_params(init_robot_ptr->GetJntNum()),
-      m_model_params(init_robot_ptr->GetJntNum()),
-      m_fc_to_servo(init_robot_ptr->GetJntNum()) {
-    m_jnt_num = init_robot_ptr->GetJntNum();
-    m_chain = init_robot_ptr->GetChain();
-    m_fc_status_tracker = new FcStatusTracker(init_robot_ptr, &m_fc_status);
-    m_force_planner_ptr = new Control::ForcePlanner(init_robot_ptr, &m_fc_status);
-    m_servo_to_fc = new ServoToFc(m_jnt_num);
-    m_fc_dynamic_solver = new Model::DynamicSolver(m_chain, init_robot_ptr->GetGravity());
-    m_mechanical_params = init_robot_ptr->GetMechanicalParams();
-    m_control_params = init_robot_ptr->GetControlParams();
-    m_model_params = init_robot_ptr->GetModelParams();
-    // 电机&编码器
-    m_encoder_offset.resize(m_jnt_num);
-    m_encoder_resolution.resize(m_jnt_num);
-    m_decel_ratio_high.resize(m_jnt_num);
-    m_decel_ratio_low.resize(m_jnt_num);
-    m_rated_torque.resize(m_jnt_num);
+ForceControl::ForceControl(InitRobot* init_robot_ptr) : m_init_robot_ptr(init_robot_ptr) {
+    m_jnt_num = m_init_robot_ptr->GetJntNum();
+    m_chain = m_init_robot_ptr->GetChain();
 
-    //传感器
-    m_analog2trq_high.resize(m_jnt_num);
-    m_analog2trq_low.resize(m_jnt_num);
-    m_analog_bias.resize(m_jnt_num);
-    m_sensor_amplify.resize(m_jnt_num);
-    m_encoder_to_jnt_scale.resize(m_jnt_num);
-    m_decel_ratio.resize(m_jnt_num);
-    m_analog2trq.resize(m_jnt_num);
+    //初始化一些求解器
+    m_force_protect_ptr = new Protect::ForceProtect(m_jnt_num);
+    m_axis_convert_ptr = new Axis_Convert(m_jnt_num, m_init_robot_ptr->GetMechanicalParams());
+    m_dynamicsolver_ptr = new DynamicSolver(m_chain, m_init_robot_ptr->GetGravity());
+    m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr);
+    
+    //初始化信息
+    m_load.SetZero();
+    m_drag_type = DragType::DRAG_JOINT;
+    m_enable_drag = false;
+    //初始化参数
+    m_encoder_offset_inner.resize(m_jnt_num);  
+    m_analog_bias_inner.resize(m_jnt_num);      
+    m_decel_ratio_low_inner.resize(m_jnt_num);
+
+    m_joint_range_min_inner.resize(m_jnt_num);
+    m_joint_range_max_inner.resize(m_jnt_num);
+    m_joint_range_min_new_inner.resize(m_jnt_num);
+    m_joint_range_max_new_inner.resize(m_jnt_num);
+
+    m_joint_gain_kp_inner.resize(m_jnt_num);
+    m_joint_damp_zeta_inner.resize(m_jnt_num);
+    m_friction_cof_servo_inner.resize(m_jnt_num);
+
+    m_trq_error_threshold_inner.resize(m_jnt_num);
+
+    m_ref_trq_desire.resize(m_jnt_num);
+    m_ref_trq_overlay.resize(m_jnt_num);
+    m_ref_trq_impedance.resize(m_jnt_num);
+    m_ref_trq_virtual_wall.resize(m_jnt_num);
+    m_ref_trq_joint_limit.resize(m_jnt_num);
+    m_ref_trq_dyn.resize(m_jnt_num);
+    m_ref_trq.resize(m_jnt_num);
+    m_trq_comp_coef.resize(m_jnt_num);
+    m_joint_inertia.resize(m_jnt_num);
+
+    m_kp_set_gain.resize(m_jnt_num);
+    m_fric_set_gain.resize(m_jnt_num);
+
     m_analog_ch1.resize(m_jnt_num);
     m_analog_ch2.resize(m_jnt_num);
     m_analog_average.resize(m_jnt_num);
     m_sensor_trq.resize(m_jnt_num);
 
-    //模型参数
-    m_joint_range_min.resize(m_jnt_num);
-    m_joint_range_max.resize(m_jnt_num);
-    m_joint_range_min_new.resize(m_jnt_num);
-    m_joint_range_max_new.resize(m_jnt_num);
-
-    //控制参数
-    m_joint_gain_kp.resize(m_jnt_num);
-    m_joint_damp_zeta.resize(m_jnt_num);
-    m_friction_cof_servo.resize(m_jnt_num);
-
-    //保护参数
-    m_trq_error.resize(m_jnt_num);
-    m_trq_error_max.resize(m_jnt_num);
-    m_trq_comp_coef.resize(m_jnt_num);
-
-    //中间变量
     m_jnt_pos.resize(m_jnt_num);
     m_jnt_vel_abs.resize(m_jnt_num);
     m_jnt_vel_real.resize(m_jnt_num);
-    m_ref_trq_dyn.resize(m_jnt_num);
-    m_ref_trq_joint_limit.resize(m_jnt_num);
-    m_ref_trq.resize(m_jnt_num);
-    m_ref_trq_vec.resize(m_jnt_num);
-    m_joint_inertia.resize(m_jnt_num);
-    m_trq_feedforward.resize(m_jnt_num);
 
-    //增益调节接口
-    m_kp_set_gain.resize(m_jnt_num, 0.5);
-    m_fric_set_gain.resize(m_jnt_num, 0.5);
-
-    //状态位
-    m_enable_drag = false;
+    m_trq_error.resize(m_jnt_num);
 }
 
 ForceControl::~ForceControl() {
-    delete m_fc_status_tracker;
-    delete m_servo_to_fc;
-    delete m_fc_dynamic_solver;
-    delete m_force_planner_ptr;
+    delete m_init_robot_ptr;
+    delete m_force_protect_ptr;
 }
 
 int ForceControl::Fcinit() {
-    // TODO:这部分确实有点冗余，m_encoder_offset这些成员变量可以不用的，直接用m_mechanical_params就行，后续再改
+    //可变参数赋值
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        m_encoder_offset[i] = m_mechanical_params.encoder_offset[i];
-        m_encoder_resolution[i] = m_mechanical_params.encoder_resolution[i];
-        m_decel_ratio_high[i] = m_mechanical_params.decel_ratio_high[i];
-        m_decel_ratio_low[i] = m_mechanical_params.decel_ratio_low[i];
-        m_rated_torque[i] = m_mechanical_params.rated_torque[i];
-        //传感器
-        m_analog2trq_high[i] = m_mechanical_params.analog2trq_high[i];
-        m_analog2trq_low[i] = m_mechanical_params.analog2trq_low[i];
-        m_analog_bias[i] = m_mechanical_params.analog_bias[i];
-        m_sensor_amplify[i] = m_mechanical_params.sensor_amplify[i];
-        m_analog2trq[i] = m_analog2trq_high[i] / m_analog2trq_low[i];
-        //中间参数
-        m_encoder_to_jnt_scale[i] = 2.0 * PI / m_encoder_resolution[i];
-        m_decel_ratio[i] = m_decel_ratio_high[i] / m_decel_ratio_low[i];
+        //可变参数--机械
+        m_encoder_offset_inner[i] = m_init_robot_ptr->GetMechanicalParams().encoder_offset[i];  
+        m_analog_bias_inner[i] = m_init_robot_ptr->GetMechanicalParams().analog_bias[i];      
+        m_decel_ratio_low_inner[i] = m_init_robot_ptr->GetMechanicalParams().decel_ratio_low[i];    
+    
+        //可变参数--模型
+        m_joint_range_min_inner[i] = m_init_robot_ptr->GetModelParams().joint_range_min[i];
+        m_joint_range_max_inner[i] = m_init_robot_ptr->GetModelParams().joint_range_max[i];
+        m_joint_range_min_new_inner[i] = m_init_robot_ptr->GetModelParams().joint_range_min_new[i];
+        m_joint_range_max_new_inner[i] = m_init_robot_ptr->GetModelParams().joint_range_max_new[i];
 
-        //模型参数
-        m_joint_range_min[i] = m_model_params.joint_range_min[i] /180 * PI;
-        m_joint_range_max[i] = m_model_params.joint_range_max[i] /180 * PI;
-        m_joint_range_min_new[i] = m_model_params.joint_range_min_new[i];
-        m_joint_range_max_new[i] = m_model_params.joint_range_max_new[i];        
+        //可变参数--控制
+        m_joint_gain_kp_inner[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_gain_kp[i];
+        m_joint_damp_zeta_inner[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_damp_zeta[i];
+        m_friction_cof_servo_inner[i] = m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i];
 
-        //控制参数
-        m_joint_gain_kp[i] = m_control_params.m_gain_params.joint_gain_kp[i];
-        m_joint_damp_zeta[i] = m_control_params.m_gain_params.joint_damp_zeta[i];
-        m_friction_cof_servo[i] = m_control_params.m_gain_params.friction_cof_servo[i];
-
-        //保护参数
-        m_trq_error_max[i] = m_control_params.m_protect_params.max_mode_switch_trq[i];
+        //可变参数--保护
+        m_trq_error_threshold_inner[i] = m_init_robot_ptr->GetControlParams().m_protect_params.max_mode_switch_trq[i];
     }
 
     //设置默认软限位
-    m_force_planner_ptr ->SetSoftLimit(m_joint_range_min, m_joint_range_max);
+    m_force_planner_ptr->SetSoftLimit(m_joint_range_min_inner, m_joint_range_max_inner);
 
     return SOLVE_NOERROR;
 }
 
-//*******************************数据更新相关接口部分*****************************
-int ForceControl::FcUpdate(const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6], const int8_t param_0x6061[6],
-                           int16_t param_0x6071[6], int16_t param_0x60B2[6], int16_t param_0x2201[6], int16_t param_0x2202[6], int16_t param_0x2203[6],
-                           int16_t param_0x2204[6], int16_t param_0x2205[6], int16_t param_0x2206[6], double jnt_vel_rad[6]) {
+void ForceControl::SetFcCommand() {
+    switch (m_fc_status.force_type) {
+    case ForceType::DRAG:
+        // Set Feedback As Cmd
+        m_fc_status.jnt_pos_command = m_fc_status.jnt_pos_measure;
+        break;
 
-    //0.m_enable_drag==true之后才能进行FcUpdate
-    if(m_enable_drag == false){
+    case ForceType::IMPEDANCE:
+        // Set Reference As Cmd
+        //暂时不开发
+        break;
+    }
+}
+
+int ForceControl::FcUpdate(const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
+                           const std::vector<int16_t>& trq_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
+                            std::vector<int16_t>& trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
+                            std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
+                            std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo
+                            ) {
+    // 1.判断是否进行了drag_config
+    if(!m_enable_drag) {
+        return ERROR_DRAG_ENABLE;
+    }    
+    // 2.读取伺服数据并转换为Fc内部变量
+
+    // 3.力控模块功能力计算
+
+    // 4.将Fc内部数据转换为下发给伺服数据
+
+    // 5.判断当前伺服模式是否为力矩模式，处于力矩模式允许下发力控相关指令
+}
+
+int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
+                             const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const DragType& drag_type) {
+    //0.初始化标志位
+    int res = SOLVE_NOERROR;
+    m_enable_drag = false;
+
+    // 1.判断是否允许进行Drag设置
+    // 1.1 处于位置模式下
+    if (std::any_of(pos_encoder_from_servo.cbegin(), pos_encoder_from_servo.cend(),
+                    [](int8_t servo_type) { return servo_type != 8; })) {
+        return SERVO_MODE_ERROR;
+    }
+    // 1.2 计算当前位置
+    std::vector<double> jnt_pos_rad_temp(m_jnt_num);
+    m_axis_convert_ptr->GetAxisPos(pos_encoder_from_servo, jnt_pos_rad_temp);
+
+    // 1.3 力矩偏差在合理范围
+    std::vector<double> sensor_trq_temp(m_jnt_num);
+    auto model_trq_temp = m_dynamicsolver_ptr->GetGravity(m_load, VectorToJntArray(jnt_pos_rad_temp));
+    m_axis_convert_ptr->GetCobotTrq(analog_ch1, analog_ch2, sensor_trq_temp);
+    res = m_force_protect_ptr->TrqErrorProtect(sensor_trq_temp, JntArrayToVector(model_trq_temp), m_trq_error_threshold_inner);
+    if (res != SOLVE_NOERROR) return res;
+
+    // 1.4 当前机器人位置不处在软限位保护范围内
+    if (m_force_protect_ptr->IsInForceControlArea(VectorToJntArray(jnt_pos_rad_temp), m_joint_range_max_inner,
+                                                  m_joint_range_min_inner)) {
+        return STARTDRAG_POS_OVER_LIMIT;
+    }
+
+    // 2.设置拖动模式
+    m_drag_type = drag_type;
+
+    // 3.设置负载参数
+    m_fc_status_tracker_ptr->SetLoad(m_load);
+
+    // 4.更新标志位
+    m_enable_drag = true;
+    
+    return SOLVE_NOERROR;
+}
+
+//*******************************数据更新相关接口部分*****************************
+int ForceControl::FcUpdate(const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6],
+                           const int8_t param_0x6061[6], int16_t param_0x6071[6], int16_t param_0x60B2[6],
+                           int16_t param_0x2201[6], int16_t param_0x2202[6], int16_t param_0x2203[6], int16_t param_0x2204[6],
+                           int16_t param_0x2205[6], int16_t param_0x2206[6], double jnt_vel_rad[6]) {
+    // 0.m_enable_drag==true之后才能进行FcUpdate
+    if (m_enable_drag == false) {
         return ERROR_DRAG_ENABLE;
     }
 
     // 1.读取伺服数据，并更新Fcstatus
     UpdateFcStatus(param_0x6064, param_0x606C, param_0x2406, param_0x6061);
 
-    //1.1新增，只要drag之后，就更新速度反馈
-    for(unsigned int i = 0 ; i < m_jnt_num ; i++){
+    // 1.1新增，只要drag之后，就更新速度反馈
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
         jnt_vel_rad[i] = m_fc_status.jnt_vel_measure(i);
     }
     // 2.判断伺服模式，伺服为力矩模式才允许更新力闭环参数
     for (unsigned int i = 0; i < m_jnt_num; i++) {
         if (m_servo_to_fc->mode_operation_0x6061[i] != 10) {
-            if(m_servo_to_fc->mode_operation_0x6061[i] == 0){
+            if (m_servo_to_fc->mode_operation_0x6061[i] == 0) {
                 //临时版本：针对伺服模式突变为0的情况，不做任何处理，仍计算力矩
-            }else{
+            } else {
                 return SERVO_MODE_ERROR;
             }
         }
@@ -168,12 +216,14 @@ int ForceControl::FcUpdate(const int32_t param_0x6064[6], const int32_t param_0x
     UpDateFcToServo();
 
     // 4.数据转化，下发到伺服
-    ServoDataVectorToArray(param_0x6071, param_0x60B2, param_0x2201, param_0x2202, param_0x2203, param_0x2204, param_0x2205, param_0x2206);
+    ServoDataVectorToArray(param_0x6071, param_0x60B2, param_0x2201, param_0x2202, param_0x2203, param_0x2204, param_0x2205,
+                           param_0x2206);
 
     return SOLVE_NOERROR;
 }
 
-int ForceControl::DataTransform(const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6], const int8_t param_0x6061[6]) {
+int ForceControl::DataTransform(const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6],
+                                const int8_t param_0x6061[6]) {
     std::copy(param_0x6064, param_0x6064 + 6, std::begin(m_servo_to_fc->pos_feedback_0x6064));  //此处加6不是加5
     std::copy(param_0x606C, param_0x606C + 6, std::begin(m_servo_to_fc->vel_feedback_0x606C));
     std::copy(param_0x2406, param_0x2406 + 6, std::begin(m_servo_to_fc->trq_feedback_0x2406));
@@ -182,9 +232,10 @@ int ForceControl::DataTransform(const int32_t param_0x6064[6], const int32_t par
     return SOLVE_NOERROR;
 }
 
-int ForceControl::UpdateFcStatus(const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6], const int8_t param_0x6061[6]) {
+int ForceControl::UpdateFcStatus(const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6],
+                                 const int8_t param_0x6061[6]) {
     // 1.从伺服读取数据，并进行数据类型转换，同时进行模式判断，非力矩模式返回错误码，不允许继续下发
-	DataTransform(param_0x6064, param_0x606C, param_0x2406, param_0x6061);
+    DataTransform(param_0x6064, param_0x606C, param_0x2406, param_0x6061);
 
     // 2.根据伺服数据(编码器值等)计算位置、速度、传感器力矩等
     GetAxisPos(m_servo_to_fc->pos_feedback_0x6064);
@@ -204,19 +255,7 @@ int ForceControl::UpdateFcStatus(const int32_t param_0x6064[6], const int32_t pa
     return SOLVE_NOERROR;
 }
 
-void ForceControl::SetFcCommand() {
-    switch (m_fc_status.force_type) {
-    case ForceType::DRAG:
-        // Set Feedback As Cmd
-        m_fc_status.jnt_pos_command = m_fc_status.jnt_pos_measure;
-        break;
 
-    case ForceType::IMPEDANCE:
-        // Set Reference As Cmd
-        //暂时不开发
-        break;
-    }
-}
 
 void ForceControl::ForcePlanner() {
     // 1.期望力
@@ -228,7 +267,7 @@ void ForceControl::ForcePlanner() {
     // 4.虚拟墙
 
     // 5.关节限位
-    m_ref_trq_joint_limit = m_force_planner_ptr->JointLimitUpdate(m_trq_comp_coef);//暂时没用到m_trq_comp_coef
+    m_ref_trq_joint_limit = m_force_planner_ptr->JointLimitUpdate(m_trq_comp_coef);  //暂时没用到m_trq_comp_coef
 
     // 6.动力学补偿
     m_ref_trq_dyn = m_fc_status.jnt_trq_gra_measure;
@@ -239,7 +278,6 @@ void ForceControl::ForcePlanner() {
 
         // 8.惯量计算（放到plan里计算，但是不计入m_ref_trq）
         m_joint_inertia[i] = m_fc_status.jnt_inertia_matrix_measure(i, i);
-
     }
 
     // 9.前馈计算(力矩模式下发前馈力矩为0)
@@ -265,8 +303,9 @@ void ForceControl::UpDateFcToServo() {
     }
 }
 
-void ForceControl::ServoDataVectorToArray(int16_t param_0x6071[6], int16_t param_0x60B2[6], int16_t param_0x2201[6], int16_t param_0x2202[6],
-                                          int16_t param_0x2203[6], int16_t param_0x2204[6], int16_t param_0x2205[6], int16_t param_0x2206[6]) {
+void ForceControl::ServoDataVectorToArray(int16_t param_0x6071[6], int16_t param_0x60B2[6], int16_t param_0x2201[6],
+                                          int16_t param_0x2202[6], int16_t param_0x2203[6], int16_t param_0x2204[6],
+                                          int16_t param_0x2205[6], int16_t param_0x2206[6]) {
     std::copy(m_fc_to_servo.trq_cmd.begin(), m_fc_to_servo.trq_cmd.end(), param_0x6071);
     std::copy(m_fc_to_servo.trq_feedforward.begin(), m_fc_to_servo.trq_feedforward.end(), param_0x60B2);
     std::copy(m_fc_to_servo.k_p.begin(), m_fc_to_servo.k_p.end(), param_0x2201);
@@ -277,7 +316,6 @@ void ForceControl::ServoDataVectorToArray(int16_t param_0x6071[6], int16_t param
     std::copy(m_fc_to_servo.jnt_inertia.begin(), m_fc_to_servo.jnt_inertia.end(), param_0x2206);
 }
 //************************************************************************************************
-
 
 //**************************************编码器数据转化接口******************************************
 
@@ -295,16 +333,13 @@ void ForceControl::GetAxisPos(const std::vector<int32_t>& encoder_value) {
 }
 
 void ForceControl::GetJntVel(const std::vector<int32_t>& encoder_vel_value) {
-
-
-    for (unsigned int i = 0; i < m_jnt_num ; i++) {
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
         m_jnt_vel_abs[i] = fabs((encoder_vel_value[i] * PI * 2 / 60 / m_decel_ratio[i]));
         m_jnt_vel_real[i] = (encoder_vel_value[i] * PI * 2 / 60 / m_decel_ratio[i]);
     }
 
     VectorToJntArray(m_jnt_vel_abs, m_fc_status.jnt_vel_measure_abs);
     VectorToJntArray(m_jnt_vel_real, m_fc_status.jnt_vel_measure);
-
 }
 
 void ForceControl::GetSensorTorque(const std::vector<int16_t>& analog_average) {
@@ -318,12 +353,12 @@ void ForceControl::GetSensorTorque(const std::vector<int16_t>& analog_average) {
 }
 //************************************************************************************************
 
-
 //*******************************内部控制参数计算、配置及状态切换接口部分*****************************
 
-int ForceControl::DragConfig(const int8_t param_0x6061[6], const int16_t param_0x2401[6], const int16_t param_0x2402[6], const int32_t param_0x6064[6],
-                             const int32_t param_0x606C[6], const int16_t param_0x2406[6], const LoadInertia& load_params, DragType drag_type,
-                             double sensor_trq_feedback[6], double trq_ref[6], double trq_error[6]) {
+int ForceControl::DragConfig(const int8_t param_0x6061[6], const int16_t param_0x2401[6], const int16_t param_0x2402[6],
+                             const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6],
+                             const LoadInertia& load_params, DragType drag_type, double sensor_trq_feedback[6], double trq_ref[6],
+                             double trq_error[6]) {
     int res_drag_config = SOLVE_NOERROR;
     // 1.读取模式相关变量
     m_fc_status.drag_type = drag_type;
@@ -369,7 +404,7 @@ int ForceControl::DragConfig(const int8_t param_0x6061[6], const int16_t param_0
     UpdateFcStatus(param_0x6064, param_0x606C, param_0x2406, param_0x6061);
 
     // 5.判断当前位置是否允许开启拖动
-    if(IsInForceControlArea(m_fc_status.jnt_pos_measure, m_joint_range_max, m_joint_range_min) == true){
+    if (IsInForceControlArea(m_fc_status.jnt_pos_measure, m_joint_range_max_inner, m_joint_range_min_inner) == true) {
         return STARTDRAG_POS_OVER_LIMIT;
     }
 
@@ -405,9 +440,12 @@ void ForceControl::ResetKpByLoad(const LoadInertia& load) {
         }
     }
     //临时对2、3轴进行调整
-    if(m_joint_gain_kp[1] < 25){m_joint_gain_kp[1] = 25;}
-    if(m_joint_gain_kp[2] < 25){m_joint_gain_kp[2] = 25;}
-
+    if (m_joint_gain_kp[1] < 25) {
+        m_joint_gain_kp[1] = 25;
+    }
+    if (m_joint_gain_kp[2] < 25) {
+        m_joint_gain_kp[2] = 25;
+    }
 }
 
 void ForceControl::ResetFricByLoad(const LoadInertia& load) {
@@ -416,8 +454,9 @@ void ForceControl::ResetFricByLoad(const LoadInertia& load) {
 
     for (unsigned int i = 0; i < m_jnt_num; i++) {
         if (m_fric_set_gain[i] >= 0.5 && m_fric_set_gain[i] <= 1) {
-            m_friction_cof_servo[i] = ((m_fric_set_gain[i] - 0.5) / 0.5) * (1 - m_control_params.m_gain_params.friction_cof_servo[i]) +
-                                      m_control_params.m_gain_params.friction_cof_servo[i];
+            m_friction_cof_servo[i] =
+                ((m_fric_set_gain[i] - 0.5) / 0.5) * (1 - m_control_params.m_gain_params.friction_cof_servo[i]) +
+                m_control_params.m_gain_params.friction_cof_servo[i];
         } else if (m_fric_set_gain[i] >= 0) {
             m_friction_cof_servo[i] = m_friction_cof_servo[i] - ((0.5 - m_fric_set_gain[i]) / 0.5) * m_friction_cof_servo[i];
         }
@@ -435,16 +474,19 @@ void ForceControl::ResetFricByLoad(const LoadInertia& load) {
 
         // if(m_friction_cof_servo[i] < 0.3){m_friction_cof_servo[i] = 0.3;}
         // if(m_friction_cof_servo[5] < 0.4){m_friction_cof_servo[5] = 0.4;}
-
     }
     //临时改动，2、3轴不能低于0.15
-    if(m_friction_cof_servo[1] < 0.15){m_friction_cof_servo[1] = 0.15;}
-    if(m_friction_cof_servo[2] < 0.15){m_friction_cof_servo[2] = 0.15;}
+    if (m_friction_cof_servo[1] < 0.15) {
+        m_friction_cof_servo[1] = 0.15;
+    }
+    if (m_friction_cof_servo[2] < 0.15) {
+        m_friction_cof_servo[2] = 0.15;
+    }
 }
 
-int ForceControl::StopDrag(const int8_t param_0x6061[6]){
-    for(unsigned int i = 0; i <m_jnt_num ; i++){
-        if(param_0x6061[i] != 8){
+int ForceControl::StopDrag(const int8_t param_0x6061[6]) {
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        if (param_0x6061[i] != 8) {
             return SERVO_MODE_ERROR;
         }
     }
@@ -452,7 +494,6 @@ int ForceControl::StopDrag(const int8_t param_0x6061[6]){
     return SOLVE_NOERROR;
 }
 //************************************************************************************************
-
 
 //*******************************外部设置参数接口部分*****************************
 int ForceControl::SetSensorLinearity(const std::vector<double> analog2trq_low) {
@@ -513,30 +554,34 @@ int ForceControl::SetSoftLimit(const std::vector<double> joint_range_min, const 
     int res = SOLVE_NOERROR;
 
     //长度检查
-    if(joint_range_min.size() != m_joint_range_min.size()){return SIZE_ERROR;}
-    if(joint_range_max.size() != m_joint_range_max.size()){return SIZE_ERROR;}
+    if (joint_range_min.size() != m_joint_range_min.size()) {
+        return SIZE_ERROR;
+    }
+    if (joint_range_max.size() != m_joint_range_max.size()) {
+        return SIZE_ERROR;
+    }
 
     //数据有效性检查
-    for(unsigned int i = 0 ; i < m_jnt_num ; i++){
-        if((joint_range_min[i] < m_joint_range_min_new[i]) or (joint_range_max[i] > m_joint_range_max_new[i])){
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        if ((joint_range_min[i] < m_joint_range_min_new[i]) or (joint_range_max[i] > m_joint_range_max_new[i])) {
             return SOFT_LIMIT_PARAMS_ERROR;
         }
     }
 
     //更新软限位成员变量
-    for(unsigned int j = 0 ; j < m_jnt_num ; j++){
-        m_joint_range_min[j] = joint_range_min[j] / 180 *PI;
-        m_joint_range_max[j] = joint_range_max[j] / 180 *PI;
+    for (unsigned int j = 0; j < m_jnt_num; j++) {
+        m_joint_range_min[j] = joint_range_min[j] / 180 * PI;
+        m_joint_range_max[j] = joint_range_max[j] / 180 * PI;
     }
     //设置软限位
-    res = m_force_planner_ptr ->SetSoftLimit(m_joint_range_min, m_joint_range_max);
-    
+    res = m_force_planner_ptr->SetSoftLimit(m_joint_range_min, m_joint_range_max);
+
     return res;
-    
 }
 
-int ForceControl::CalibrateTrqSensor(const int32_t param_0x6064[6], const LoadInertia& load_params_in, const int16_t analog_array_ch1[6][200],
-                                     const int16_t analog_array_ch2[6][200], double sensor_bias[6]) {
+int ForceControl::CalibrateTrqSensor(const int32_t param_0x6064[6], const LoadInertia& load_params_in,
+                                     const int16_t analog_array_ch1[6][200], const int16_t analog_array_ch2[6][200],
+                                     double sensor_bias[6]) {
     std::vector<double> analog_read;
     std::vector<int32_t> pos_encoder_input;
     KDL::JntArray trq_gra_jntarray;
@@ -566,20 +611,21 @@ int ForceControl::CalibrateTrqSensor(const int32_t param_0x6064[6], const LoadIn
 
     //计算传感器零点
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        sensor_bias[i] = analog_read[i] - (trq_gra_jntarray(i) * m_sensor_amplify[i] * 1000 * m_analog2trq_low[i]) / m_analog2trq_high[i];
+        sensor_bias[i] =
+            analog_read[i] - (trq_gra_jntarray(i) * m_sensor_amplify[i] * 1000 * m_analog2trq_low[i]) / m_analog2trq_high[i];
         //传感器零点一般不会超过2.5V±50%的误差，如果超过，就意味着传感器失效或负载信息错误。
         if ((sensor_bias[i] > 3750) or (sensor_bias[i] < 1250)) {
             return SENSOR_BIAS_ERROR;
         }
-
     }
 
     return SOLVE_NOERROR;
 }
 
-int ForceControl::CalibrateTrqSensorAxis(const int32_t param_0x6064[6], const LoadInertia& load_params_in, const int16_t analog_array_ch1[200],
-                                         const int16_t analog_array_ch2[200], const unsigned int axis_num, double sensor_bias_axis[6]) {
-    if(axis_num>m_jnt_num or axis_num<1){
+int ForceControl::CalibrateTrqSensorAxis(const int32_t param_0x6064[6], const LoadInertia& load_params_in,
+                                         const int16_t analog_array_ch1[200], const int16_t analog_array_ch2[200],
+                                         const unsigned int axis_num, double sensor_bias_axis[6]) {
+    if (axis_num > m_jnt_num or axis_num < 1) {
         return AXIS_NUM_ERROR;
     }
     double analog_read = 0;
@@ -604,23 +650,25 @@ int ForceControl::CalibrateTrqSensorAxis(const int32_t param_0x6064[6], const Lo
     for (unsigned int i = 0; i < 200; i++) {
         analog_read += double((analog_array_ch1[i] + analog_array_ch2[i]) / 2);
     }
-        analog_read = analog_read / 200;
+    analog_read = analog_read / 200;
 
     //先给非标定轴的sensor_bias赋值
-    for(unsigned int i = 0 ; i < m_jnt_num ; i++){
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
         sensor_bias_axis[i] = m_analog_bias[i];
     }
-    
+
     //计算特定轴传感器零点
-    sensor_bias_axis[axis_num-1] = analog_read - (trq_gra_jntarray(axis_num-1) * m_sensor_amplify[axis_num-1] * 1000 * m_analog2trq_low[axis_num-1]) / m_analog2trq_high[axis_num-1];
-    
+    sensor_bias_axis[axis_num - 1] =
+        analog_read - (trq_gra_jntarray(axis_num - 1) * m_sensor_amplify[axis_num - 1] * 1000 * m_analog2trq_low[axis_num - 1]) /
+                          m_analog2trq_high[axis_num - 1];
+
     //传感器零点一般不会超过2.5V±50%的误差，如果超过，就意味着传感器失效或负载信息错误。
-    if ((sensor_bias_axis[axis_num-1] > 3750) or (sensor_bias_axis[axis_num-1] < 1250)) {
+    if ((sensor_bias_axis[axis_num - 1] > 3750) or (sensor_bias_axis[axis_num - 1] < 1250)) {
         return SENSOR_BIAS_ERROR;
     }
 
-    return SOLVE_NOERROR;    
-    }
+    return SOLVE_NOERROR;
+}
 //************************************************************************************************
 
 //**************************************保护接口部分***********************************************
@@ -641,11 +689,10 @@ int ForceControl::SwichToTrqMode(double sensor_trq_feedback[6], double trq_ref[6
     }
 }
 
-bool ForceControl::IsInForceControlArea(const JntArray& q_in, const std::vector<double>& joint_limit_upper, const std::vector<double>& joint_limit_lower) {
-
-    for(unsigned int i = 0 ; i< m_jnt_num ; i++){
-        if((q_in(i) < (joint_limit_lower[i] + 9.5*KDL::deg2rad))
-        or (q_in(i) > (joint_limit_upper[i] - 9.5*KDL::deg2rad))){
+bool ForceControl::IsInForceControlArea(const JntArray& q_in, const std::vector<double>& joint_limit_upper,
+                                        const std::vector<double>& joint_limit_lower) {
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        if ((q_in(i) < (joint_limit_lower[i] + 9.5 * KDL::deg2rad)) or (q_in(i) > (joint_limit_upper[i] - 9.5 * KDL::deg2rad))) {
             return true;
         }
     }
