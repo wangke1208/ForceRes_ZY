@@ -16,8 +16,10 @@
 namespace RokaeApi {
 namespace Control {
 
-FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_status_ptr)
-    : m_jnt_num(init_robot_ptr->GetChain().getNrOfJoints()), m_fc_status_info(fc_status_ptr) {
+FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_status_ptr, FcParamsInner* fc_params_inner)
+    : m_jnt_num(init_robot_ptr->GetChain().getNrOfJoints()),
+      m_fc_status_info(fc_status_ptr),
+      m_fc_params_inner_ptr(fc_params_inner) {
     m_dynamic_solver = new Model::DynamicSolver(init_robot_ptr->GetChain(), init_robot_ptr->GetGravity());
     m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(init_robot_ptr->GetChain());
     m_tool_in_flan = KDL::Frame::Identity();
@@ -25,6 +27,7 @@ FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_st
     m_is_rot_angle_outof_range = false;
     KDL::SetToZero(m_orient_delta_d);
     KDL::SetToZero(m_orient_delta_d_last);
+    m_cart_stiffness.resize(6, 100.0);
 }
 
 FcStatusTracker::~FcStatusTracker() {
@@ -33,8 +36,30 @@ FcStatusTracker::~FcStatusTracker() {
 }
 
 int FcStatusTracker::FcStatusUpdata() {
+    switch (FC->drag_type) {
+    case Control::DragType::DRAG_JOINT:
+        FcStatusUpdataJoint();
+        return FcStatusUpdataDynamic();
+    case Control::DragType::DRAG_CART_TRANS:
+    case Control::DragType::DRAG_CART_ROT:
+    case Control::DragType::DRAG_CART_FREE:
+        int res = FcStatusUpdataCart();
+        if (!res) {
+            return res;
+        } else {
+            return FcStatusUpdataDynamic();
+        }
+    default:
+        return DRAGTYPE_ERROR;
+    }
+}
+
+int FcStatusTracker::FcStatusUpdataJoint() {
     //关节跟踪误差
     KDL::Subtract(FC->jnt_pos_command, FC->jnt_pos_measure, FC->jnt_pos_following_error);
+    return SOLVE_NOERROR;
+}
+int FcStatusTracker::FcStatusUpdataCart() {
     // 1.笛卡尔反馈(flan_in_base)
     m_fkpos_ptr->JntToCart(FC->jnt_pos_measure, FC->cart_pos_measure_flan_in_base);
     // 2.笛卡尔反馈(tcp_in_base)
@@ -55,8 +80,11 @@ int FcStatusTracker::FcStatusUpdata() {
             m_if_first_in = false;
         }
     }
+    //解缠绕
     UnwarpRPY(m_orient_delta_d_last, m_orient_delta_d);
     m_orient_delta_d_last = m_orient_delta_d;
+    //旋转分量范围检查，如果任意一个分量接近 ±π，则认为旋转角度超出范围
+    m_fc_params_inner_ptr->m_function_params.GetParams("cart_stiff", m_cart_stiffness);
     while (m_cart_stiffness[3] > EPSILON4 or m_cart_stiffness[4] > EPSILON4 or m_cart_stiffness[5] > EPSILON4) {
         if (fabs(m_orient_delta_d[0]) >= (PI - EPSILON1) || fabs(m_orient_delta_d[1]) >= (PI - EPSILON1) ||
             fabs(m_orient_delta_d[2]) >= (PI - EPSILON1)) {
@@ -73,13 +101,15 @@ int FcStatusTracker::FcStatusUpdata() {
 
     //6.基坐标系下的总偏差（平移+旋转）
     FC->cart_pos_following_error_tcp_in_base.vel = FC->cart_pos_following_error_tcp_in_base_pos;
+    return SOLVE_NOERROR;
+}
 
+int FcStatusTracker::FcStatusUpdataDynamic() {
     //动力学计算部分
     // 1.重力矩
     FC->jnt_gravity_trq_measure = m_dynamic_solver->GetGraTorque(m_load, FC->jnt_pos_measure);
     // 2.惯性力(不在这里计算)
     // 3.科式力(不在这里计算)
-
     return SOLVE_NOERROR;
 }
 

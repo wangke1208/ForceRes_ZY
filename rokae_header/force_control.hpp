@@ -386,6 +386,7 @@ class ForceControl {
     // 7.内部数据流
     Servo_To_FcInner m_servo_data_fc_inner;
     FcStatusInner m_fc_status_inner;
+    FcParamsInner* m_fc_params_inner_ptr;
 
     // 8.一些求解器
     Protect::ForceProtect* m_force_protect_ptr;

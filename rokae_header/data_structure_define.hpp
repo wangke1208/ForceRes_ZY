@@ -20,6 +20,7 @@
 #include <../3rd/kdl/joint.hpp>
 #include <vector>
 
+#include "fc_params.hpp"
 
 //一些宏定义
 #define DEFAULT_AXIS 6U
@@ -515,6 +516,8 @@ struct FcToServo {
 };
 
 struct FcStatusInner {
+    //拖动类型
+    DragType drag_type;
     //关节指令
     KDL::JntArray jnt_pos_command;
     KDL::JntArray jnt_vel_command;
@@ -559,7 +562,8 @@ struct FcStatusInner {
     double mani_measure;
 
     FcStatusInner(unsigned int jnt_num)
-        : jnt_pos_command(jnt_num),
+        : drag_type(DRAG_JOINT),
+          jnt_pos_command(jnt_num),
           jnt_vel_command(jnt_num),
           jnt_acc_command(jnt_num),
           cart_pos_command_flan_in_base(KDL::Frame::Identity()),
@@ -592,6 +596,7 @@ struct FcStatusInner {
 
 #define SET_FC_STATUS_INFO(name) this->name = fc_status_inner.name
     FcStatusInner& operator=(const FcStatusInner fc_status_inner) {
+        SET_FC_STATUS_INFO(drag_type);
         SET_FC_STATUS_INFO(jnt_pos_command);
         SET_FC_STATUS_INFO(jnt_vel_command);
         SET_FC_STATUS_INFO(jnt_acc_command);

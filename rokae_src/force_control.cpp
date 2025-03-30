@@ -28,11 +28,13 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
       m_fc_status_inner(init_robot_ptr->GetJntNum()),
       m_servo_data_fc_inner(init_robot_ptr->GetJntNum()) {
     //初始化一些求解器
-    m_force_protect_ptr = new Protect::ForceProtect(m_jnt_num);
+    m_fc_params_inner_ptr = new FcParamsInner(m_jnt_num);
+
+    m_force_protect_ptr = new Protect::ForceProtect(m_jnt_num, m_fc_params_inner_ptr);
     m_axis_convert_ptr = new Axis_Convert(m_jnt_num, m_init_robot_ptr->GetMechanicalParams());
     m_dynamicsolver_ptr = new DynamicSolver(m_chain, m_init_robot_ptr->GetGravity());
     m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(m_chain);
-    m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr, &m_fc_status_inner);
+    m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr, &m_fc_status_inner, m_fc_params_inner_ptr);
     m_servo_fc_convert_ptr = new Servo_Fc_Convert(m_jnt_num);
     //初始化信息
     m_load.SetZero();
@@ -40,6 +42,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_enable_drag = false;
     m_is_first_drag = true;
     m_servo_data_fc_inner.Resize(m_jnt_num);
+
     //初始化参数
     m_encoder_offset_inner.resize(m_jnt_num);  
     m_analog_bias_inner.resize(m_jnt_num);      
@@ -53,8 +56,6 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_joint_gain_kp_inner.resize(m_jnt_num);
     m_joint_damp_zeta_inner.resize(m_jnt_num);
     m_friction_cof_servo_inner.resize(m_jnt_num);
-
-    m_trq_error_threshold_inner.resize(m_jnt_num);
 
     m_ref_trq_desire.resize(m_jnt_num);
     m_ref_trq_overlay.resize(m_jnt_num);
@@ -90,7 +91,7 @@ ForceControl::~ForceControl() {
 }
 
 int ForceControl::Fcinit() {
-    //可变参数赋值
+    //可变参数赋值:TODO 后续也像Fc内部参数一样进行优化
     for (unsigned int i = 0; i < m_jnt_num; i++) {
         //可变参数--机械
         m_encoder_offset_inner[i] = m_init_robot_ptr->GetMechanicalParams().encoder_offset[i];  
@@ -102,15 +103,17 @@ int ForceControl::Fcinit() {
         m_joint_range_max_inner[i] = m_init_robot_ptr->GetModelParams().joint_range_max[i];
         m_joint_range_min_new_inner[i] = m_init_robot_ptr->GetModelParams().joint_range_min_new[i];
         m_joint_range_max_new_inner[i] = m_init_robot_ptr->GetModelParams().joint_range_max_new[i];
-
-        //可变参数--控制
-        m_joint_gain_kp_inner[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_gain_kp[i];
-        m_joint_damp_zeta_inner[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_damp_zeta[i];
-        m_friction_cof_servo_inner[i] = m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i];
-
-        //可变参数--保护
-        m_trq_error_threshold_inner[i] = m_init_robot_ptr->GetControlParams().m_protect_params.max_mode_switch_trq[i];
     }
+
+    // Fc内部可调参数
+    m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_kp",
+                                                  m_init_robot_ptr->GetControlParams().m_gain_params.joint_gain_kp);
+    m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_dmap_kv",
+                                                  m_init_robot_ptr->GetControlParams().m_gain_params.joint_damp_zeta);
+    m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_friction",
+                                                  m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo);
+    m_fc_params_inner_ptr->m_protect_params.SetParam("max_mode_switch_trq",
+                                                 m_init_robot_ptr->GetControlParams().m_protect_params.max_mode_switch_trq);
 
     //设置默认软限位
     m_force_planner_ptr->SetSoftLimit(m_joint_range_min_inner, m_joint_range_max_inner);
@@ -121,6 +124,9 @@ int ForceControl::Fcinit() {
 void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
     // 1.计算当前关节位置
     m_axis_convert_ptr->GetAxisPos(servo_data_fc_inner.pos_feedback, m_fc_status_inner.jnt_pos_measure);
+    // 2.更新拖动类型
+    m_fc_status_inner.drag_type = m_drag_type;
+
     //计算实际位置
     switch (m_drag_type) {
     case DragType::DRAG_JOINT:
@@ -168,7 +174,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     SetFcCommand(m_servo_data_fc_inner);
 
     // 3.力控数据流计算
-        
+    
     // 4.力控模块功能力计算
 
     // 5.将Fc内部数据转换为下发给伺服数据
@@ -196,7 +202,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     std::vector<double> sensor_trq_temp(m_jnt_num);
     auto model_trq_temp = m_dynamicsolver_ptr->GetGraTorque(m_load, VectorToJntArray(jnt_pos_rad_temp));
     m_axis_convert_ptr->GetCobotTrq(analog_ch1, analog_ch2, sensor_trq_temp);
-    res = m_force_protect_ptr->TrqErrorProtect(sensor_trq_temp, JntArrayToVector(model_trq_temp), m_trq_error_threshold_inner);
+    res = m_force_protect_ptr->TrqErrorProtect(sensor_trq_temp, JntArrayToVector(model_trq_temp));
     if (res != SOLVE_NOERROR) return res;
 
     // 1.4 当前机器人位置不处在软限位保护范围内

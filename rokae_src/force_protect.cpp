@@ -15,16 +15,20 @@
 
 namespace RokaeApi {
 namespace Protect {
-ForceProtect::ForceProtect(unsigned int axis_num)
-    : m_axis_num(axis_num){};
+ForceProtect::ForceProtect(unsigned int axis_num, Control::FcParamsInner* fc_params_inner)
+    : m_axis_num(axis_num),
+      m_fc_params_inner_ptr(fc_params_inner){
 
-int ForceProtect::TrqErrorProtect(const std::vector<double>& sensor_feedback_trq, const std::vector<double>& model_trq,
-                                  const std::vector<double> trq_error_threshold) {
-    if (sensor_feedback_trq.size() != m_axis_num || model_trq.size() != m_axis_num || trq_error_threshold.size() != m_axis_num) {
+      };
+
+int ForceProtect::TrqErrorProtect(const std::vector<double>& sensor_feedback_trq, const std::vector<double>& model_trq) {
+    if (sensor_feedback_trq.size() != m_axis_num || model_trq.size() != m_axis_num ||
+        m_fc_params_inner_ptr->m_protect_params.m_params["max_mode_switch_trq"].size() != m_axis_num) {
         return SIZE_ERROR;
     }
     for (unsigned int i = 0; i < m_axis_num; i++) {
-        if (std::abs(sensor_feedback_trq[i] - model_trq[i]) > trq_error_threshold[i]) {
+        if (std::abs(sensor_feedback_trq[i] - model_trq[i]) >
+            m_fc_params_inner_ptr->m_protect_params.m_params["max_mode_switch_trq"][i]) {
             return EXCESSIVE_TORQUE_ERROR;
         }
     }

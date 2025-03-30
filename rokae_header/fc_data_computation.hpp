@@ -15,6 +15,7 @@
 
 #include "data_structure_define.hpp"
 #include "dynamic_solver.hpp"
+#include "fc_params.hpp"
 #include "initialize.hpp"
 
 using namespace RokaeApi::Model;
@@ -23,7 +24,7 @@ namespace RokaeApi {
 namespace Control {
 class FcStatusTracker {
    public:
-    FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_status_ptr);
+    FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_status_ptr, FcParamsInner* fc_params_inner);
 
     ~FcStatusTracker();
 
@@ -43,11 +44,14 @@ class FcStatusTracker {
     void SetLoad(const LoadInertia& load);
     //对旋转数据进行解缠绕处理 ，避免角度在正负 2π 附近出现跳跃不连续的情况
     void UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data);
-
+    int FcStatusUpdataCart();     //笛卡尔空间数据更新
+    int FcStatusUpdataJoint();    //轴空间数据更新
+    int FcStatusUpdataDynamic();  //动力学部分数据更新
 
    private:
     DynamicSolver* m_dynamic_solver;
     FcStatusInner* m_fc_status_info;
+    FcParamsInner* m_fc_params_inner_ptr;
     KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;
 
     double m_period;
@@ -59,6 +63,7 @@ class FcStatusTracker {
     bool m_is_rot_angle_outof_range;
     KDL::Vector m_orient_delta_d;
     KDL::Vector m_orient_delta_d_last;
+    std::vector<double> m_cart_stiffness;
 };
 
 }  // namespace Control
