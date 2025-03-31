@@ -36,6 +36,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(m_chain);
     m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr, &m_fc_status_inner, m_fc_params_inner_ptr);
     m_servo_fc_convert_ptr = new Servo_Fc_Convert(m_jnt_num);
+    m_force_planner_ptr = new Control::ForcePlanner(m_init_robot_ptr, &m_fc_status_inner, m_fc_params_inner_ptr);
     //初始化信息
     m_load.SetZero();
     m_drag_type = DragType::DRAG_JOINT;
@@ -57,15 +58,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_joint_damp_zeta_inner.resize(m_jnt_num);
     m_friction_cof_servo_inner.resize(m_jnt_num);
 
-    m_ref_trq_desire.resize(m_jnt_num);
-    m_ref_trq_overlay.resize(m_jnt_num);
-    m_ref_trq_impedance.resize(m_jnt_num);
-    m_ref_trq_virtual_wall.resize(m_jnt_num);
-    m_ref_trq_joint_limit.resize(m_jnt_num);
-    m_ref_trq_dyn.resize(m_jnt_num);
     m_ref_trq.resize(m_jnt_num);
-    m_trq_comp_coef.resize(m_jnt_num);
-    m_joint_inertia.resize(m_jnt_num);
 
     m_kp_set_gain.resize(m_jnt_num);
     m_fric_set_gain.resize(m_jnt_num);
@@ -174,11 +167,11 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     SetFcCommand(m_servo_data_fc_inner);
 
     // 3.力控数据流计算
-    
+    m_fc_status_tracker_ptr->FcStatusUpdata();
     // 4.力控模块功能力计算
-
+    m_ref_trq = m_force_planner_ptr->ForcePlannerUpdata();
     // 5.将Fc内部数据转换为下发给伺服数据
-
+    
     // 6.判断当前伺服模式是否为力矩模式，处于力矩模式允许下发力控相关指令
 }
 

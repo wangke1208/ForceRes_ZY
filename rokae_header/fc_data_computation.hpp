@@ -48,22 +48,29 @@ class FcStatusTracker {
     int FcStatusUpdataJoint();    //轴空间数据更新
     int FcStatusUpdataDynamic();  //动力学部分数据更新
 
+    const KDL::Frame& GetBaseInFcFrame() { return m_fc_frame; }
+    void SetFcFrameType(const FcFrameType& fc_frame_type);
+    void SetFrameToolInFlan(const KDL::Frame& frame_tool_in_flan) { m_tool_in_flan = frame_tool_in_flan; }
    private:
     DynamicSolver* m_dynamic_solver;
     FcStatusInner* m_fc_status_info;
     FcParamsInner* m_fc_params_inner_ptr;
     KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;
+    KDL::ChainJntToJacSolver* m_jac_solver;
 
     double m_period;
     //一些变量
     unsigned int m_jnt_num;
     LoadInertia m_load;
-    KDL::Frame m_tool_in_flan;
     bool m_if_first_in;
     bool m_is_rot_angle_outof_range;
     KDL::Vector m_orient_delta_d;
     KDL::Vector m_orient_delta_d_last;
     std::vector<double> m_cart_stiffness;
+    //坐标系
+    KDL::Frame m_tool_in_flan;
+    KDL::Frame m_fc_frame;  //力控坐标系，拖动情况下，力控坐标系均为工具坐标系
+    FcFrameType m_fc_frame_type;
 };
 
 }  // namespace Control

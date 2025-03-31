@@ -385,6 +385,13 @@ enum DragType {
     DRAG_CART_FREE    //笛卡尔自由
 };
 
+enum FcFrameType {
+    FCFRAME_WORLD,  //世界坐标系
+    FCFRAME_TOOL,   //工具坐标系
+    FCFRAME_FLAN,   //法兰坐标系
+    FCFRAME_BASE    //基坐标系
+};
+
 enum ServoType {
     POSTION_CONTROL,  //位置模式
     FORCE_CONTROL,    //力矩模式
@@ -528,6 +535,12 @@ struct FcStatusInner {
     KDL::Frame cart_pos_command_tcp_in_base;   //旋转指令tcp_in_base
     KDL::JntArray cart_pos_jnt_command;
     KDL::Twist cart_pos_following_error_tcp_in_base;  //位置+旋转误差 tcp_in_base
+    KDL::Twist cart_pos_following_error_tcp_in_fcframe;  //位置+旋转误差 tcp_in_frame
+    KDL::Twist cart_vel_following_error_tcp_in_fcframe;  //速度误差 tcp_in_fcframe
+
+    KDL::Twist cart_vel_command_flan_in_base;
+    KDL::Twist cart_vel_command_tcp_in_base;
+    KDL::Twist cart_vel_command_tcp_in_fcframe;
 
     //动力学指令
     KDL::JntArray jnt_trq_gra_command;
@@ -552,6 +565,11 @@ struct FcStatusInner {
     KDL::Vector cart_pos_following_error_flan_in_base_pos;
     KDL::Vector cart_pos_following_error_tcp_in_base_pos;
     KDL::Rotation cart_tcp_rot_between_command_and_measure;
+    KDL::Twist cart_vel_measure_flan_in_base;
+    KDL::Twist cart_vel_measure_tcp_in_base;
+    KDL::Twist cart_vel_measure_tcp_in_fcframe;
+
+
     //反馈力雅可比
     KDL::Jacobian jac_measure_flan_in_base;
     KDL::Jacobian jac_measure_tcp_in_base;
@@ -560,6 +578,10 @@ struct FcStatusInner {
     Jacobian_inv jac_inv_measure_flan_in_base;
     Jacobian_trans_inv jac_trans_inv_measure_flan_in_base;
     double mani_measure;
+
+    //指令力雅可比
+    KDL::Jacobian jac_command_flan_in_base;
+    KDL::Jacobian jac_command_tcp_in_base;
 
     FcStatusInner(unsigned int jnt_num)
         : drag_type(DRAG_JOINT),
@@ -570,6 +592,11 @@ struct FcStatusInner {
           cart_pos_command_tcp_in_base(KDL::Frame::Identity()),
           cart_pos_jnt_command(jnt_num),
           cart_pos_following_error_tcp_in_base(KDL::Twist::Zero()),
+          cart_pos_following_error_tcp_in_fcframe(KDL::Twist::Zero()),
+          cart_vel_following_error_tcp_in_fcframe(KDL::Twist::Zero()),
+          cart_vel_command_flan_in_base(KDL::Twist::Zero()),
+          cart_vel_command_tcp_in_base(KDL::Twist::Zero()),
+          cart_vel_command_tcp_in_fcframe(KDL::Twist::Zero()),
           jnt_trq_gra_command(jnt_num),
           jnt_pos_measure(jnt_num),
           jnt_vel_measure(jnt_num),
@@ -586,6 +613,9 @@ struct FcStatusInner {
           cart_pos_following_error_flan_in_base_pos(KDL::Vector::Zero()),
           cart_pos_following_error_tcp_in_base_pos(KDL::Vector::Zero()),
           cart_tcp_rot_between_command_and_measure(KDL::Rotation::Identity()),
+          cart_vel_measure_flan_in_base(KDL::Twist::Zero()),
+          cart_vel_measure_tcp_in_base(KDL::Twist::Zero()),
+          cart_vel_measure_tcp_in_fcframe(KDL::Twist::Zero()),
           jac_measure_flan_in_base(jnt_num),
           jac_measure_tcp_in_base(jnt_num),
           jac_trans_measure_flan_in_base(jnt_num, 6),
@@ -604,6 +634,11 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(cart_pos_command_tcp_in_base);
         SET_FC_STATUS_INFO(cart_pos_jnt_command);
         SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_base);
+        SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_fcframe);
+        SET_FC_STATUS_INFO(cart_vel_following_error_tcp_in_fcframe);
+        SET_FC_STATUS_INFO(cart_vel_command_flan_in_base);
+        SET_FC_STATUS_INFO(cart_vel_command_tcp_in_base);
+        SET_FC_STATUS_INFO(cart_vel_command_tcp_in_fcframe);
         SET_FC_STATUS_INFO(jnt_trq_gra_command);
         SET_FC_STATUS_INFO(jnt_pos_measure);
         SET_FC_STATUS_INFO(jnt_vel_measure);
@@ -620,6 +655,9 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(cart_pos_following_error_flan_in_base_pos);
         SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_base_pos);
         SET_FC_STATUS_INFO(cart_tcp_rot_between_command_and_measure);
+        SET_FC_STATUS_INFO(cart_vel_measure_flan_in_base);
+        SET_FC_STATUS_INFO(cart_vel_measure_tcp_in_base);
+        SET_FC_STATUS_INFO(cart_vel_measure_tcp_in_fcframe);
         SET_FC_STATUS_INFO(jac_measure_flan_in_base);
         SET_FC_STATUS_INFO(jac_measure_tcp_in_base);
         SET_FC_STATUS_INFO(jac_trans_measure_flan_in_base);

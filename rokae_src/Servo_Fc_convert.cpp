@@ -195,4 +195,19 @@ int Servo_Fc_Convert::ServoData2FcInner(const std::vector<int8_t>& pdo_mode_oper
     return SOLVE_NOERROR;
 }
 
+void Servo_Fc_Convert::FcData2ServoData() {
+    //整合到m_fc_to_servo
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        m_fc_to_servo.trq_cmd[i] = (int16_t)(m_ref_trq_vec[i] * KDL::sign(m_decel_ratio[i]) / 1000.0 * 32768.0);
+        //前馈力矩为0
+        m_fc_to_servo.trq_feedforward[i] = (int16_t)(m_trq_feedforward[i] * 1000 / (m_rated_torque[i] * m_decel_ratio[i]));
+        m_fc_to_servo.k_p[i] = (int16_t)(m_joint_gain_kp[i] * 100);
+        m_fc_to_servo.k_d[i] = (int16_t)(m_joint_damp_zeta[i] * 100);
+        m_fc_to_servo.edb_cof[i] = (int16_t)(2.25 / fabs(m_analog2trq_low[i]) * 100.0);
+        m_fc_to_servo.edb_cof[i] = (m_fc_to_servo.edb_cof[i] < 90) ? 90 : m_fc_to_servo.edb_cof[i];
+        m_fc_to_servo.edb_o[i] = (int16_t)((m_analog_bias[i] - 2500) / 1000.0 / 2.25 * m_analog2trq_high[i] * 100);
+        m_fc_to_servo.fric_cof[i] = (int16_t)(m_friction_cof_servo[i] * 100);
+        m_fc_to_servo.jnt_inertia[i] = (int16_t)(m_joint_inertia[i] * 100);
+    }
+}
 }  // namespace RokaeApi

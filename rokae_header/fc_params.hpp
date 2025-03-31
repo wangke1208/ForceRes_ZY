@@ -123,6 +123,9 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(null_damp, 10.0, 1);
         ADD_PARAM_VECTOR(joint_damp_zeta, 0.707, jnt_num);
         ADD_PARAM_VECTOR(cart_damp_zeta, 0.707, 6);
+        ADD_PARAM_VECTOR(soft_limit_stiff, 1000, jnt_num);
+        ADD_PARAM_VECTOR(soft_limit_damp, 10, jnt_num);
+
     }
     void ResetParamsToDefault() override {
         std::fill(m_params["joint_servo_kp"].begin(), m_params["joint_servo_kp"].end(), 1.0);
@@ -136,6 +139,8 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         std::fill(m_params["null_damp"].begin(), m_params["null_damp"].end(), 10.0);
         std::fill(m_params["joint_damp_zeta"].begin(), m_params["joint_damp_zeta"].end(), 0.707);
         std::fill(m_params["cart_damp_zeta"].begin(), m_params["cart_damp_zeta"].end(), 0.707);
+        std::fill(m_params["soft_limit_stiff"].begin(), m_params["soft_limit_stiff"].end(), 1000);
+        std::fill(m_params["soft_limit_damp"].begin(), m_params["soft_limit_damp"].end(), 10);
     }
     void SetFreeDragParams() {
         SetZero("joint_stiff");

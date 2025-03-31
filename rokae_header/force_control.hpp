@@ -5,7 +5,7 @@
  * Information in this file is the intellectual property of Rokae Technology Co., Ltd,
  * And may contains trade secrets that must be stored and viewed confidentially.
  *
- * @file: forcecontrol.hpp
+ * @file: force_control.hpp
  * @author: wangke
  * @date: 2024/4/25
  * @brief: 力控计算模块
@@ -20,7 +20,7 @@
 #include "fc_data_computation.hpp"
 #include "force_protect.hpp"
 #include "initialize.hpp"
-
+#include "force_planner.hpp"
 namespace RokaeApi {
 namespace Control {
 
@@ -347,16 +347,7 @@ class ForceControl {
     std::vector<double> m_trq_error_threshold_inner;
 
     // 2.功能力计算
-    KDL::JntArray m_ref_trq_desire;        //期望力
-    KDL::JntArray m_ref_trq_overlay;       //搜索力
-    KDL::JntArray m_ref_trq_impedance;     //阻抗力
-    KDL::JntArray m_ref_trq_virtual_wall;  //虚拟墙
-    KDL::JntArray m_ref_trq_joint_limit;   //关节限位保护力
-    KDL::JntArray m_ref_trq_dyn;           //静动力学(仅重力)
     KDL::JntArray m_ref_trq;               //指令力矩
-    std::vector<double> m_trq_comp_coef;   //软限位保护力
-    std::vector<double> m_joint_inertia;   //关节惯量
-
 
     // 3.增益调节相关
     std::vector<double> m_kp_set_gain;
@@ -374,8 +365,6 @@ class ForceControl {
     KDL::Chain m_chain;
     LoadInertia m_load;
     std::vector<double> m_jnt_current_pos;
-    // std::vector<double> m_jnt_vel_abs;
-    // std::vector<double> m_jnt_vel_real;
 
     // 6.其他参数
     std::vector<double> m_trq_error;  //重力矩与传感器反馈之差
@@ -395,6 +384,7 @@ class ForceControl {
     KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;
     FcStatusTracker* m_fc_status_tracker_ptr;
     Servo_Fc_Convert* m_servo_fc_convert_ptr;
+    Control::ForcePlanner* m_force_planner_ptr;
 };
 
 }  // namespace Control

@@ -22,8 +22,11 @@ FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_st
       m_fc_params_inner_ptr(fc_params_inner) {
     m_dynamic_solver = new Model::DynamicSolver(init_robot_ptr->GetChain(), init_robot_ptr->GetGravity());
     m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(init_robot_ptr->GetChain());
+    m_jac_solver = new KDL::ChainJntToJacSolver(init_robot_ptr->GetChain());
     m_tool_in_flan = KDL::Frame::Identity();
+    m_fc_frame = KDL::Frame::Identity();
     m_if_first_in = true;
+    m_fc_frame_type = FcFrameType::FCFRAME_TOOL;
     m_is_rot_angle_outof_range = false;
     KDL::SetToZero(m_orient_delta_d);
     KDL::SetToZero(m_orient_delta_d_last);
@@ -33,6 +36,7 @@ FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_st
 FcStatusTracker::~FcStatusTracker() {
     delete m_dynamic_solver;
     delete m_fkpos_ptr;
+    delete m_jac_solver;
 }
 
 int FcStatusTracker::FcStatusUpdata() {
@@ -64,17 +68,19 @@ int FcStatusTracker::FcStatusUpdataCart() {
     m_fkpos_ptr->JntToCart(FC->jnt_pos_measure, FC->cart_pos_measure_flan_in_base);
     // 2.笛卡尔反馈(tcp_in_base)
     FC->cart_pos_measure_tcp_in_base = FC->cart_pos_measure_flan_in_base * m_tool_in_flan;
+
     // 3.笛卡尔指令(tcp_in_base)
     FC->cart_pos_command_tcp_in_base = FC->cart_pos_command_flan_in_base * m_tool_in_flan;
-    // 4.笛卡尔位置偏差
+
+    // 4.笛卡尔位置偏差(指令相对于测量的偏移)
     FC->cart_pos_following_error_flan_in_base_pos = FC->cart_pos_command_flan_in_base.p - FC->cart_pos_measure_flan_in_base.p;
     FC->cart_pos_following_error_tcp_in_base_pos = FC->cart_pos_command_tcp_in_base.p - FC->cart_pos_measure_tcp_in_base.p;
 
-    // 5.笛卡尔姿态偏差
+    // 5.笛卡尔姿态偏差(指令相对于测量的旋转)
     FC->cart_tcp_rot_between_command_and_measure =
-        FC->cart_pos_command_tcp_in_base.M.Inverse() * FC->cart_pos_measure_tcp_in_base.M;
+        FC->cart_pos_measure_tcp_in_base.M.Inverse() * FC->cart_pos_command_tcp_in_base.M;
     if (!m_is_rot_angle_outof_range) {
-        m_orient_delta_d = FC->cart_tcp_rot_between_command_and_measure.GetRot();  //相对于TCP坐标系
+        m_orient_delta_d = FC->cart_tcp_rot_between_command_and_measure.GetRot();  //
         if (m_if_first_in == true) {
             m_orient_delta_d_last = m_orient_delta_d;
             m_if_first_in = false;
@@ -101,6 +107,39 @@ int FcStatusTracker::FcStatusUpdataCart() {
 
     //6.基坐标系下的总偏差（平移+旋转）
     FC->cart_pos_following_error_tcp_in_base.vel = FC->cart_pos_following_error_tcp_in_base_pos;
+
+    // 7.计算雅可比以及速度相关
+    m_jac_solver->JntToJac(FC->jnt_pos_measure, FC->jac_measure_flan_in_base);
+    m_jac_solver->JntToJac(FC->jnt_pos_command, FC->jac_command_flan_in_base);
+
+    KDL::MultiplyJacobian(FC->jac_measure_flan_in_base, FC->jnt_vel_measure, FC->cart_vel_measure_flan_in_base);
+    KDL::MultiplyJacobian(FC->jac_command_flan_in_base, FC->jnt_vel_command, FC->cart_vel_command_flan_in_base);
+
+    KDL::changeRefPoint(FC->jac_measure_flan_in_base, FC->cart_pos_measure_flan_in_base.M * m_tool_in_flan.p,
+                        FC->jac_measure_tcp_in_base);
+    KDL::MultiplyJacobian(FC->jac_measure_tcp_in_base, FC->jnt_vel_measure, FC->cart_vel_measure_tcp_in_base);
+    KDL::MultiplyJacobian(FC->jac_command_tcp_in_base, FC->jnt_vel_command, FC->cart_vel_command_tcp_in_base);
+    FC->cart_vel_command_tcp_in_fcframe = m_fc_frame.M * FC->cart_vel_command_tcp_in_base;
+    FC->cart_vel_measure_tcp_in_fcframe = m_fc_frame.M * FC->cart_vel_measure_tcp_in_base;
+
+    // 8.计算力控坐标系
+    switch (m_fc_frame_type) {
+    case FcFrameType::FCFRAME_TOOL:
+        m_fc_frame =
+            m_tool_in_flan.Inverse() * FC->cart_pos_measure_flan_in_base.Inverse() * FC->cart_pos_command_flan_in_base.Inverse();
+        break;
+    //其他暂时不考虑，先均给到TCP
+    default:
+        m_fc_frame =
+            m_tool_in_flan.Inverse() * FC->cart_pos_measure_flan_in_base.Inverse() * FC->cart_pos_command_flan_in_base.Inverse();
+        break;
+    }
+
+    // 9.将总偏差转到力控坐标系下
+
+    FC->cart_pos_following_error_tcp_in_fcframe = m_fc_frame.M * FC->cart_pos_following_error_tcp_in_base;
+    FC->cart_vel_following_error_tcp_in_fcframe = FC->cart_vel_command_tcp_in_fcframe - FC->cart_vel_measure_tcp_in_fcframe;
+
     return SOLVE_NOERROR;
 }
 
