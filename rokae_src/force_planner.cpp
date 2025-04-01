@@ -31,9 +31,9 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, Control::FcStatusInner* fc
     m_cart_damp.resize(6, 10.0);
 
     // 关节阻抗力
-    m_function_jnt_imp_trq.resize(m_jnt_num);
-    m_function_jnt_imp_stiff_trq.resize(m_jnt_num);
-    m_function_jnt_imp_damp_trq.resize(m_jnt_num);
+    // m_function_jnt_imp_trq.resize(m_jnt_num);
+    // m_function_jnt_imp_stiff_trq.resize(m_jnt_num);
+    // m_function_jnt_imp_damp_trq.resize(m_jnt_num);
 
     // 笛卡尔阻抗力
     m_function_cart_imp_trq.resize(6);
@@ -46,7 +46,6 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, Control::FcStatusInner* fc
     m_function_jnt_gravity.resize(m_jnt_num);  //重力补偿
     m_function_jnt_zero_trq.resize(m_jnt_num);
     m_function_jnt_zero_trq.data.setZero();
-
     // 初始化关节软限位边界相关向量
     m_lower_bound.resize(m_jnt_num, -180);
     m_upper_bound.resize(m_jnt_num, 180);
@@ -65,7 +64,7 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, Control::FcStatusInner* fc
     m_jnt_pos_safety_threshold = 10 * KDL::deg2rad;
 }
 
-const KDL::JntArray ForcePlanner::ForcePlannerUpdata() {
+void ForcePlanner::ForcePlannerUpdata() {
     // 1.阻抗力
     if (FC->drag_type == Control::DragType::DRAG_JOINT) {
         JointImpedanceUpdate(m_function_imp_trq);
@@ -76,11 +75,13 @@ const KDL::JntArray ForcePlanner::ForcePlannerUpdata() {
     JointLimitProtectUpdate(m_function_jnt_limit_trq);
     // 3.动力学补偿
     m_function_jnt_gravity = FC->jnt_gravity_trq_measure;
-    // 4.合力
+    // 4.惯量
+    // 5.合力
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        m_function_trq_ref(i) = m_function_jnt_gravity(i) + m_function_imp_trq(i) + m_function_jnt_limit_trq(i);
+        FC->jnt_inertia(i) = FC->jnt_inertia_matrix_measure(i,i);
+        FC->jnt_trq_final_cmd(i) = m_function_jnt_gravity(i) + m_function_imp_trq(i) + m_function_jnt_limit_trq(i);
     }
-    return m_function_trq_ref;
+    return;
 }
 
 void ForcePlanner::JointImpedanceUpdate(KDL::JntArray& function_imp_trq) {

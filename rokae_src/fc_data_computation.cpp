@@ -147,7 +147,12 @@ int FcStatusTracker::FcStatusUpdataDynamic() {
     //动力学计算部分
     // 1.重力矩
     FC->jnt_gravity_trq_measure = m_dynamic_solver->GetGraTorque(m_load, FC->jnt_pos_measure);
-    // 2.惯性力(不在这里计算)
+    // 2.惯量
+    m_dynamic_solver->JntToMass(m_load, FC->jnt_pos_measure, FC->jnt_inertia_matrix_measure);
+    for(unsigned int i = 0; i < m_jnt_num; i++){
+            m_joint_inertia[i] = m_fc_status.jnt_inertia_matrix_measure(i, i);
+
+    }
     // 3.科式力(不在这里计算)
     return SOLVE_NOERROR;
 }

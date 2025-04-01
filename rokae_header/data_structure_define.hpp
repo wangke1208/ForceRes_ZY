@@ -69,7 +69,8 @@ enum SolverRes {
     AXIS_NUM_ERROR = -11,
     GAIN_VALUE_ERROR = -12,
     SENSOR_LINERALITY_ERROR = -13,
-    ERROR_RPY_CAL = -14
+    ERROR_RPY_CAL = -14,
+    INIT_ERROR = -15
 };
 
 enum ServoMode { SERVO_MODE_POS = 8, SERVO_MODE_TORQUE = 10 };
@@ -483,7 +484,7 @@ struct Servo_To_FcInner {
     }
 };
 
-struct FcToServo {
+struct FcInner_To_Servo {
     std::vector<int16_t> trq_cmd;          //关节扭矩指令
     std::vector<int16_t> trq_feedforward;  //力矩前馈
     std::vector<int16_t> k_p;              //关节力矩环带宽
@@ -493,7 +494,7 @@ struct FcToServo {
     std::vector<int16_t> fric_cof;         //摩擦力补偿系数
     std::vector<int16_t> jnt_inertia;      //关节惯量
 
-    FcToServo(unsigned int jnt_num) { Resize(jnt_num); }
+    FcInner_To_Servo(unsigned int jnt_num) { Resize(jnt_num); }
 
     void Resize(unsigned int jnt_num) {
         trq_cmd.resize(jnt_num, 0);
@@ -554,9 +555,9 @@ struct FcStatusInner {
 
     //动力学反馈
     KDL::JntArray jnt_ineria_trq_measure;
+    KDL::JntArray jnt_inertia;
     KDL::JntArray jnt_corlios_trq_measure;
     KDL::JntArray jnt_gravity_trq_measure;
-    KDL::JntArray jnt_trq_measure_all;  //计算得到的总力矩
     KDL::JntSpaceInertiaMatrix jnt_inertia_matrix_measure;
 
     //笛卡尔反馈
@@ -583,6 +584,9 @@ struct FcStatusInner {
     KDL::Jacobian jac_command_flan_in_base;
     KDL::Jacobian jac_command_tcp_in_base;
 
+    //力矩指令
+    KDL::JntArray jnt_trq_final_cmd;
+
     FcStatusInner(unsigned int jnt_num)
         : drag_type(DRAG_JOINT),
           jnt_pos_command(jnt_num),
@@ -604,9 +608,9 @@ struct FcStatusInner {
           jnt_trq_sensor_measure(jnt_num),
           jnt_pos_following_error(jnt_num),
           jnt_ineria_trq_measure(jnt_num),
+          jnt_inertia(jnt_num),
           jnt_corlios_trq_measure(jnt_num),
           jnt_gravity_trq_measure(jnt_num),
-          jnt_trq_measure_all(jnt_num),
           jnt_inertia_matrix_measure(jnt_num),
           cart_pos_measure_flan_in_base(KDL::Frame::Identity()),
           cart_pos_measure_tcp_in_base(KDL::Frame::Identity()),
@@ -622,7 +626,8 @@ struct FcStatusInner {
           jac_trans_measure_tcp_in_base(jnt_num, 6),
           jac_inv_measure_flan_in_base(jnt_num, 6),
           jac_trans_inv_measure_flan_in_base(6, jnt_num),
-          mani_measure(0.0) {}
+          mani_measure(0.0),
+          jnt_trq_final_cmd(jnt_num){}
 
 #define SET_FC_STATUS_INFO(name) this->name = fc_status_inner.name
     FcStatusInner& operator=(const FcStatusInner fc_status_inner) {
@@ -646,9 +651,9 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(jnt_trq_sensor_measure);
         SET_FC_STATUS_INFO(jnt_pos_following_error);
         SET_FC_STATUS_INFO(jnt_ineria_trq_measure);
+        SET_FC_STATUS_INFO(jnt_inertia);
         SET_FC_STATUS_INFO(jnt_corlios_trq_measure);
         SET_FC_STATUS_INFO(jnt_gravity_trq_measure);
-        SET_FC_STATUS_INFO(jnt_trq_measure_all);
         SET_FC_STATUS_INFO(jnt_inertia_matrix_measure);
         SET_FC_STATUS_INFO(cart_pos_measure_flan_in_base);
         SET_FC_STATUS_INFO(cart_pos_measure_tcp_in_base);
@@ -665,6 +670,7 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(jac_inv_measure_flan_in_base);
         SET_FC_STATUS_INFO(jac_trans_inv_measure_flan_in_base);
         SET_FC_STATUS_INFO(mani_measure);
+        SET_FC_STATUS_INFO(jnt_trq_final_cmd);
         return *this;
     }
 };

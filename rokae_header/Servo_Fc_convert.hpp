@@ -21,7 +21,7 @@ namespace RokaeApi {
 class Axis_Convert {
    public:
     Axis_Convert(){};
-    ~Axis_Convert(){};
+    virtual ~Axis_Convert(){};
     Axis_Convert(unsigned int axis_num, const Model::MechanicalParams& mec_params_input){};
 
     int GetEncoderValue(const std::vector<double>& jnt_pos_rad, std::vector<int>& encoder_value);
@@ -36,9 +36,9 @@ class Axis_Convert {
     int SetSensorBias(const std::vector<double>& sensor_bias_set);
     int SetSensorLinearity(const std::vector<double>& analog_low_set);
 
-   private:
-    //电机相关转换
+   protected:
     unsigned m_axis_num;                                // 轴数
+    //电机相关转换
     std::vector<int> m_motorside_encoder_offset;        // 关节端编码器偏移量
     std::vector<int> m_motorside_encoder_resolution;    // 关节端编码器分辨率
     std::vector<double> m_motorside_reduce_retio;       //关节端编码器减速比
@@ -58,19 +58,23 @@ class Axis_Convert {
     std::vector<double> m_sensor_trq;       //转换后的力矩值
 };
 
-class Servo_Fc_Convert  {
-
+class Servo_Fc_Convert : public Axis_Convert {
    public:
-    Servo_Fc_Convert(){};
-    ~Servo_Fc_Convert(){};
-    Servo_Fc_Convert(unsigned int axis_num){};
+    Servo_Fc_Convert() : Axis_Convert(){};
+    ~Servo_Fc_Convert() override{};
+    Servo_Fc_Convert(unsigned int axis_num, const Model::MechanicalParams& mec_params_input)
+        : Axis_Convert(axis_num, mec_params_input){};
 
     int ServoData2FcInner(const std::vector<int8_t>& pdo_mode_operation_0x6061, const std::vector<int16_t>& pdo_analog_ch1_0x2401,
                          const std::vector<int16_t>& pdo_analog_ch2_0x2402, const std::vector<int16_t>& pdo_trq_feedback_0x2406,
                          const std::vector<int32_t>& pdo_pos_feedback_0x6064, const std::vector<int32_t>& pdo_vel_feedback_0x606C,
                          Control::Servo_To_FcInner& servo_data_fcinner);
-    private:
-    unsigned int m_axis_num;  //轴数
+
+    void FcData2ServoData(const Control::FcStatusInner& fc_status_inner, const Control::FcParamsInner* fc_params_inner,
+                          Control::FcInner_To_Servo& fc_inner_to_servo);
+
+   private:
+   std::vector<int16_t> m_zero_feedforward_trq;
 };
 
 }  // namespace RokaeApi

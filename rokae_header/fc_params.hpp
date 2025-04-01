@@ -88,6 +88,19 @@ struct FcParamsInnerBase {
         return *this;
     }
 };
+struct HardwareParamsInner : public FcParamsInnerBase {
+    HardwareParamsInner(unsigned int jnt_num = 7) : FcParamsInnerBase(jnt_num){};
+    virtual ~HardwareParamsInner(){};
+    void InitParams(unsigned int jnt_num) override {
+        m_jnt_num = jnt_num;
+        ADD_PARAM_VECTOR(encoder_offset, 0.0, jnt_num);
+        ADD_PARAM_VECTOR(analog_bias, 2.5, jnt_num);
+        ADD_PARAM_VECTOR(analog2trq_low, 2.25, jnt_num);
+        ADD_PARAM_VECTOR(joint_angle_limit_max, 180.0, jnt_num);
+        ADD_PARAM_VECTOR(joint_angle_limit_min, -180.0, jnt_num);
+    }
+    void ResetParamsToDefault() override;
+};
 
 struct ProtectParamsInner : public FcParamsInnerBase {
     ProtectParamsInner(unsigned int jnt_num = 7) : FcParamsInnerBase(jnt_num){};
@@ -173,9 +186,11 @@ struct FunctionParamsInner : public FcParamsInnerBase {
 struct FcParamsInner {
     ProtectParamsInner m_protect_params;
     FunctionParamsInner m_function_params;
-    FcParamsInner(unsigned int jnt_num) : m_protect_params(jnt_num), m_function_params(jnt_num){
+    HardwareParamsInner m_hardware_params;
+    FcParamsInner(unsigned int jnt_num) : m_protect_params(jnt_num), m_function_params(jnt_num), m_hardware_params(jnt_num) {
         m_protect_params.InitParams(jnt_num);
         m_function_params.InitParams(jnt_num);
+        m_hardware_params.InitParams(jnt_num);
     };
     ~FcParamsInner(){};
 };

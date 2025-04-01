@@ -24,7 +24,7 @@ class ForcePlanner {
     ForcePlanner();
     ~ForcePlanner();
     ForcePlanner(InitRobot* init_robot_ptr, Control::FcStatusInner* fc_status_ptr, Control::FcParamsInner* fc_params_inner_ptr);
-    const KDL::JntArray ForcePlannerUpdata();
+    void ForcePlanner::ForcePlannerUpdata();
     void ForcePlanner::JointImpedanceUpdate(KDL::JntArray& function_imp_trq);
     void ForcePlanner::CartImpedanceUpdate(KDL::JntArray& function_imp_trq);
     void ForcePlanner::JointLimitProtectUpdate(KDL::JntArray& protect_torque);
@@ -56,9 +56,9 @@ class ForcePlanner {
     KDL::JntArray m_function_trq_ref;            //合力
     KDL::JntArray m_function_jnt_gravity;        //重力
     KDL::JntArray m_function_imp_trq;            //阻抗力
-    KDL::JntArray m_function_jnt_imp_trq;        //关节阻抗力
-    KDL::JntArray m_function_jnt_imp_stiff_trq;  //关节阻抗力
-    KDL::JntArray m_function_jnt_imp_damp_trq;   //关节阻抗力
+    // KDL::JntArray m_function_jnt_imp_trq;        //关节阻抗力
+    // KDL::JntArray m_function_jnt_imp_stiff_trq;  //关节阻抗力
+    // KDL::JntArray m_function_jnt_imp_damp_trq;   //关节阻抗力
 
     KDL::JntArray m_function_cart_imp_trq;        //笛卡尔阻抗力
     KDL::JntArray m_function_cart_imp_stiff_trq;  //笛卡尔阻抗力

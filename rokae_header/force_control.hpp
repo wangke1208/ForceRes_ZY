@@ -324,13 +324,23 @@ class ForceControl {
                  std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
                  std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo);
 
+    int SetSensorLinearity(const std::vector<double> analog2trq_low);
+    int SetSensorBias(const std::vector<double> analog_bias);
+    int SetEncoderOffset(const std::vector<int32_t> encoder_offset);
+    int SetSoftLimit(const std::vector<double> joint_range_min, const std::vector<double> joint_range_max);
+    int SetMaxTrqErrorThreshold(const std::vector<double> m_max_trq_error_threshold);
+
+    int SetFricGain(const std::vector<double> fric_set);
+    int SetKpGain(const std::vector<double> kp_set);
+    int SetZetaGain(const std::vector<double> zeta_set);
+
    private:
     // ForceControl内部计算的变量
     // 1.可变参数部分(配置文件中存在，但可变的)
     // 1.1机械部分
     std::vector<int32_t> m_encoder_offset_inner;  //电机编码器零点
     std::vector<double> m_analog_bias_inner;      //传感器零点
-    std::vector<double> m_decel_ratio_low_inner;  //传感器线性度
+    std::vector<double> m_analog2trq_low;         //传感器线性度
 
     // 1.2模型参数
     std::vector<double> m_joint_range_min_inner;
@@ -371,15 +381,18 @@ class ForceControl {
     bool m_enable_drag;
     DragType m_drag_type;
     bool m_is_first_drag;
+    std::vector<int32_t> m_zero_vector;
+    KDL::JntArray m_zero_jnt;
 
     // 7.内部数据流
     Servo_To_FcInner m_servo_data_fc_inner;
+    FcInner_To_Servo m_fc_inner_servo_data;
     FcStatusInner m_fc_status_inner;
     FcParamsInner* m_fc_params_inner_ptr;
+    
 
     // 8.一些求解器
     Protect::ForceProtect* m_force_protect_ptr;
-    Axis_Convert* m_axis_convert_ptr;
     DynamicSolver* m_dynamicsolver_ptr;
     KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;
     FcStatusTracker* m_fc_status_tracker_ptr;
