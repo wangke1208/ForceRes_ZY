@@ -16,7 +16,6 @@
 
 #include "rokae_header/force_control.hpp"
 
-
 using namespace std;
 
 namespace RokaeApi {
@@ -221,8 +220,9 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
 }
 
 int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
-                             const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const DragType& drag_type) {
-    //0.初始化标志位
+                             const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
+                             const DragType& drag_type) {
+    // 0.初始化标志位
     int res = SOLVE_NOERROR;
     m_enable_drag = false;
     m_is_first_drag = true;
@@ -484,183 +484,39 @@ int ForceControl::StopDrag(const int8_t param_0x6061[6]) {
 //************************************************************************************************
 
 //*******************************外部设置参数接口部分*****************************
-int ForceControl::SetSensorLinearity(const std::vector<double> analog2trq_low) {
-    if (m_analog2trq_low.size() != analog2trq_low.size()) {
-        return SIZE_ERROR;
-    }
-    m_analog2trq_low = analog2trq_low;
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        m_analog2trq[i] = m_analog2trq_high[i] / m_analog2trq_low[i];
-    }
 
-    return SOLVE_NOERROR;
-}
-
-int ForceControl::SetSensorBias(const std::vector<double> analog_bias) {
-    if (m_analog_bias.size() != analog_bias.size()) {
-        return SIZE_ERROR;
-    }
-    m_analog_bias = analog_bias;
-    return SOLVE_NOERROR;
-}
-
-int ForceControl::SetEncoderOffset(const std::vector<int32_t> encoder_offset) {
-    if (m_encoder_offset.size() != encoder_offset.size()) {
-        return SIZE_ERROR;
-    }
-    m_encoder_offset = encoder_offset;
-    return SOLVE_NOERROR;
-}
-
-int ForceControl::SetSoftLimit(const std::vector<double> joint_range_min, const std::vector<double> joint_range_max) {
-    int res = SOLVE_NOERROR;
-
+int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_feedback, const RokaeLoad& load_input,
+                                     const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
+                                     const std::vector<std::array<int16_t, 200>>& analog_array_ch2,
+                                     std::vector<double>& sensor_bias) {
     //长度检查
-    if (joint_range_min.size() != m_joint_range_min.size()) {
+    if (pos_encoder_feedback.size() != m_jnt_num || analog_array_ch1.size() != m_jnt_num ||
+        analog_array_ch2.size() != m_jnt_num) {
         return SIZE_ERROR;
     }
-    if (joint_range_max.size() != m_joint_range_max.size()) {
-        return SIZE_ERROR;
-    }
+    KDL::JntArray trq_gra_jntarray;
+    KDL::JntArray q_in_jntarray;
+    std::vector<double> analog_average(m_jnt_num);
+    trq_gra_jntarray.resize(m_jnt_num);
+    q_in_jntarray.resize(m_jnt_num);
+    // 1.计算当前关节角度
+    m_servo_fc_convert_ptr->GetAxisPos(pos_encoder_feedback, q_in_jntarray);
+    // 2.计算当前模型重力矩
+    trq_gra_jntarray = m_dynamicsolver_ptr->GetGraTorque(load_input.m_rokae_load_inertia, q_in_jntarray);
 
-    //数据有效性检查
+    // 3.提取200次电压数据的平均值
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if ((joint_range_min[i] < m_joint_range_min_new[i]) or (joint_range_max[i] > m_joint_range_max_new[i])) {
-            return SOFT_LIMIT_PARAMS_ERROR;
+        for (unsigned int j = 0; j < 200; j++) {
+            analog_average[i] += double((analog_array_ch1[i][j] + analog_array_ch2[i][j]) / 2);
         }
+        analog_average[i] = analog_average[i] / 200;
     }
 
-    //更新软限位成员变量
-    for (unsigned int j = 0; j < m_jnt_num; j++) {
-        m_joint_range_min[j] = joint_range_min[j] / 180 * PI;
-        m_joint_range_max[j] = joint_range_max[j] / 180 * PI;
-    }
-    //设置软限位
-    res = m_force_planner_ptr->SetSoftLimit(m_joint_range_min, m_joint_range_max);
+    // 4.计算传感器零点
+    int res = m_servo_fc_convert_ptr->GetAnalogBias(trq_gra_jntarray, analog_average, sensor_bias);
 
     return res;
 }
-
-int ForceControl::CalibrateTrqSensor(const int32_t param_0x6064[6], const LoadInertia& load_params_in,
-                                     const int16_t analog_array_ch1[6][200], const int16_t analog_array_ch2[6][200],
-                                     double sensor_bias[6]) {
-    std::vector<double> analog_read;
-    std::vector<int32_t> pos_encoder_input;
-    KDL::JntArray trq_gra_jntarray;
-    KDL::JntArray q_in_jntarray;
-
-    trq_gra_jntarray.resize(m_jnt_num);
-    analog_read.resize(m_jnt_num);
-    pos_encoder_input.resize(m_jnt_num);
-    q_in_jntarray.resize(m_jnt_num);
-
-    //数据转换&计算关节角度
-    std::copy(param_0x6064, param_0x6064 + 6, std::begin(pos_encoder_input));
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        q_in_jntarray(i) = double((pos_encoder_input[i] - m_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_decel_ratio[i]);
-    }
-
-    //计算当前位置模型力矩
-    trq_gra_jntarray = m_fc_dynamic_solver->GetGraTorque(load_params_in, q_in_jntarray);
-
-    //计算200次读取传感器电压的平均值
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        for (unsigned int j = 0; j < 200; j++) {
-            analog_read[i] += double((analog_array_ch1[i][j] + analog_array_ch2[i][j]) / 2);
-        }
-        analog_read[i] = analog_read[i] / 200;
-    }
-
-    //计算传感器零点
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        sensor_bias[i] =
-            analog_read[i] - (trq_gra_jntarray(i) * m_sensor_amplify[i] * 1000 * m_analog2trq_low[i]) / m_analog2trq_high[i];
-        //传感器零点一般不会超过2.5V±50%的误差，如果超过，就意味着传感器失效或负载信息错误。
-        if ((sensor_bias[i] > 3750) or (sensor_bias[i] < 1250)) {
-            return SENSOR_BIAS_ERROR;
-        }
-    }
-
-    return SOLVE_NOERROR;
-}
-
-int ForceControl::CalibrateTrqSensorAxis(const int32_t param_0x6064[6], const LoadInertia& load_params_in,
-                                         const int16_t analog_array_ch1[200], const int16_t analog_array_ch2[200],
-                                         const unsigned int axis_num, double sensor_bias_axis[6]) {
-    if (axis_num > m_jnt_num or axis_num < 1) {
-        return AXIS_NUM_ERROR;
-    }
-    double analog_read = 0;
-    std::vector<int32_t> pos_encoder_input;
-    KDL::JntArray trq_gra_jntarray;
-    KDL::JntArray q_in_jntarray;
-
-    trq_gra_jntarray.resize(m_jnt_num);
-    pos_encoder_input.resize(m_jnt_num);
-    q_in_jntarray.resize(m_jnt_num);
-
-    //数据转换&计算关节角度
-    std::copy(param_0x6064, param_0x6064 + 6, std::begin(pos_encoder_input));
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        q_in_jntarray(i) = double((pos_encoder_input[i] - m_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_decel_ratio[i]);
-    }
-
-    //计算当前位置模型力矩
-    trq_gra_jntarray = m_fc_dynamic_solver->GetGraTorque(load_params_in, q_in_jntarray);
-
-    //计算200次读取传感器电压的平均值
-    for (unsigned int i = 0; i < 200; i++) {
-        analog_read += double((analog_array_ch1[i] + analog_array_ch2[i]) / 2);
-    }
-    analog_read = analog_read / 200;
-
-    //先给非标定轴的sensor_bias赋值
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        sensor_bias_axis[i] = m_analog_bias[i];
-    }
-
-    //计算特定轴传感器零点
-    sensor_bias_axis[axis_num - 1] =
-        analog_read - (trq_gra_jntarray(axis_num - 1) * m_sensor_amplify[axis_num - 1] * 1000 * m_analog2trq_low[axis_num - 1]) /
-                          m_analog2trq_high[axis_num - 1];
-
-    //传感器零点一般不会超过2.5V±50%的误差，如果超过，就意味着传感器失效或负载信息错误。
-    if ((sensor_bias_axis[axis_num - 1] > 3750) or (sensor_bias_axis[axis_num - 1] < 1250)) {
-        return SENSOR_BIAS_ERROR;
-    }
-
-    return SOLVE_NOERROR;
-}
-//************************************************************************************************
-
-//**************************************保护接口部分***********************************************
-int ForceControl::SwichToTrqMode(double sensor_trq_feedback[6], double trq_ref[6], double trq_error[6]) {
-    bool if_error_inside = true;  //如果if_error_inside最后输出为1，则表明误差小于阈值，若等于0，则误差大于阈值
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        sensor_trq_feedback[i] = m_sensor_trq[i];
-        trq_ref[i] = m_ref_trq_vec[i];
-        trq_error[i] = fabs(sensor_trq_feedback[i] - trq_ref[i]);
-        if (trq_error[i] > m_trq_error_max[i]) {
-            if_error_inside = false;  //只要有一个轴超过阈值，if_error_inside就为false
-        }
-    }
-    if (if_error_inside == true) {
-        return SOLVE_NOERROR;
-    } else {
-        return EXCESSIVE_TORQUE_ERROR;
-    }
-}
-
-bool ForceControl::IsInForceControlArea(const JntArray& q_in, const std::vector<double>& joint_limit_upper,
-                                        const std::vector<double>& joint_limit_lower) {
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if ((q_in(i) < (joint_limit_lower[i] + 9.5 * KDL::deg2rad)) or (q_in(i) > (joint_limit_upper[i] - 9.5 * KDL::deg2rad))) {
-            return true;
-        }
-    }
-    return false;
-}
-//************************************************************************************************
 
 }  // namespace Control
 }  // namespace RokaeApi

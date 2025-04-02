@@ -35,6 +35,8 @@ class Axis_Convert {
                     std::vector<double>& jnt_sensor_feedback);
     int SetSensorBias(const std::vector<double>& sensor_bias_set);
     int SetSensorLinearity(const std::vector<double>& analog_low_set);
+    int GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std::vector<double>& analog_average,
+                      std::vector<double>& analog_bias);
 
    protected:
     unsigned m_axis_num;                                // 轴数

@@ -14,7 +14,7 @@
 #include "../rokae_header/Servo_Fc_convert.hpp"
 
 namespace RokaeApi {
-
+/****************************************轴转换类************************************ */
 Axis_Convert::Axis_Convert(unsigned int axis_num, const Model::MechanicalParams& mec_params_input) {
     //初始化
     m_axis_num = axis_num;
@@ -168,7 +168,25 @@ int Axis_Convert::SetSensorLinearity(const std::vector<double>& analog_low_set) 
 
     return SOLVE_NOERROR;
 }
+int Axis_Convert::GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std::vector<double>& analog_average,
+                                std::vector<double>& analog_bias) {
+    if (trq_gra_jntarray.rows() != m_axis_num || analog_average.size() != m_axis_num || analog_bias.size() != m_axis_num) {
+        return SIZE_ERROR;
+    }
+    for (unsigned int i = 0; i < m_axis_num; i++) {
+        analog_bias[i] =
+            analog_average[i] - (trq_gra_jntarray(i) * m_sensor_amplify[i] * 1000 * m_analog2trq_low[i]) / m_analog2trq_high[i];
+        //传感器零点一般不会超过2.5V±50%的误差，如果超过，就意味着传感器失效或负载信息错误。
+        if ((analog_bias[i] > 3750) or (analog_bias[i] < 1250)) {
+            //辨识失败均返回0
+            analog_bias.assign(m_axis_num, 0.0);
+            return SENSOR_BIAS_ERROR;
+        }
+    }
+    return SOLVE_NOERROR;
+}
 
+/****************************************伺服数据和Fc数据转换类************************************ */
 Servo_Fc_Convert::Servo_Fc_Convert(unsigned int axis_num, const Model::MechanicalParams& mec_params_input)
     : Axis_Convert(axis_num, mec_params_input), m_zero_feedforward_trq(axis_num, 0){};
 

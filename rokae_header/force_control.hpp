@@ -330,6 +330,11 @@ class ForceControl {
     int ResetKpByLoad(const RokaeLoad& load);
     int ResetFricByLoad(const RokaeLoad& load);
 
+    //额外功能
+    int CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_feedback, const RokaeLoad& load_input,
+                           const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
+                           const std::vector<std::array<int16_t, 200>>& analog_array_ch2, std::vector<double>& sensor_bias);
+
    private:
     // ForceControl内部计算的变量
     // 1.可变参数部分(配置文件中存在，但可变的)
