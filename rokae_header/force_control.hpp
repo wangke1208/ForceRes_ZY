@@ -54,10 +54,6 @@ class ForceControl {
      *
      * @return 返回0表示配置成功，不成功则返回错误码
      */
-    // int DragConfig(const int8_t param_0x6061[6], const int16_t param_0x2401[6], const int16_t param_0x2402[6],
-    //                const int32_t param_0x6064[6], const int32_t param_0x606C[6], const int16_t param_0x2406[6],
-    //                const LoadInertia& load_params, DragType drag_type, double sensor_trq_feedback[6], double trq_ref[6],
-    //                double trq_error[6]);
 
     /**
      * @brief 力控计算总接口，包括数据读取、数据转换、数据计算以及下发，每个控制周期调用一次
@@ -213,24 +209,6 @@ class ForceControl {
     int SetEncoderOffset(const std::vector<int32_t> encoder_offset);
 
     /**
-     * @brief 设置摩擦力补偿系数，范围[0~1]
-     * @param[in] fric_set: 摩擦力补偿系数
-     *
-     * @param return：0:设置成功；
-     *                其他:设置失败，返回错误码
-     */
-    int SetFricGain(const std::vector<double> fric_set);
-
-    /**
-     * @brief 设置力控增益系数，范围[0~1]
-     * @param[in] kp_set: 力控增益系数
-     *
-     * @param return：0:设置成功；
-     *                其他:设置失败，返回错误码
-     */
-    int SetKpGain(const std::vector<double> kp_set);
-
-    /**
      * @brief 设置软限位(输入的是角度，内部会自动转化为弧度)
      * @param[in] joint_range_min: 软限位下限
      * @param[in] joint_range_max: 软限位上限
@@ -330,9 +308,14 @@ class ForceControl {
     int SetSoftLimit(const std::vector<double> joint_range_min, const std::vector<double> joint_range_max);
     int SetMaxTrqErrorThreshold(const std::vector<double> m_max_trq_error_threshold);
 
-    int SetFricGain(const std::vector<double> fric_set);
-    int SetKpGain(const std::vector<double> kp_set);
     int SetZetaGain(const std::vector<double> zeta_set);
+    int SetImpedenceGain(const DragType& drag_type);  //该接口先不开放
+    int SetLoadLimit(const double& max_load_mass, const double& max_load_tcp_length);
+    int SetFcLoad(const RokaeLoad& load);
+    int SetKpGain(const std::vector<double>& kp_gain_set);
+    int SetFricGain(const std::vector<double>& fric_gain_set);
+    int ResetKpByLoad(const RokaeLoad& load);
+    int ResetFricByLoad(const RokaeLoad& load);
 
    private:
     // ForceControl内部计算的变量
@@ -359,24 +342,20 @@ class ForceControl {
     // 2.功能力计算
     KDL::JntArray m_ref_trq;               //指令力矩
 
-    // 3.增益调节相关
-    std::vector<double> m_kp_set_gain;
-    std::vector<double> m_fric_set_gain;
-
-    // 4.传感器相关
+    // 3.传感器相关
     std::vector<int16_t> m_analog_ch1;      //通道1电压
     std::vector<int16_t> m_analog_ch2;      //通道2电压
     std::vector<int16_t> m_analog_average;  //双通道电压平均值
     std::vector<double> m_sensor_trq;       //传感器反馈力矩
 
-    // 5.模型基础信息及负载
+    // 4.模型基础信息及负载
     InitRobot* m_init_robot_ptr;
     unsigned int m_jnt_num;
     KDL::Chain m_chain;
-    LoadInertia m_load;
+    RokaeLoad m_load;
     std::vector<double> m_jnt_current_pos;
 
-    // 6.其他参数
+    // 5.其他参数
     std::vector<double> m_trq_error;  //重力矩与传感器反馈之差
     bool m_enable_drag;
     DragType m_drag_type;
@@ -384,12 +363,11 @@ class ForceControl {
     std::vector<int32_t> m_zero_vector;
     KDL::JntArray m_zero_jnt;
 
-    // 7.内部数据流
+    // 6.内部数据流
     Servo_To_FcInner m_servo_data_fc_inner;
     FcInner_To_Servo m_fc_inner_servo_data;
     FcStatusInner m_fc_status_inner;
-    FcParamsInner* m_fc_params_inner_ptr;
-    
+    FcParamsInner* m_fc_params_inner_ptr;    
 
     // 8.一些求解器
     Protect::ForceProtect* m_force_protect_ptr;
@@ -398,6 +376,16 @@ class ForceControl {
     FcStatusTracker* m_fc_status_tracker_ptr;
     Servo_Fc_Convert* m_servo_fc_convert_ptr;
     Control::ForcePlanner* m_force_planner_ptr;
+
+    //9.一些只在forcecontrol内部用的成员变量
+    std::vector<double> m_kp_gain_set;
+    std::vector<double> m_kp_set_by_load;
+    std::vector<double> m_fri_gain_set;
+    std::vector<double> m_fri_set_by_load;
+    std::vector<double> m_load_mass_limit;
+    std::vector<double> m_load_tcp_length_limit;
+
+
 };
 
 }  // namespace Control

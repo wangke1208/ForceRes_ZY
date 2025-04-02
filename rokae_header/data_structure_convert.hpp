@@ -23,9 +23,10 @@
 
 namespace RokaeApi {
 
-inline KDL::RigidBodyInertia GetKDLloadFromRokaeLoad(const Model::LoadInertia& in) {
+inline KDL::RigidBodyInertia GetKDLloadFromRokaeLoad(const Model::RokaeLoadInertia& in) {
     return KDL::RigidBodyInertia(in.m, in.GetCOG(),
-                                 KDL::RotationalInertia(in.inertia[0], in.inertia[1], in.inertia[2], in.inertia[3], in.inertia[4], in.inertia[5]));
+                                 KDL::RotationalInertia(in.m_inertia[0], in.m_inertia[1], in.m_inertia[2], in.m_inertia[3],
+                                                        in.m_inertia[4], in.m_inertia[5]));
 }
 
 inline int VectorToJntArray(const std::vector<double>& in, KDL::JntArray& out) {
@@ -113,6 +114,7 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
     }
     model_out.axis_num = in.model_config_params.AXIS_NUM;
     model_out.max_load = in.model_config_params.MAX_LOAD;
+    model_out.max_load_tcp_length = in.model_config_params.MAX_LOAD_TCP_LENGTH;
 
     // 2.机械参数
     for (unsigned int i = 0; i < mec_out.encoder_offset.size(); i++) {

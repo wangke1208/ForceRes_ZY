@@ -25,6 +25,10 @@ void ControlConifgParams::Resize(unsigned int jnt_num) {
     CTRL_BANDWIDTH_SERVO_EXEC.resize(jnt_num, 0.0);
     CTRL_ZETA_SERVO_EXEC.resize(jnt_num, 0.0);
     FRICTION_COF_DRAG.resize(jnt_num, 0.0);
+    ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING.resize(6, 0.0);
+    ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.resize(6, 0.0);
+    TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING.resize(6, 0.0);
+    TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.resize(6, 0.0);
 }
 
 MechanicalConifgParams::MechanicalConifgParams() { this->Resize(6); }
@@ -63,6 +67,7 @@ ModelConifgParams::ModelConifgParams() { Resize(6); }
 ModelConifgParams::ModelConifgParams(unsigned int jnt_num)
     : AXIS_NUM(jnt_num),
       MAX_LOAD(0.0),
+      MAX_LOAD_TCP_LENGTH(0.3),
       JOINT_TYPE(jnt_num, 0),
       ROT_AXIS(jnt_num, 0),
       ROT_ANGLE(jnt_num, 0.0),
@@ -82,6 +87,7 @@ void ModelConifgParams::Resize(unsigned int jnt_num) {
     ROBOT_NAME = "UNKNOWN";
     AXIS_NUM = jnt_num;
     MAX_LOAD = 0.0;
+    MAX_LOAD_TCP_LENGTH = 0.3;
     JOINT_TYPE.resize(jnt_num + 1, 0);
     ROT_AXIS.resize(jnt_num + 1, 0);
     ROT_ANGLE.resize(jnt_num + 1, 0.0);
@@ -112,6 +118,7 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         model_config_params.ROBOT_NAME = "XMS3-R580-W4G3B1C";
         model_config_params.AXIS_NUM = 6;
         model_config_params.MAX_LOAD = 4.5;
+        model_config_params.MAX_LOAD_TCP_LENGTH = 0.3;
 
         model_config_params.JOINT_TYPE = {8, 3, 2, 2, 3, 2, 3};
         model_config_params.ROT_AXIS = {0, 0, 3, 0, 0, 0, 3};
@@ -146,6 +153,10 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {32.0, 32.0, 32.0, 30.0, 20.0, 35.0};
         control_config_params.CTRL_ZETA_SERVO_EXEC = {0.7, 0.7, 0.7, 0.7, 0.4, 0.4};
         control_config_params.FRICTION_COF_DRAG = {0.5, 0.4, 0.4, 0.5, 0.5, 0.8};
+        control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
+        control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
+        control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
+        control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
 
         // mechanical_config_params
         mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0};

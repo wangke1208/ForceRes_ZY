@@ -25,7 +25,10 @@ struct ControlConifgParams {
     std::vector<double> CTRL_BANDWIDTH_SERVO_EXEC;  // 拖动带宽
     std::vector<double> CTRL_ZETA_SERVO_EXEC;       // 拖动阻尼比
     std::vector<double> FRICTION_COF_DRAG;          // 拖动摩擦力系数
-
+    std::vector<double> ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING;
+    std::vector<double> ROTATION_DAMPING_OF_TRANSLATION_DRAGGING;
+    std::vector<double> TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING;
+    std::vector<double> TRANSLATION_DAMPING_OF_ROTATION_DRAGGING;
     ControlConifgParams();
     ControlConifgParams(unsigned int jnt_num);
     void Resize(unsigned int jnt_num);
@@ -59,6 +62,7 @@ struct ModelConifgParams {
     std::string ROBOT_NAME;
     unsigned int AXIS_NUM;
     double MAX_LOAD;
+    double MAX_LOAD_TCP_LENGTH;
     std::vector<int> JOINT_TYPE;
     std::vector<int> ROT_AXIS;
     std::vector<double> ROT_ANGLE;

@@ -47,11 +47,11 @@ DynamicSolver::~DynamicSolver() {
     delete m_svd_ptr;
 }
 
-void DynamicSolver::JntToMass(const LoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H) {
+void DynamicSolver::JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H) {
     m_chain_dyn_params->JntToMass(GetKDLloadFromRokaeLoad(load_params), q, H);
 }
 
-const KDL::JntArray& DynamicSolver::GetGraTorque(const LoadInertia& load_params, const KDL::JntArray& q) {
+const KDL::JntArray& DynamicSolver::GetGraTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q) {
     m_load_temp.Zero();
     m_load_temp = GetKDLloadFromRokaeLoad(load_params);
     KDL::SetToZero(m_trq_gravity);
@@ -60,7 +60,7 @@ const KDL::JntArray& DynamicSolver::GetGraTorque(const LoadInertia& load_params,
     return m_trq_gravity;
 }
 
-const KDL::JntArray& DynamicSolver::GetInertTorque(const LoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq) {
+const KDL::JntArray& DynamicSolver::GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq) {
     m_load_temp.Zero();
     m_load_temp = GetKDLloadFromRokaeLoad(load_params);
     KDL::SetToZero(m_trq_gravity);
@@ -71,7 +71,7 @@ const KDL::JntArray& DynamicSolver::GetInertTorque(const LoadInertia& load_param
     return m_trq_inertia;
 }
 
-const KDL::JntArray& DynamicSolver::GetColioTorque(const LoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq){
+const KDL::JntArray& DynamicSolver::GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq){
     m_load_temp.Zero();
     m_load_temp = GetKDLloadFromRokaeLoad(load_params);
     KDL::SetToZero(m_trq_gravity);

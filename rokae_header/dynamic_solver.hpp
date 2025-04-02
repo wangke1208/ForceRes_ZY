@@ -44,7 +44,7 @@ class DynamicSolver {
      *
      * @return 无
      */
-    void JntToMass(const LoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H);
+    void JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H);
 
     /**
      * @brief 计算动力学总力矩，，包括重力、科式力、惯性力
@@ -56,7 +56,7 @@ class DynamicSolver {
      *
      * @return 动力学总力矩(KDL::JntArray)
      */
-    const KDL::JntArray& GetTotalTorque(const LoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq, const KDL::JntArray& ddq);
+    const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq, const KDL::JntArray& ddq);
 
     /**
      * @brief 计算重力矩
@@ -66,9 +66,9 @@ class DynamicSolver {
      *
      * @return 重力矩(KDL::JntArray)
      */
-    const KDL::JntArray& GetGraTorque(const LoadInertia& load_params, const KDL::JntArray& q);
-    const KDL::JntArray& GetInertTorque(const LoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq);
-    const KDL::JntArray& GetColioTorque(const LoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq);
+    const KDL::JntArray& GetGraTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q);
+    const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq);
+    const KDL::JntArray& GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq);
 
     void GetJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian);                     //计算雅可比矩阵
     void GetJacobianTrans(const KDL::Jacobian& jacobian, Jacobian_trans& jacobian_trans);  //计算雅可比矩阵的转置

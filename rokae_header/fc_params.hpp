@@ -117,6 +117,8 @@ struct ProtectParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(max_cart_damp_trq, 20.0, 6);
         ADD_PARAM_VECTOR(max_null_stiff, 100.0, 1);
         ADD_PARAM_VECTOR(max_mode_switch_trq, 30.0, jnt_num);
+        ADD_PARAM_VECTOR(max_load_mass, 7, 1);
+        ADD_PARAM_VECTOR(max_load_tcp_length, 0.3, 1);
     }
     void ResetParamsToDefault() override;
 };
@@ -125,9 +127,11 @@ struct FunctionParamsInner : public FcParamsInnerBase {
     virtual ~FunctionParamsInner(){};
     void InitParams(unsigned int jnt_num) override {
         m_jnt_num = jnt_num;
-        ADD_PARAM_VECTOR(joint_servo_kp, 1.0, jnt_num);
-        ADD_PARAM_VECTOR(joint_servo_dmap_kv, 0.0, jnt_num);
+        ADD_PARAM_VECTOR(kp_gain_set, 1.0, jnt_num);
+        ADD_PARAM_VECTOR(fri_gain_set, 0.5, jnt_num)
+        ADD_PARAM_VECTOR(joint_servo_kp, 10.0, jnt_num);
         ADD_PARAM_VECTOR(joint_servo_friction, 0.6, jnt_num)
+        ADD_PARAM_VECTOR(joint_servo_dmap_kv, 0.0, jnt_num);
         ADD_PARAM_VECTOR(joint_stiff, 100.0, jnt_num);
         ADD_PARAM_VECTOR(joint_damp, 10.0, jnt_num);
         ADD_PARAM_VECTOR(cart_stiff, 100.0, 6);
@@ -138,12 +142,13 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(cart_damp_zeta, 0.707, 6);
         ADD_PARAM_VECTOR(soft_limit_stiff, 1000, jnt_num);
         ADD_PARAM_VECTOR(soft_limit_damp, 10, jnt_num);
-
     }
     void ResetParamsToDefault() override {
-        std::fill(m_params["joint_servo_kp"].begin(), m_params["joint_servo_kp"].end(), 1.0);
+        std::fill(m_params["kp_gain_set"].begin(), m_params["kp_gain_set"].end(), 1.0);
+        std::fill(m_params["fri_gain_set"].begin(), m_params["fri_gain_set"].end(), 0.5);
+        std::fill(m_params["joint_servo_kp"].begin(), m_params["joint_servo_kp"].end(), 10.0);
+        std::fill(m_params["joint_servo_friction"].begin(), m_params["joint_servo_friction"].end(), 0.0);
         std::fill(m_params["joint_servo_dmap_kv"].begin(), m_params["joint_servo_dmap_kv"].end(), 0.0);
-        std::fill(m_params["joint_servo_friction"].begin(), m_params["joint_servo_friction"].end(), 0.6);
         std::fill(m_params["joint_stiff"].begin(), m_params["joint_stiff"].end(), 100.0);
         std::fill(m_params["joint_damp"].begin(), m_params["joint_damp"].end(), 10.0);
         std::fill(m_params["cart_stiff"].begin(), m_params["cart_stiff"].end(), 100.0);
@@ -166,6 +171,10 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         if (trans_stiff.size() != 3 || trans_damp.size() != 3) {
             return false;
         }
+        std::vector<double> rot_damp_temp(3);  // TODO:没有加上根据负载调节阻尼的部分
+        for (int i = 0; i < 3; i++) {
+            rot_damp_temp[i] = std::sqrt(trans_stiff[i]) * 2 * 0.5;
+        }
         return FixedX(trans_stiff[0], trans_damp[0]) && FixedY(trans_stiff[1], trans_damp[1]) &&
                FixedZ(trans_stiff[2], trans_damp[2]);
     }
@@ -174,7 +183,12 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         if (rot_stiff.size() != 3 || rot_damp.size() != 3) {
             return false;
         }
-        return FixedA(rot_stiff[0], rot_damp[0]) && FixedB(rot_stiff[1], rot_damp[1]) && FixedC(rot_stiff[2], rot_damp[2]);
+        std::vector<double> rot_damp_temp(3);
+        for (int i = 0; i < 3; i++) {
+            rot_damp_temp[i] = std::sqrt(rot_stiff[i]) * 2 * 2.0;
+        }
+        return FixedA(rot_stiff[0], rot_damp_temp[0]) && FixedB(rot_stiff[1], rot_damp_temp[1]) &&
+               FixedC(rot_stiff[2], rot_damp_temp[2]);
     }
     bool FixedX(double stiff, double damp) { return SetParam("cart_stiff", stiff, 0) && SetParam("cart_damp", damp, 0); }
     bool FixedY(double stiff, double damp) { return SetParam("cart_stiff", stiff, 1) && SetParam("cart_damp", damp, 1); }

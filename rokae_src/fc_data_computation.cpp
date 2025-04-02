@@ -31,6 +31,7 @@ FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_st
     KDL::SetToZero(m_orient_delta_d);
     KDL::SetToZero(m_orient_delta_d_last);
     m_cart_stiffness.resize(6, 100.0);
+    m_load.SetZero();
 }
 
 FcStatusTracker::~FcStatusTracker() {
@@ -146,18 +147,32 @@ int FcStatusTracker::FcStatusUpdataCart() {
 int FcStatusTracker::FcStatusUpdataDynamic() {
     //动力学计算部分
     // 1.重力矩
-    FC->jnt_gravity_trq_measure = m_dynamic_solver->GetGraTorque(m_load, FC->jnt_pos_measure);
+    FC->jnt_gravity_trq_measure = m_dynamic_solver->GetGraTorque(m_load.m_rokae_load_inertia, FC->jnt_pos_measure);
     // 2.惯量
-    m_dynamic_solver->JntToMass(m_load, FC->jnt_pos_measure, FC->jnt_inertia_matrix_measure);
+    m_dynamic_solver->JntToMass(m_load.m_rokae_load_inertia, FC->jnt_pos_measure, FC->jnt_inertia_matrix_measure);
     for(unsigned int i = 0; i < m_jnt_num; i++){
-            m_joint_inertia[i] = m_fc_status.jnt_inertia_matrix_measure(i, i);
-
+        FC->jnt_inertia(i) = FC->jnt_inertia_matrix_measure(i, i);
     }
     // 3.科式力(不在这里计算)
     return SOLVE_NOERROR;
 }
 
-void FcStatusTracker::SetLoad(const LoadInertia& load) {m_load = load; }
+void FcStatusTracker::SetLoad(const RokaeLoad& load) {
+    //设置负载信息
+    m_load = load;
+    //更新tool_in_flan坐标系
+    m_tool_in_flan = load.m_rokae_load_pose.GetKDLFrame();
+    return;
+}
+
+int FcStatusTracker::SetFcFrameType(const FcFrameType& fc_frame_type) {
+    if (fc_frame_type > 3 || fc_frame_type < 0) {
+        return FC_FRAME_TYPE_ERROR;
+    }
+    //设置力控坐标系
+    m_fc_frame_type = fc_frame_type;
+    return SOLVE_NOERROR;
+}
 
 void FcStatusTracker::UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data) {
     for (unsigned int i = 0; i < 3; i++) {
@@ -169,5 +184,6 @@ void FcStatusTracker::UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data)
     }
 }
 
+void FcStatusTracker::ResetCalStatus() { m_is_rot_angle_outof_range = false; }
 }  // namespace Control
 }  // namespace RokaeApi

@@ -41,7 +41,7 @@ class FcStatusTracker {
      * @param[in] load:负载信息
      * @return 无
      */
-    void SetLoad(const LoadInertia& load);
+    void SetLoad(const RokaeLoad& load);
     //对旋转数据进行解缠绕处理 ，避免角度在正负 2π 附近出现跳跃不连续的情况
     void UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data);
     int FcStatusUpdataCart();     //笛卡尔空间数据更新
@@ -49,8 +49,10 @@ class FcStatusTracker {
     int FcStatusUpdataDynamic();  //动力学部分数据更新
 
     const KDL::Frame& GetBaseInFcFrame() { return m_fc_frame; }
-    void SetFcFrameType(const FcFrameType& fc_frame_type);
+    int SetFcFrameType(const FcFrameType& fc_frame_type);
     void SetFrameToolInFlan(const KDL::Frame& frame_tool_in_flan) { m_tool_in_flan = frame_tool_in_flan; }
+    void ResetCalStatus();
+
    private:
     DynamicSolver* m_dynamic_solver;
     FcStatusInner* m_fc_status_info;
@@ -61,7 +63,7 @@ class FcStatusTracker {
     double m_period;
     //一些变量
     unsigned int m_jnt_num;
-    LoadInertia m_load;
+    RokaeLoad m_load;
     bool m_if_first_in;
     bool m_is_rot_angle_outof_range;
     KDL::Vector m_orient_delta_d;

@@ -78,7 +78,6 @@ void ForcePlanner::ForcePlannerUpdata() {
     // 4.惯量
     // 5.合力
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        FC->jnt_inertia(i) = FC->jnt_inertia_matrix_measure(i,i);
         FC->jnt_trq_final_cmd(i) = m_function_jnt_gravity(i) + m_function_imp_trq(i) + m_function_jnt_limit_trq(i);
     }
     return;

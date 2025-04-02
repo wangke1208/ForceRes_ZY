@@ -207,7 +207,6 @@ void Servo_Fc_Convert::FcData2ServoData(const Control::FcStatusInner& fc_status_
         fc_inner_servo_data.trq_feedforward[i] =
             (int16_t)(m_zero_feedforward_trq[i] * 1000 / (m_rated_torque[i] * m_motorside_reduce_retio[i]));
         fc_inner_servo_data.k_p[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_kp")[i] * 100);
-
         fc_inner_servo_data.k_d[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_dmap_kv")[i] * 100);
         fc_inner_servo_data.edb_cof[i] = (int16_t)(2.25 / fabs(m_analog2trq_low[i]) * 100.0);
         fc_inner_servo_data.edb_cof[i] = (fc_inner_servo_data.edb_cof[i] < 90) ? 90 : fc_inner_servo_data.edb_cof[i];
@@ -218,4 +217,5 @@ void Servo_Fc_Convert::FcData2ServoData(const Control::FcStatusInner& fc_status_
     }
     return;
 }
+
 }  // namespace RokaeApi

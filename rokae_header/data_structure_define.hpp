@@ -70,7 +70,9 @@ enum SolverRes {
     GAIN_VALUE_ERROR = -12,
     SENSOR_LINERALITY_ERROR = -13,
     ERROR_RPY_CAL = -14,
-    INIT_ERROR = -15
+    INIT_ERROR = -15,
+    LOAD_LIMIT_PARAMS_ERROR = -16,
+    FC_FRAME_TYPE_ERROR = -17
 };
 
 enum ServoMode { SERVO_MODE_POS = 8, SERVO_MODE_TORQUE = 10 };
@@ -82,7 +84,7 @@ enum MechUnitType {
 };
 struct ModelParams {
     struct Link_Inertial {
-        double mass;            //质量,单位kg
+        double mass;                      //质量,单位kg
         std::vector<double> centroid;     //质心,单位mm
         std::vector<double> moment;       //总惯量，单位kg.mm^2
         std::vector<double> moment_link;  //连杆惯量，单位kg.mm^2
@@ -177,11 +179,13 @@ struct ModelParams {
     std::vector<double> joint_range_min_new;  //硬限位
     std::vector<double> joint_range_max_new;
     double max_load;
+    double max_load_tcp_length;
     // ModelParams(){this->Resize(DEFAULT_SEGMENT);};
     ModelParams(unsigned int segments_cnt) { this->Resize(segments_cnt); };
 
     void Resize(unsigned int segments_cnt) {
         max_load = 0.0;
+        max_load_tcp_length = 0.3;
         axis_num = segments_cnt - 1;
         joint_type.resize(segments_cnt);
         coor_orient.resize(segments_cnt);
@@ -252,61 +256,117 @@ enum RobotType {
     ROBOT_XMATE_CR_6_AXES  // 10  注意SR机型和CR机型使用的是相同的字段
 };
 
-struct LoadInertia {
-    double m;              //质量，单位kg
-    KDL::Vector m_cog;  // 质心,单位m
-    KDL::Vector mx;     // 一阶矩阵 单位kg.m
-    double inertia[6];  // 二阶矩阵,ix,iy,iz,ixy,ixz,iyz,单位kg.m^2
-    LoadInertia() : m(0.0), m_cog(0.0, 0.0, 0.0), mx(0.0, 0.0, 0.0) {
-        for (unsigned int i = 0; i < 6; ++i) {
-            inertia[i] = 0.0;
-        }
-    }
+struct RokaeLoadInertia {
+    double mass;                      //质量，单位kg
+    KDL::Vector m_cog;                // 质心,单位m
+    KDL::Vector mx;                   // 一阶矩阵 单位kg.m
+    std::array<double, 6> m_inertia;  // 二阶矩阵,ix,iy,iz,ixy,ixz,iyz,单位kg.m^2
 
-    LoadInertia(const double& mass, const KDL::Vector& cog) : m(mass), m_cog(cog) {
-        mx = m * cog;
+    RokaeLoadInertia() : mass(0.0), m_cog(0.0, 0.0, 0.0), mx(0.0, 0.0, 0.0), m_inertia{0.0, 0.0, 0.0, 0.0, 0.0, 0.0} {}
+
+    RokaeLoadInertia(const double& mass, const KDL::Vector& cog) : mass(mass), m_cog(cog) {
+        mx = mass * cog;
         for (int i = 0; i < 6; i++) {
-            inertia[i] = 0.0;
+            m_inertia[i] = 0.0;
         }
     }
-
-    KDL::Vector GetCOG() const { return m_cog; }
-
-    void GetCOG(double& x, double& y, double& z) const {
-        x = m_cog.x();
-        y = m_cog.y();
-        z = m_cog.z();
+    void SetMass(const double& mass) {
+        this->mass = mass;
+        this->mx = mass * this->m_cog;
     }
 
     void SetCOG(const KDL::Vector& cog) {
         this->m_cog = cog;
-        this->mx = this->m * cog;
+        this->mx = this->mass * cog;
     }
 
     void SetInertia(double ix, double iy, double iz, double ixy = 0, double ixz = 0, double iyz = 0) {
-        inertia[0] = ix;
-        inertia[1] = iy;
-        inertia[2] = iz;
-        inertia[3] = ixy;
-        inertia[4] = ixz;
-        inertia[5] = iyz;
+        m_inertia[0] = ix;
+        m_inertia[1] = iy;
+        m_inertia[2] = iz;
+        m_inertia[3] = ixy;
+        m_inertia[4] = ixz;
+        m_inertia[5] = iyz;
     }
 
     void SetZero() {
-        this->m = 0.0;
+        this->mass = 0.0;
         for (unsigned int i = 0; i < 3; ++i) {
             this->m_cog(i) = 0.0;
             this->mx(i) = 0.0;
         }
         for (unsigned int i = 0; i < 6; ++i) {
-            this->inertia[i] = 0.0;
+            this->m_inertia[i] = 0.0;
         }
     }
-    LoadInertia& operator=(const LoadInertia load_input) {
+
+    const double& GetMass() const { return this->mass; }
+    const KDL::Vector& GetCOG() const { return this->m_cog; }
+    const std::array<double, 6>& GetInertia() const { return this->m_inertia; }
+
+    RokaeLoadInertia& operator=(const RokaeLoadInertia& load_input) {
+        this->mass = load_input.GetMass();
         this->SetCOG(load_input.GetCOG());
-        this->m = load_input.m;
-        this->SetInertia(load_input.inertia[0], load_input.inertia[1], load_input.inertia[2], load_input.inertia[3], load_input.inertia[4],
-                         load_input.inertia[5]);
+        this->SetInertia(load_input.m_inertia[0], load_input.m_inertia[1], load_input.m_inertia[2], load_input.m_inertia[3],
+                         load_input.m_inertia[4], load_input.m_inertia[5]);
+        return *this;
+    }
+};
+
+struct RokaeLoadPose {
+    KDL::Vector spatiapos;    //空间位置
+    KDL::Vector eulerangles;  //旋转欧拉角(弧度)
+    RokaeLoadPose() : spatiapos(0.0, 0.0, 0.0), eulerangles(0.0, 0.0, 0.0){};
+    RokaeLoadPose(const double& x, const double& y, const double& z, const double& a, const double& b, const double& c)
+        : spatiapos(x, y, z), eulerangles(a, b, c){};
+    const KDL::Frame& GetKDLFrame() const {
+        KDL::Rotation rot = KDL::Rotation::RPY(eulerangles.x(), eulerangles.y(), eulerangles.z());
+        KDL::Frame frame(rot, spatiapos);
+        return frame;
+    }
+
+    void SetSpatiaPos(const KDL::Vector& pos) {
+        this->spatiapos.x(pos[0]);
+        this->spatiapos.y(pos[1]);
+        this->spatiapos.z(pos[2]);
+    }
+
+    void SetRotAngle(const KDL::Vector& rot) {
+        this->eulerangles.x(rot[0]);
+        this->eulerangles.y(rot[1]);
+        this->eulerangles.z(rot[2]);
+    }
+
+    void SetZero() {
+        this->spatiapos.Zero();
+        this->eulerangles.Zero();
+    }
+    RokaeLoadPose& operator=(const RokaeLoadPose& load_input) {
+        this->spatiapos = load_input.spatiapos;
+        this->eulerangles = load_input.eulerangles;
+        return *this;
+    }
+};
+
+struct RokaeLoad {
+    RokaeLoadInertia m_rokae_load_inertia;  //动力学信息
+    RokaeLoadPose m_rokae_load_pose;        //位姿信息
+
+    RokaeLoad() {
+        m_rokae_load_inertia.SetZero();
+        m_rokae_load_pose.SetZero();
+    };
+    void SetZero() {
+        m_rokae_load_inertia.SetZero();
+        m_rokae_load_pose.SetZero();
+    }
+    void SetRokaeLoadInertia(const RokaeLoadInertia& load_inertia) { this->m_rokae_load_inertia = load_inertia; }
+    void SetRokaeLoadPose(const RokaeLoadPose& load_pose) { this->m_rokae_load_pose = load_pose; }
+    const RokaeLoadInertia& GetRokaeLoadInertia() { return this->m_rokae_load_inertia; }
+    const RokaeLoadPose& GetRokaeLoadPose() { return this->m_rokae_load_pose; }
+    RokaeLoad& operator=(const RokaeLoad& load_input) {
+        this->m_rokae_load_inertia = load_input.m_rokae_load_inertia;
+        this->m_rokae_load_pose = load_input.m_rokae_load_pose;
         return *this;
     }
 };
@@ -325,57 +385,6 @@ struct Vector3D {
     }
 };
 
-struct LoadInertia_C {
-    double m;
-    Vector3D m_cog;     // 质心
-    Vector3D mx;        // 一阶矩阵
-    double inertia[6];  // 二阶矩阵,ix,iy,iz,ixy,ixz,iyz
-    LoadInertia_C() : m(0.0) {
-        m_cog.SetToZero();
-        mx.SetToZero();
-        for (unsigned int i = 0; i < 6; ++i) {
-            inertia[i] = 0.0;
-        }
-    }
-
-    LoadInertia_C(double mass, Vector3D cog) : m(mass) {
-        m_cog.m_x = cog.m_x;
-        m_cog.m_y = cog.m_y;
-        m_cog.m_z = cog.m_z;
-        mx.m_x = m_cog.m_x * m;
-        mx.m_y = m_cog.m_y * m;
-        mx.m_z = m_cog.m_z * m;
-        for (int i = 0; i < 6; i++) {
-            inertia[i] = 0.0;
-        }
-    }
-
-    Vector3D GetCOG() const { return m_cog; }
-
-    void SetCOG(const Vector3D cog) {
-        m_cog.m_x = cog.m_x;
-        m_cog.m_y = cog.m_y;
-        m_cog.m_z = cog.m_z;
-    }
-
-    void SetInertia(double ix, double iy, double iz, double ixy = 0, double ixz = 0, double iyz = 0) {
-        inertia[0] = ix;
-        inertia[1] = iy;
-        inertia[2] = iz;
-        inertia[3] = ixy;
-        inertia[4] = ixz;
-        inertia[5] = iyz;
-    }
-
-    void SetZero() {
-        m = 0.0;
-        m_cog.SetToZero();
-        mx.SetToZero();
-        for (unsigned int i = 0; i < 6; ++i) {
-            inertia[i] = 0.0;
-        }
-    }
-};
 }  // namespace Model
 namespace Control {
 
@@ -436,6 +445,10 @@ struct GainParams {
     std::vector<double> joint_gain_kp;
     std::vector<double> joint_damp_zeta;
     std::vector<double> friction_cof_servo;
+    std::vector<double> trans_drag_rot_stiff;
+    std::vector<double> trans_drag_rot_damp;
+    std::vector<double> rot_drag_trans_stiff;
+    std::vector<double> rot_drag_trans_damp;
     //笛卡尔空间暂不开放
     //阻抗暂不开放
 
@@ -446,6 +459,10 @@ struct GainParams {
         joint_gain_kp.resize(m_jnt_num, 1.0);
         joint_damp_zeta.resize(m_jnt_num, 0.707);
         friction_cof_servo.resize(m_jnt_num, 0.6);
+        trans_drag_rot_stiff.resize(6, 300.0);
+        trans_drag_rot_damp.resize(6, 5.0);
+        rot_drag_trans_stiff.resize(6, 2000);
+        rot_drag_trans_damp.resize(6, 10.0);
     }
 };
 
@@ -489,6 +506,8 @@ struct FcInner_To_Servo {
     std::vector<int16_t> trq_feedforward;  //力矩前馈
     std::vector<int16_t> k_p;              //关节力矩环带宽
     std::vector<int16_t> k_d;              //关节阻尼比
+    std::vector<int16_t> k_p_reset_by_load;  //根据负载参数更新的关节力矩环带宽
+    std::vector<int16_t> k_d_reset_by_load;  //根据负载参数更新的关节阻尼比
     std::vector<int16_t> edb_cof;          //传感器线性度
     std::vector<int16_t> edb_o;            //传感器偏置
     std::vector<int16_t> fric_cof;         //摩擦力补偿系数
@@ -501,6 +520,8 @@ struct FcInner_To_Servo {
         trq_feedforward.resize(jnt_num, 0);
         k_p.resize(jnt_num, 2000);
         k_d.resize(jnt_num, 70);
+        k_p_reset_by_load.resize(jnt_num, 2000);
+        k_d_reset_by_load.resize(jnt_num, 70);
         edb_cof.resize(jnt_num, 100);
         edb_o.resize(jnt_num, 0);
         fric_cof.resize(jnt_num, 10);
@@ -516,6 +537,8 @@ struct FcInner_To_Servo {
         std::fill(trq_feedforward.begin(), trq_feedforward.end(), 0);
         std::fill(k_p.begin(), k_p.end(), 0);
         std::fill(k_d.begin(), k_d.end(), 0);
+        std::fill(k_p_reset_by_load.begin(), k_p_reset_by_load.end(), 0);
+        std::fill(k_d_reset_by_load.begin(), k_d_reset_by_load.end(), 0);
         std::fill(edb_cof.begin(), edb_cof.end(), 0);
         std::fill(edb_o.begin(), edb_o.end(), 0);
         std::fill(fric_cof.begin(), fric_cof.end(), 0);
@@ -535,7 +558,7 @@ struct FcStatusInner {
     KDL::Frame cart_pos_command_flan_in_base;  //旋转指令flan_in_base
     KDL::Frame cart_pos_command_tcp_in_base;   //旋转指令tcp_in_base
     KDL::JntArray cart_pos_jnt_command;
-    KDL::Twist cart_pos_following_error_tcp_in_base;  //位置+旋转误差 tcp_in_base
+    KDL::Twist cart_pos_following_error_tcp_in_base;     //位置+旋转误差 tcp_in_base
     KDL::Twist cart_pos_following_error_tcp_in_fcframe;  //位置+旋转误差 tcp_in_frame
     KDL::Twist cart_vel_following_error_tcp_in_fcframe;  //速度误差 tcp_in_fcframe
 
@@ -569,7 +592,6 @@ struct FcStatusInner {
     KDL::Twist cart_vel_measure_flan_in_base;
     KDL::Twist cart_vel_measure_tcp_in_base;
     KDL::Twist cart_vel_measure_tcp_in_fcframe;
-
 
     //反馈力雅可比
     KDL::Jacobian jac_measure_flan_in_base;
@@ -627,7 +649,7 @@ struct FcStatusInner {
           jac_inv_measure_flan_in_base(jnt_num, 6),
           jac_trans_inv_measure_flan_in_base(6, jnt_num),
           mani_measure(0.0),
-          jnt_trq_final_cmd(jnt_num){}
+          jnt_trq_final_cmd(jnt_num) {}
 
 #define SET_FC_STATUS_INFO(name) this->name = fc_status_inner.name
     FcStatusInner& operator=(const FcStatusInner fc_status_inner) {
