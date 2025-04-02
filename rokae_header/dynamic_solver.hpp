@@ -81,7 +81,7 @@ class DynamicSolver {
     KDL::ChainIdSolver_RNE* m_chain_dyn_solver;
 
    private:
-    unsigned int m_jonit_num;
+    unsigned int m_joint_num;
     KDL::RigidBodyInertia m_load_temp;
 
     KDL::Vector m_gravity;  //重力矢量，默认-9.81

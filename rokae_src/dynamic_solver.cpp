@@ -15,29 +15,29 @@
 namespace RokaeApi {
 namespace Model {
 DynamicSolver::DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity) : m_chain(chain), m_gravity(gravity) {
-    m_jonit_num = m_chain.getNrOfJoints();
+    m_joint_num = m_chain.getNrOfJoints();
 
     m_chain_dyn_params = new KDL::ChainDynParam(m_chain, m_gravity);
     m_chain_dyn_solver = new KDL::ChainIdSolver_RNE(m_chain, m_gravity);
     m_jnt_to_jac_solver = new KDL::ChainJntToJacSolver(m_chain);
     m_svd_ptr = new Eigen::JacobiSVD<Eigen::MatrixXd>(m_jacobian_trans, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
-    m_zeros_jntarry.resize(m_jonit_num);
-    m_trq_gravity.resize(m_jonit_num);
-    m_trq_coriolis.resize(m_jonit_num);
-    m_trq_inertia.resize(m_jonit_num);
-    m_trq_total.resize(m_jonit_num);
+    m_zeros_jntarry.resize(m_joint_num);
+    m_trq_gravity.resize(m_joint_num);
+    m_trq_coriolis.resize(m_joint_num);
+    m_trq_inertia.resize(m_joint_num);
+    m_trq_total.resize(m_joint_num);
     KDL::SetToZero(m_zeros_jntarry);
 
     //雅可比相关
     m_manipulate = 0.0;
-    m_singular_num = KDL::min(m_jonit_num, 6);
+    m_singular_num = KDL::min(m_joint_num, 6);
     m_singular_values.resize(m_singular_num);
-    m_singular_values_inv_mat = Eigen::MatrixXd::Zero(6, m_jonit_num);
+    m_singular_values_inv_mat = Eigen::MatrixXd::Zero(6, m_joint_num);
     m_tolerance = EPSILON15;
 
-    m_jacobian.resize(m_jonit_num);
-    m_jacobian_trans.resize(m_jonit_num, 6);
+    m_jacobian.resize(m_joint_num);
+    m_jacobian_trans.resize(m_joint_num, 6);
 }
 
 DynamicSolver::~DynamicSolver() {
@@ -83,7 +83,7 @@ const KDL::JntArray& DynamicSolver::GetColioTorque(const RokaeLoadInertia& load_
 }
 
 void DynamicSolver::GetJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian) {
-    if (q.data.size() != m_jonit_num) {
+    if (q.data.size() != m_joint_num) {
         // TODO::日志
         return;
     }

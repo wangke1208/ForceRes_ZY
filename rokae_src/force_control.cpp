@@ -83,8 +83,10 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
 ForceControl::~ForceControl() {
     delete m_force_protect_ptr;
     delete m_dynamicsolver_ptr;
+    delete m_fkpos_ptr;
     delete m_fc_status_tracker_ptr;
     delete m_servo_fc_convert_ptr;
+    delete m_force_planner_ptr;
 }
 
 void ForceControl::InitInStance(InitRobot* init_robot_ptr) {
@@ -179,32 +181,39 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
                            std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
                            std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
                            std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo) {
+    int res = SOLVE_NOERROR;
+
     // 1.判断是否进行了drag_config
     if (!m_enable_drag) {
         return ERROR_DRAG_ENABLE;
     }
     // 1.1当前非力矩模式不允许调用本接口(双重保护,避免drag_config后又置为位置模式)
     if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
-                    [](int8_t servo_type) { return servo_type != 10; })) {
+                    [](int8_t servo_type) { return servo_type != TORQUE_MODE; })) {
         return SERVO_MODE_ERROR;
     }
     // 2.读取伺服数据并转换为Fc内部变量
-    m_servo_fc_convert_ptr->ServoData2FcInner(servo_mode_from_servo, pdo_analog_ch1, pdo_analog_ch2, trq_encoder_from_servo,
-                                              pos_encoder_from_servo, vel_encoder_from_servo, m_servo_data_fc_inner);
-
+    res = m_servo_fc_convert_ptr->ServoData2FcInner(servo_mode_from_servo, pdo_analog_ch1, pdo_analog_ch2, trq_encoder_from_servo,
+                                                    pos_encoder_from_servo, vel_encoder_from_servo, m_servo_data_fc_inner);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
     // 3.更新指令和反馈
     SetFcCommand(m_servo_data_fc_inner);
 
     // 3.力控数据流计算
-    m_fc_status_tracker_ptr->FcStatusUpdata();
-
+    res = m_fc_status_tracker_ptr->FcStatusUpdata();
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
     // 4.力控模块功能力计算
     m_force_planner_ptr->ForcePlannerUpdata();
 
     // 5.根据负载参数更新下发给伺服的增益
-    ResetKpByLoad(m_load);
-    ResetFricByLoad(m_load);
-
+    res = (ResetKpByLoad(m_load) && ResetFricByLoad(m_load));
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
     // 6.将Fc内部数据转换为下发给伺服数据
     m_servo_fc_convert_ptr->FcData2ServoData(m_fc_status_inner, m_fc_params_inner_ptr, m_fc_inner_servo_data);
     std::copy(m_fc_inner_servo_data.trq_cmd.cbegin(), m_fc_inner_servo_data.trq_cmd.cend(), trq_cmd_to_servo.begin());
@@ -217,6 +226,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     std::copy(m_fc_inner_servo_data.fric_cof.cbegin(), m_fc_inner_servo_data.fric_cof.cend(), fc_fric_cof_to_servo.begin());
     std::copy(m_fc_inner_servo_data.jnt_inertia.cbegin(), m_fc_inner_servo_data.jnt_inertia.cend(),
               fc_jnt_inertia_to_servo.begin());
+    return SOLVE_NOERROR;
 }
 
 int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
@@ -229,7 +239,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     // 1.判断是否允许进行Drag设置
     // 1.1 处于位置模式下
     if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
-                    [](int8_t servo_type) { return servo_type != 8; })) {
+                    [](int8_t servo_type) { return servo_type != POSITION_MODE; })) {
         return SERVO_MODE_ERROR;
     }
     // 1.2 计算当前位置
@@ -473,7 +483,7 @@ int ForceControl::SetLoadLimit(const double& max_load_mass, const double& max_lo
 
 int ForceControl::StopDrag(const int8_t param_0x6061[6]) {
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if (param_0x6061[i] != 8) {
+        if (param_0x6061[i] != POSITION_MODE) {
             return SERVO_MODE_ERROR;
         }
     }
@@ -486,8 +496,8 @@ int ForceControl::StopDrag(const int8_t param_0x6061[6]) {
 //*******************************外部设置参数接口部分*****************************
 
 int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_feedback, const RokaeLoad& load_input,
-                                     const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
-                                     const std::vector<std::array<int16_t, 200>>& analog_array_ch2,
+                                     const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch1,
+                                     const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch2,
                                      std::vector<double>& sensor_bias) {
     //长度检查
     if (pos_encoder_feedback.size() != m_jnt_num || analog_array_ch1.size() != m_jnt_num ||
@@ -506,10 +516,10 @@ int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_fee
 
     // 3.提取200次电压数据的平均值
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        for (unsigned int j = 0; j < 200; j++) {
+        for (unsigned int j = 0; j < ANALOG_DATA_COUNT; j++) {
             analog_average[i] += double((analog_array_ch1[i][j] + analog_array_ch2[i][j]) / 2);
         }
-        analog_average[i] = analog_average[i] / 200;
+        analog_average[i] = analog_average[i] / ANALOG_DATA_COUNT;
     }
 
     // 4.计算传感器零点
