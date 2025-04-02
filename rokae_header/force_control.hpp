@@ -23,12 +23,25 @@
 #include "force_planner.hpp"
 namespace RokaeApi {
 namespace Control {
-
+#define FORCECONTROL_INSTANCE ForceControl::GetInstance()  // 定义一个宏，用于获取单例实例
 class ForceControl {
-   public:
+   private:
+    static ForceControl* force_control_instance_ptr;  // 静态成员变量，指向唯一的实例
     ForceControl(InitRobot* init_robot_ptr);
-    ~ForceControl();
 
+   public:
+    ~ForceControl();
+    // 获取实例的静态方法
+    static ForceControl* GetInstance();
+    //初始化单例实例
+    static void InitInStance(InitRobot* init_robot_ptr);
+    // 释放单例实例
+    static void ReleaseInstance();
+    // 防止拷贝构造和拷贝赋值
+    ForceControl(const ForceControl&) = delete;
+    ForceControl& operator=(const ForceControl&) = delete;
+
+   public:
     /**
      * @brief 力控初始化接口，转化一些从cfg中读取到的参数，并赋值到成员变量中
      *

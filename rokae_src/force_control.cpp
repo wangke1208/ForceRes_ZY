@@ -21,6 +21,7 @@ using namespace std;
 
 namespace RokaeApi {
 namespace Control {
+ForceControl* ForceControl::force_control_instance_ptr = nullptr;
 ForceControl::ForceControl(InitRobot* init_robot_ptr)
     : m_init_robot_ptr(init_robot_ptr),
       m_jnt_num(m_init_robot_ptr->GetJntNum()),
@@ -87,6 +88,19 @@ ForceControl::~ForceControl() {
     delete m_servo_fc_convert_ptr;
 }
 
+void ForceControl::InitInStance(InitRobot* init_robot_ptr) {
+    if (force_control_instance_ptr == nullptr) {
+        force_control_instance_ptr = new ForceControl(init_robot_ptr);
+    }
+}
+
+void ForceControl::ReleaseInstance() {
+    if (force_control_instance_ptr) {
+        delete force_control_instance_ptr;
+        force_control_instance_ptr = nullptr;
+    }
+}
+ForceControl* ForceControl::GetInstance() { return force_control_instance_ptr; }
 int ForceControl::Fcinit() {
     //初始化一些参数
     // 1.编码器零点
