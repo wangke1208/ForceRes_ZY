@@ -20,60 +20,45 @@ using namespace std;
 
 namespace RokaeApi {
 namespace Control {
+
+// 单例实例指针初始化
 ForceControl* ForceControl::force_control_instance_ptr = nullptr;
+
+// 构造函数
 ForceControl::ForceControl(InitRobot* init_robot_ptr)
     : m_init_robot_ptr(init_robot_ptr),
-      m_jnt_num(m_init_robot_ptr->GetJntNum()),
+      m_jnt_num(init_robot_ptr->GetJntNum()),
       m_chain(init_robot_ptr->GetChain()),
       m_fc_status_inner(init_robot_ptr->GetJntNum()),
       m_servo_data_fc_inner(init_robot_ptr->GetJntNum()),
       m_fc_inner_servo_data(init_robot_ptr->GetJntNum()) {
-    //初始化一些求解器
+    // 初始化一些求解器
     m_fc_params_inner_ptr = new FcParamsInner(m_jnt_num);
-
-    m_force_protect_ptr = new Protect::ForceProtect(m_jnt_num, m_fc_params_inner_ptr);
-    m_dynamicsolver_ptr = new DynamicSolver(m_chain, m_init_robot_ptr->GetGravity());
     m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(m_chain);
-    m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr, &m_fc_status_inner, m_fc_params_inner_ptr);
+    m_dynamicsolver_ptr = new DynamicSolver(m_chain, m_init_robot_ptr->GetGravity());
+    m_force_protect_ptr = new Protect::ForceProtect(m_jnt_num, m_fc_params_inner_ptr);
     m_servo_fc_convert_ptr = new Servo_Fc_Convert(m_jnt_num, m_init_robot_ptr->GetMechanicalParams());
+    m_fc_status_tracker_ptr = new FcStatusTracker(m_init_robot_ptr, &m_fc_status_inner, m_fc_params_inner_ptr);
     m_force_planner_ptr = new Control::ForcePlanner(m_init_robot_ptr, &m_fc_status_inner, m_fc_params_inner_ptr);
-    //初始化信息
+
+    // 初始化负载信息
     m_load.SetZero();
+
+    // 初始化拖动类型
     m_drag_type = DragType::DRAG_JOINT;
+
+    // 初始化拖动标志位
     m_enable_drag = false;
     m_is_first_drag = true;
+
+    // 调整内部数据结构大小
+
+    // 初始化参数
     m_servo_data_fc_inner.Resize(m_jnt_num);
-
-    //初始化参数
-    m_encoder_offset_inner.resize(m_jnt_num);
-    m_analog_bias_inner.resize(m_jnt_num);
-    m_analog2trq_low.resize(m_jnt_num);
-
     m_joint_range_min_inner.resize(m_jnt_num);
     m_joint_range_max_inner.resize(m_jnt_num);
-    m_joint_range_min_new_inner.resize(m_jnt_num);
-    m_joint_range_max_new_inner.resize(m_jnt_num);
-
-    m_joint_gain_kp_inner.resize(m_jnt_num);
-    m_joint_damp_zeta_inner.resize(m_jnt_num);
-    m_friction_cof_servo_inner.resize(m_jnt_num);
-
-    m_ref_trq.resize(m_jnt_num);
-
-    m_analog_ch1.resize(m_jnt_num);
-    m_analog_ch2.resize(m_jnt_num);
-    m_analog_average.resize(m_jnt_num);
-    m_sensor_trq.resize(m_jnt_num);
-
-    m_jnt_current_pos.resize(m_jnt_num);
-    // m_jnt_vel_abs.resize(m_jnt_num);
-    // m_jnt_vel_real.resize(m_jnt_num);
-
-    m_trq_error.resize(m_jnt_num);
-    m_zero_vector.resize(m_jnt_num, 0);
-
-    m_kp_gain_set.resize(m_jnt_num, 1.0);
-    m_fri_gain_set.resize(m_jnt_num, 0.5);
+    m_kp_gain_set.resize(m_jnt_num, DEFAULT_KP_GAIN);
+    m_fri_gain_set.resize(m_jnt_num, DEFAULT_FRIC_GAIN);
     m_kp_set_by_load.resize(m_jnt_num);
     m_fri_set_by_load.resize(m_jnt_num);
     m_load_mass_limit.resize(1);
@@ -101,9 +86,11 @@ void ForceControl::ReleaseInstance() {
         force_control_instance_ptr = nullptr;
     }
 }
+
 ForceControl* ForceControl::GetInstance() { return force_control_instance_ptr; }
+
 int ForceControl::Fcinit() {
-    //初始化一些参数
+    // 初始化一些参数
     // 1.编码器零点
     // 2.传感器零点
     // 3.传感器线性度
@@ -140,95 +127,6 @@ int ForceControl::Fcinit() {
     return SOLVE_NOERROR;
 }
 
-void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
-    // 1.计算当前关节位置
-    m_servo_fc_convert_ptr->GetAxisPos(servo_data_fc_inner.pos_feedback, m_fc_status_inner.jnt_pos_measure);
-    // 2.赋值拖动类型
-    m_fc_status_inner.drag_type = m_drag_type;
-
-    //计算实际位置
-    switch (m_drag_type) {
-    case DragType::DRAG_JOINT:
-        if (m_is_first_drag) {
-            m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
-            m_fc_status_inner.jnt_vel_command.data.setZero();  //速度指令给0
-            m_is_first_drag = false;
-        }
-        m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_measure;
-        m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
-
-        break;
-
-    case DragType::DRAG_CART_TRANS:
-    case DragType::DRAG_CART_ROT:
-    case DragType::DRAG_CART_FREE:
-        if (m_is_first_drag) {
-            m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_measure;
-            m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
-            m_fc_status_inner.jnt_vel_command.data.setZero();
-            m_is_first_drag = false;
-        }
-        m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
-
-        break;
-    }
-}
-
-int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
-                           const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
-                           const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
-                           std::vector<int16_t>& trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
-                           std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
-                           std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
-                           std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo) {
-    int res = SOLVE_NOERROR;
-
-    // 1.判断是否进行了drag_config
-    if (!m_enable_drag) {
-        return ERROR_DRAG_ENABLE;
-    }
-    // 1.1当前非力矩模式不允许调用本接口(双重保护,避免drag_config后又置为位置模式)
-    if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
-                    [](int8_t servo_type) { return servo_type != TORQUE_MODE; })) {
-        return SERVO_MODE_ERROR;
-    }
-    // 2.读取伺服数据并转换为Fc内部变量
-    res = m_servo_fc_convert_ptr->ServoData2FcInner(servo_mode_from_servo, pdo_analog_ch1, pdo_analog_ch2, trq_encoder_from_servo,
-                                                    pos_encoder_from_servo, vel_encoder_from_servo, m_servo_data_fc_inner);
-    if (res != SOLVE_NOERROR) {
-        return res;
-    }
-    // 3.更新指令和反馈
-    SetFcCommand(m_servo_data_fc_inner);
-
-    // 3.力控数据流计算
-    res = m_fc_status_tracker_ptr->FcStatusUpdata();
-    if (res != SOLVE_NOERROR) {
-        return res;
-    }
-    // 4.力控模块功能力计算
-    m_force_planner_ptr->ForcePlannerUpdata();
-
-    // 5.根据负载参数更新下发给伺服的增益
-    res = (ResetKpByLoad(m_load) && ResetFricByLoad(m_load));
-    if (res != SOLVE_NOERROR) {
-        return res;
-    }
-    // 6.将Fc内部数据转换为下发给伺服数据
-    m_servo_fc_convert_ptr->FcData2ServoData(m_fc_status_inner, m_fc_params_inner_ptr, m_fc_inner_servo_data);
-    std::copy(m_fc_inner_servo_data.trq_cmd.cbegin(), m_fc_inner_servo_data.trq_cmd.cend(), trq_cmd_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.trq_feedforward.cbegin(), m_fc_inner_servo_data.trq_feedforward.cend(),
-              fc_trq_feedforward_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.k_p.cbegin(), m_fc_inner_servo_data.k_p.cend(), fc_kp_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.k_d.cbegin(), m_fc_inner_servo_data.k_d.cend(), fc_kd_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.edb_cof.cbegin(), m_fc_inner_servo_data.edb_cof.cend(), fc_edb_cof_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.edb_o.cbegin(), m_fc_inner_servo_data.edb_o.cend(), fc_edb_o_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.fric_cof.cbegin(), m_fc_inner_servo_data.fric_cof.cend(), fc_fric_cof_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.jnt_inertia.cbegin(), m_fc_inner_servo_data.jnt_inertia.cend(),
-              fc_jnt_inertia_to_servo.begin());
-    return SOLVE_NOERROR;
-}
-
 int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
                              const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
                              const DragType& drag_type) {
@@ -236,12 +134,14 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     int res = SOLVE_NOERROR;
     m_enable_drag = false;
     m_is_first_drag = true;
+
     // 1.判断是否允许进行Drag设置
     // 1.1 处于位置模式下
     if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
                     [](int8_t servo_type) { return servo_type != POSITION_MODE; })) {
         return SERVO_MODE_ERROR;
     }
+
     // 1.2 计算当前位置
     std::vector<double> jnt_pos_rad_temp(m_jnt_num);
     m_servo_fc_convert_ptr->GetAxisPos(pos_encoder_from_servo, jnt_pos_rad_temp);
@@ -278,24 +178,98 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     return SOLVE_NOERROR;
 }
 
-int ForceControl::SetFcLoad(const RokaeLoad& load) {
-    //判断负载参数是否合理
-    if (load.m_rokae_load_inertia.mass >
-        m_fc_params_inner_ptr->m_protect_params.m_params["max_load_mass"].at(0)) {  //工具质量限制，小于最大负载
-        return LOAD_PARAMS_ERROR;
-    } else if (load.m_rokae_load_inertia.GetCOG().Norm() > 0.3) {  //工具TCP长度限制
-        return LOAD_PARAMS_ERROR;
+void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
+    // 1.计算当前关节位置
+    m_servo_fc_convert_ptr->GetAxisPos(servo_data_fc_inner.pos_feedback, m_fc_status_inner.jnt_pos_measure);
+
+    // 2.赋值拖动类型
+    m_fc_status_inner.drag_type = m_drag_type;
+
+    // 计算实际位置
+    switch (m_drag_type) {
+    case DragType::DRAG_JOINT:
+        if (m_is_first_drag) {
+            m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
+            m_fc_status_inner.jnt_vel_command.data.setZero();  // 速度指令给0
+            m_is_first_drag = false;
+        }
+        m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_measure;
+        m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
+        break;
+
+    case DragType::DRAG_CART_TRANS:
+    case DragType::DRAG_CART_ROT:
+    case DragType::DRAG_CART_FREE:
+        if (m_is_first_drag) {
+            m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_measure;
+            m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
+            m_fc_status_inner.jnt_vel_command.data.setZero();
+            m_is_first_drag = false;
+        }
+        m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
+        break;
+    }
+}
+
+int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
+                           const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
+                           const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
+                           std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
+                           std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
+                           std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
+                           std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo) {
+    int res = SOLVE_NOERROR;
+
+    // 1.判断是否进行了drag_config
+    if (!m_enable_drag) {
+        return ERROR_DRAG_ENABLE;
     }
 
-    KDL::Vector rpy_rad = load.m_rokae_load_pose.eulerangles / 180.0 * PI;
+    // 1.1 当前非力矩模式不允许调用本接口(双重保护,避免drag_config后又置为位置模式)
+    if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
+                    [](int8_t servo_type) { return servo_type != TORQUE_MODE; })) {
+        return SERVO_MODE_ERROR;
+    }
 
-    // forcecontrol内部负载设置
-    m_load.SetRokaeLoadInertia(load.m_rokae_load_inertia);
-    m_load.m_rokae_load_pose.SetSpatiaPos(load.m_rokae_load_pose.spatiapos);
-    m_load.m_rokae_load_pose.SetRotAngle(rpy_rad);
+    // 2.读取伺服数据并转换为Fc内部变量
+    res = m_servo_fc_convert_ptr->ServoData2FcInner(servo_mode_from_servo, pdo_analog_ch1, pdo_analog_ch2, trq_encoder_from_servo,
+                                                    pos_encoder_from_servo, vel_encoder_from_servo, m_servo_data_fc_inner);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
 
-    // fc_status_tracker数据流计算参数设置
-    m_fc_status_tracker_ptr->SetLoad(m_load);
+    // 3.更新指令和反馈
+    SetFcCommand(m_servo_data_fc_inner);
+
+    // 3.力控数据流计算
+    res = m_fc_status_tracker_ptr->FcStatusUpdata();
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
+
+    // 4.力控模块功能力计算
+    m_force_planner_ptr->ForcePlannerUpdata();
+
+    // 5.根据负载参数更新下发给伺服的增益
+    res = (ResetKpByLoad(m_load) && ResetFricByLoad(m_load));
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
+
+    // 6.将Fc内部数据转换为下发给伺服数据
+    m_servo_fc_convert_ptr->FcData2ServoData(m_fc_status_inner, m_fc_params_inner_ptr, m_fc_inner_servo_data);
+    std::copy(m_fc_inner_servo_data.trq_cmd.cbegin(), m_fc_inner_servo_data.trq_cmd.cend(), fc_trq_cmd_to_servo.begin());
+    std::copy(m_fc_inner_servo_data.trq_feedforward.cbegin(), m_fc_inner_servo_data.trq_feedforward.cend(),
+              fc_trq_feedforward_to_servo.begin());
+    std::copy(m_fc_inner_servo_data.k_p.cbegin(), m_fc_inner_servo_data.k_p.cend(), fc_kp_to_servo.begin());
+    std::copy(m_fc_inner_servo_data.k_d.cbegin(), m_fc_inner_servo_data.k_d.cend(), fc_kd_to_servo.begin());
+    std::copy(m_fc_inner_servo_data.edb_cof.cbegin(), m_fc_inner_servo_data.edb_cof.cend(), fc_edb_cof_to_servo.begin());
+    std::copy(m_fc_inner_servo_data.edb_o.cbegin(), m_fc_inner_servo_data.edb_o.cend(), fc_edb_o_to_servo.begin());
+    std::copy(m_fc_inner_servo_data.fric_cof.cbegin(), m_fc_inner_servo_data.fric_cof.cend(), fc_fric_cof_to_servo.begin());
+    std::copy(m_fc_inner_servo_data.jnt_inertia.cbegin(), m_fc_inner_servo_data.jnt_inertia.cend(),
+              fc_jnt_inertia_to_servo.begin());
+
+    return SOLVE_NOERROR;
 }
 
 int ForceControl::SetSensorLinearity(const std::vector<double> analog2trq_low) {
@@ -330,7 +304,7 @@ int ForceControl::SetEncoderOffset(const std::vector<int32_t> encoder_offset) {
 int ForceControl::SetSoftLimit(const std::vector<double> joint_range_min, const std::vector<double> joint_range_max) {
     int res = SOLVE_NOERROR;
 
-    //长度检查
+    // 长度检查
     if (joint_range_min.size() != m_jnt_num) {
         return SIZE_ERROR;
     }
@@ -338,61 +312,35 @@ int ForceControl::SetSoftLimit(const std::vector<double> joint_range_min, const 
         return SIZE_ERROR;
     }
 
-    //数据有效性检查
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if ((joint_range_min[i] < m_init_robot_ptr->GetModelParams().joint_range_min_new[i]) or
-            (joint_range_max[i] > m_init_robot_ptr->GetModelParams().joint_range_max_new[i])) {
+    // 数据有效性检查
+    for (unsigned int i = 0; i < m_jnt_num; ++i) {
+        // 负软限位小于0，正软限位大于0，或者软限位超出机械硬限位
+        if (joint_range_min[i] < 0 || joint_range_max[i] > 0 || 
+            joint_range_min[i] < m_init_robot_ptr->GetModelParams().joint_range_min_new[i] ||
+            joint_range_max[i] > m_init_robot_ptr->GetModelParams().joint_range_max_new[i]) {
             return SOFT_LIMIT_PARAMS_ERROR;
         }
     }
 
-    //更新软限位成员变量
-    std::vector<double> m_joint_range_max_temp(m_jnt_num);
-    std::vector<double> m_joint_range_min_temp(m_jnt_num);
-
+    // 更新内部软限位成员变量
     for (unsigned int j = 0; j < m_jnt_num; j++) {
-        m_joint_range_min_temp[j] = joint_range_min[j] / 180 * PI;
-        m_joint_range_max_temp[j] = joint_range_max[j] / 180 * PI;
+        m_joint_range_min_inner[j] = joint_range_min[j] / 180 * PI;
+        m_joint_range_max_inner[j] = joint_range_max[j] / 180 * PI;
     }
-    m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_min", m_joint_range_min_temp);
-    m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_max", m_joint_range_max_temp);
-    //设置软限位
-    m_force_planner_ptr->SetSoftLimit(joint_range_min, joint_range_max);
+    m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_min", m_joint_range_min_inner);
+    m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_max", m_joint_range_max_inner);
+
+    // 设置软限位
+    m_force_planner_ptr->SetSoftLimit(m_joint_range_min_inner, m_joint_range_max_inner);
 
     return SOLVE_NOERROR;
 }
+
 int ForceControl::SetMaxTrqErrorThreshold(const std::vector<double> m_max_trq_error_threshold) {
     if (m_jnt_num != m_max_trq_error_threshold.size()) {
         return SIZE_ERROR;
     }
     m_fc_params_inner_ptr->m_protect_params.SetParam("max_mode_switch_trq", m_max_trq_error_threshold);
-    return SOLVE_NOERROR;
-}
-int ForceControl::SetKpGain(const std::vector<double>& kp_gain_set) {
-    if (m_jnt_num != kp_gain_set.size()) {
-        return SIZE_ERROR;
-    }
-    for (unsigned int i = 0; i < kp_gain_set.size(); i++) {
-        if (kp_gain_set[i] < 0 or kp_gain_set[i] > 1) {
-            return GAIN_VALUE_ERROR;
-        }
-    }
-    m_fc_params_inner_ptr->m_function_params.SetParam("kp_gain_set", kp_gain_set);
-    std::copy(kp_gain_set.cbegin(), kp_gain_set.cend(), m_kp_gain_set.begin());
-    return SOLVE_NOERROR;
-}
-
-int ForceControl::SetFricGain(const std::vector<double>& fric_gain_set) {
-    if (m_jnt_num != fric_gain_set.size()) {
-        return SIZE_ERROR;
-    }
-    for (unsigned int i = 0; i < fric_gain_set.size(); i++) {
-        if (fric_gain_set[i] < 0 or fric_gain_set[i] > 1) {
-            return GAIN_VALUE_ERROR;
-        }
-    }
-    m_fc_params_inner_ptr->m_function_params.SetParam("fri_gain_set", fric_gain_set);
-    std::copy(fric_gain_set.cbegin(), fric_gain_set.cend(), m_fri_gain_set.begin());
     return SOLVE_NOERROR;
 }
 
@@ -407,37 +355,6 @@ int ForceControl::SetZetaGain(const std::vector<double> zeta_set) {
     }
     m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_dmap_kv", zeta_set);
 
-    return SOLVE_NOERROR;
-}
-int ForceControl::ResetKpByLoad(const RokaeLoad& load) {
-    double load_scale = load.m_rokae_load_inertia.GetCOG().Norm() * load.m_rokae_load_inertia.mass /
-                        (m_load_tcp_length_limit[0] * m_load_mass_limit[0]);
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        m_kp_set_by_load[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_gain_kp[i] * m_kp_gain_set[i];
-        m_kp_set_by_load[i] = m_kp_set_by_load[i] * (1 - load_scale);
-    }
-    //更新到FcParams中
-    m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_kp", m_kp_set_by_load);
-    return SOLVE_NOERROR;
-}
-
-int ForceControl::ResetFricByLoad(const RokaeLoad& load) {
-    //调节范围为0~1
-    double load_fric_scale = load.m_rokae_load_inertia.mass / m_load_mass_limit[0];
-
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if (m_fri_gain_set[i] >= 0.5 && m_fri_gain_set[i] <= 1) {
-            m_fri_set_by_load[i] = ((m_fri_gain_set[i] - 0.5) / 0.5) *
-                                       (1 - m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i]) +
-                                   m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i];
-        } else if (m_fri_gain_set[i] >= 0) {
-            m_fri_set_by_load[i] = m_fri_set_by_load[i] - ((0.5 - m_fri_gain_set[i]) / 0.5) * m_fri_set_by_load[i];
-        }
-
-        m_fri_set_by_load[i] = m_fri_set_by_load[i] - load_fric_scale * m_fri_set_by_load[i] / 2;
-    }
-
-    m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_friction", m_fri_set_by_load);
     return SOLVE_NOERROR;
 }
 
@@ -477,40 +394,139 @@ int ForceControl::SetLoadLimit(const double& max_load_mass, const double& max_lo
     m_fc_params_inner_ptr->m_protect_params.SetParam("max_load_tcp_length", m_load_tcp_length_limit);
     return SOLVE_NOERROR;
 }
-//************************************************************************************************
 
-//*******************************内部控制参数计算、配置及状态切换接口部分*****************************
+int ForceControl::SetFcLoad(const RokaeLoad& load) {
+    // 判断负载参数是否合理
+    if (load.m_rokae_load_inertia.mass >
+        m_fc_params_inner_ptr->m_protect_params.m_params["max_load_mass"].at(0)) {  // 工具质量限制，小于最大负载
+        return LOAD_PARAMS_ERROR;
+    } else if (load.m_rokae_load_inertia.GetCOG().Norm() > 0.3) {  // 工具TCP长度限制
+        return LOAD_PARAMS_ERROR;
+    }
 
-int ForceControl::StopDrag(const int8_t param_0x6061[6]) {
+    KDL::Vector rpy_rad = load.m_rokae_load_pose.eulerangles / 180.0 * PI;
+
+    // forcecontrol内部负载设置
+    m_load.SetRokaeLoadInertia(load.m_rokae_load_inertia);
+    m_load.m_rokae_load_pose.SetSpatiaPos(load.m_rokae_load_pose.spatiapos);
+    m_load.m_rokae_load_pose.SetRotAngle(rpy_rad);
+
+    // fc_status_tracker数据流计算参数设置
+    m_fc_status_tracker_ptr->SetLoad(m_load);
+    return SOLVE_NOERROR;
+}
+
+int ForceControl::SetKpGain(const std::vector<double>& kp_gain_set) {
+    if (m_jnt_num != kp_gain_set.size()) {
+        return SIZE_ERROR;
+    }
+    for (unsigned int i = 0; i < kp_gain_set.size(); i++) {
+        if (kp_gain_set[i] < 0 or kp_gain_set[i] > 1) {
+            return GAIN_VALUE_ERROR;
+        }
+    }
+    m_fc_params_inner_ptr->m_function_params.SetParam("kp_gain_set", kp_gain_set);
+    std::copy(kp_gain_set.cbegin(), kp_gain_set.cend(), m_kp_gain_set.begin());
+    return SOLVE_NOERROR;
+}
+
+int ForceControl::SetFricGain(const std::vector<double>& fric_gain_set) {
+    if (m_jnt_num != fric_gain_set.size()) {
+        return SIZE_ERROR;
+    }
+    for (unsigned int i = 0; i < fric_gain_set.size(); i++) {
+        if (fric_gain_set[i] < 0 or fric_gain_set[i] > 1) {
+            return GAIN_VALUE_ERROR;
+        }
+    }
+    m_fc_params_inner_ptr->m_function_params.SetParam("fri_gain_set", fric_gain_set);
+    std::copy(fric_gain_set.cbegin(), fric_gain_set.cend(), m_fri_gain_set.begin());
+    return SOLVE_NOERROR;
+}
+
+int ForceControl::ResetKpByLoad(const RokaeLoad& load) {
+    double load_scale = load.m_rokae_load_inertia.GetCOG().Norm() * load.m_rokae_load_inertia.mass /
+                        (m_load_tcp_length_limit[0] * m_load_mass_limit[0]);
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if (param_0x6061[i] != POSITION_MODE) {
+        m_kp_set_by_load[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_gain_kp[i] * m_kp_gain_set[i];
+        m_kp_set_by_load[i] = m_kp_set_by_load[i] * (1 - load_scale);
+    }
+    // 更新到FcParams中
+    m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_kp", m_kp_set_by_load);
+    return SOLVE_NOERROR;
+}
+
+int ForceControl::ResetFricByLoad(const RokaeLoad& load) {
+    // 调节范围为0~1
+    double load_fric_scale = load.m_rokae_load_inertia.mass / m_load_mass_limit[0];
+
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        if (m_fri_gain_set[i] >= 0.5 && m_fri_gain_set[i] <= 1) {
+            m_fri_set_by_load[i] = ((m_fri_gain_set[i] - 0.5) / 0.5) *
+                                       (1 - m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i]) +
+                                   m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i];
+        } else if (m_fri_gain_set[i] >= 0) {
+            m_fri_set_by_load[i] = m_fri_set_by_load[i] - ((0.5 - m_fri_gain_set[i]) / 0.5) * m_fri_set_by_load[i];
+        }
+
+        m_fri_set_by_load[i] = m_fri_set_by_load[i] - load_fric_scale * m_fri_set_by_load[i] / 2;
+    }
+
+    m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_friction", m_fri_set_by_load);
+    return SOLVE_NOERROR;
+}
+
+int ForceControl::ResetFcStatus(const std::vector<int8_t>& servo_mode) {
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        if (servo_mode[i] != POSITION_MODE) {
             return SERVO_MODE_ERROR;
         }
     }
+
+    // 1.重置内部状态参数
     m_enable_drag = false;
     m_is_first_drag = true;
+
+    // 2.重置拖动类型
+    m_drag_type = DragType::DRAG_JOINT;
+
+    // 3.重置负载信息
+    m_load.SetZero();
+    SetFcLoad(m_load);
+
+    // 4.重置力控增益
+    m_kp_gain_set.assign(m_jnt_num, DEFAULT_KP_GAIN);
+    m_fri_gain_set.assign(m_jnt_num, DEFAULT_FRIC_GAIN);
+    SetKpGain(m_kp_gain_set);
+    SetFricGain(m_fri_gain_set);
+    ResetKpByLoad(m_load);
+    ResetFricByLoad(m_load);
+
+    // 5.重置阻抗增益
+    SetImpedenceGain(m_drag_type);
+
     return SOLVE_NOERROR;
 }
-//************************************************************************************************
-
-//*******************************外部设置参数接口部分*****************************
 
 int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_feedback, const RokaeLoad& load_input,
                                      const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch1,
                                      const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch2,
                                      std::vector<double>& sensor_bias) {
-    //长度检查
+    // 长度检查
     if (pos_encoder_feedback.size() != m_jnt_num || analog_array_ch1.size() != m_jnt_num ||
         analog_array_ch2.size() != m_jnt_num) {
         return SIZE_ERROR;
     }
+
     KDL::JntArray trq_gra_jntarray;
     KDL::JntArray q_in_jntarray;
     std::vector<double> analog_average(m_jnt_num);
     trq_gra_jntarray.resize(m_jnt_num);
     q_in_jntarray.resize(m_jnt_num);
+
     // 1.计算当前关节角度
     m_servo_fc_convert_ptr->GetAxisPos(pos_encoder_feedback, q_in_jntarray);
+
     // 2.计算当前模型重力矩
     trq_gra_jntarray = m_dynamicsolver_ptr->GetGraTorque(load_input.m_rokae_load_inertia, q_in_jntarray);
 
