@@ -20,10 +20,6 @@ using namespace std;
 
 namespace RokaeApi {
 namespace Control {
-
-// 单例实例指针初始化
-ForceControl* ForceControl::force_control_instance_ptr = nullptr;
-
 // 构造函数
 ForceControl::ForceControl(InitRobot* init_robot_ptr)
     : m_init_robot_ptr(init_robot_ptr),
@@ -73,21 +69,6 @@ ForceControl::~ForceControl() {
     delete m_servo_fc_convert_ptr;
     delete m_force_planner_ptr;
 }
-
-void ForceControl::InitInStance(InitRobot* init_robot_ptr) {
-    if (force_control_instance_ptr == nullptr) {
-        force_control_instance_ptr = new ForceControl(init_robot_ptr);
-    }
-}
-
-void ForceControl::ReleaseInstance() {
-    if (force_control_instance_ptr) {
-        delete force_control_instance_ptr;
-        force_control_instance_ptr = nullptr;
-    }
-}
-
-ForceControl* ForceControl::GetInstance() { return force_control_instance_ptr; }
 
 int ForceControl::Fcinit() {
     // 初始化一些参数
