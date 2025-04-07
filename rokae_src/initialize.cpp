@@ -16,7 +16,7 @@
 
 namespace RokaeApi {
 
-InitRobot::InitRobot(const Model::MechUnitType robot_type)
+InitRobot::InitRobot(const Model::MechUnitType& robot_type)
     : m_robot_type(robot_type),
       m_robot_config(robot_type),
       m_jnt_num(m_robot_config.model_config_params.AXIS_NUM),
@@ -28,8 +28,12 @@ InitRobot::InitRobot(const Model::MechUnitType robot_type)
 }
 
 int InitRobot::CreateModels() {
+    int res = SOLVE_NOERROR;
     //机型参数转换
-    ConfigurationToRobotParams(m_robot_config, m_model_param, m_mechanical_params, m_control_param);
+    res = ConfigurationToRobotParams(m_robot_config, m_model_param, m_mechanical_params, m_control_param);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
     //根据RD参数构建模型
     MakeChain_By_RobDim(m_model_param, m_chain);
 

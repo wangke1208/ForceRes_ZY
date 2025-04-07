@@ -60,6 +60,14 @@ inline std::vector<double>& JntArrayToVector(const KDL::JntArray& in) {
     }
     return out;
 }
+
+inline void FCVectorXdToWrench(const Eigen::VectorXd& in, KDL::Wrench& out) {
+    for (unsigned int i = 0; i < 3; i++) {
+        out.force(i) = in[i];
+        out.torque(i) = in[i + 3];
+    }
+}
+
 inline void VectorToRD(const std::vector<double>& in, Model::ModelParams::RobDimensions& out) {
     int joint_num = in.size() / 3;
     std::array<double*, 24> out_pointers = {&out.L01x, &out.L01y, &out.L01z, &out.L12x, &out.L12y, &out.L12z,

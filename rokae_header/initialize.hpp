@@ -16,7 +16,7 @@ namespace RokaeApi {
 
 class InitRobot {
    public:
-    InitRobot(const Model::MechUnitType robot_type);
+    InitRobot(const Model::MechUnitType& robot_type);
     ~InitRobot(){};
 
     // 创建模型

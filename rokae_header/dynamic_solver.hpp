@@ -35,6 +35,14 @@ class DynamicSolver {
     DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity);
     ~DynamicSolver();
 
+    //运动学接口
+    /**
+     * @brief 计算TCP位置
+     *
+     * @param[in] load:负载信息
+     */
+    void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, KDL::Frame& tcp_pos);
+
     /**
      * @brief 计算连杆惯量
      *
@@ -70,15 +78,19 @@ class DynamicSolver {
     const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq);
     const KDL::JntArray& GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq);
 
-    void GetJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian);                     //计算雅可比矩阵
+    void GetFlanJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian);  //计算雅可比矩阵
+    void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian);
     void GetJacobianTrans(const KDL::Jacobian& jacobian, Jacobian_trans& jacobian_trans);  //计算雅可比矩阵的转置
     void GetJacobianTransInverse(KDL::Jacobian& jacobian, Jacobian_trans_inv& jacobian_trans_inv);  //计算雅可比矩阵转置的逆
     double GetManipulate(const KDL::Jacobian& jacobian);                                            //计算可操作度
+    void GetWrench(const RokaeLoadPose& load, const KDL::JntArray& jnt_pos, const KDL::JntArray& jnt_ext_trq,
+                   KDL::Wrench& wrench);
 
    private:
     KDL::Chain m_chain;
     KDL::ChainDynParam* m_chain_dyn_params;
     KDL::ChainIdSolver_RNE* m_chain_dyn_solver;
+    KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;
 
    private:
     unsigned int m_joint_num;
@@ -103,6 +115,15 @@ class DynamicSolver {
     KDL::Jacobian m_jacobian;                       //雅可比矩阵
     Jacobian_trans m_jacobian_trans;                //雅可比矩阵转置
     Eigen::JacobiSVD<Eigen::MatrixXd>* m_svd_ptr;
+
+    //对外输出需要用到的变量
+    KDL::Jacobian m_jac_measure_flan_in_base_out;
+    KDL::Jacobian m_jac_measure_tcp_in_base_out;
+    Jacobian_trans_inv m_jacobian_trans_inv_out;
+    KDL::Frame m_cart_pos_measure_flan_in_base_out;
+    KDL::Frame m_tool_in_flan;
+    KDL::Frame temp;
+    KDL::Wrench m_flan_wrench_out;
 };
 
 }  // namespace Model

@@ -21,7 +21,7 @@ DynamicSolver::DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity
     m_chain_dyn_solver = new KDL::ChainIdSolver_RNE(m_chain, m_gravity);
     m_jnt_to_jac_solver = new KDL::ChainJntToJacSolver(m_chain);
     m_svd_ptr = new Eigen::JacobiSVD<Eigen::MatrixXd>(m_jacobian_trans, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
+    m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(m_chain);
     m_zeros_jntarry.resize(m_joint_num);
     m_trq_gravity.resize(m_joint_num);
     m_trq_coriolis.resize(m_joint_num);
@@ -38,6 +38,15 @@ DynamicSolver::DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity
 
     m_jacobian.resize(m_joint_num);
     m_jacobian_trans.resize(m_joint_num, 6);
+
+    //对外输出需要用到的变量
+    m_jac_measure_flan_in_base_out.resize(m_joint_num);
+    m_jac_measure_tcp_in_base_out.resize(m_joint_num);
+    m_jacobian_trans_inv_out.resize(6, m_joint_num);
+    m_cart_pos_measure_flan_in_base_out.Identity();
+    m_tool_in_flan.Identity();
+    temp.Identity();
+    m_flan_wrench_out.Zero();
 }
 
 DynamicSolver::~DynamicSolver() {
@@ -45,6 +54,14 @@ DynamicSolver::~DynamicSolver() {
     delete m_chain_dyn_solver;
     delete m_jnt_to_jac_solver;
     delete m_svd_ptr;
+}
+
+//运动学接口
+void DynamicSolver::GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, KDL::Frame& tcp_pos) {
+    // flan_in_base
+    m_fkpos_ptr->JntToCart(jnt_pos, temp);
+    // tcp_in_base
+    tcp_pos = temp * load.m_rokae_load_pose.GetKDLFrame();
 }
 
 void DynamicSolver::JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H) {
@@ -82,12 +99,25 @@ const KDL::JntArray& DynamicSolver::GetColioTorque(const RokaeLoadInertia& load_
     return m_trq_coriolis;
 }
 
-void DynamicSolver::GetJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian) {
+void DynamicSolver::GetFlanJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian) {
     if (q.data.size() != m_joint_num) {
         // TODO::日志
         return;
     }
     m_jnt_to_jac_solver->JntToJac(q, jacobian);
+}
+
+void DynamicSolver::GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian) {
+    if (q.data.size() != m_joint_num) {
+        // TODO::日志
+        return;
+    }
+    KDL::Frame temp;
+    temp.Identity();
+    m_fkpos_ptr->JntToCart(q, temp);
+
+    m_jnt_to_jac_solver->JntToJac(q, jacobian);
+    KDL::changeRefPoint(jacobian, temp.M * m_tool_in_flan.p, jacobian);
 }
 
 void DynamicSolver::GetJacobianTrans(const KDL::Jacobian& jacobian, Jacobian_trans& jacobian_trans) {
@@ -103,6 +133,28 @@ void DynamicSolver::GetJacobianTransInverse(KDL::Jacobian& jacobian, Jacobian_tr
         m_singular_values_inv_mat(i, i) = m_singular_values(i) > m_tolerance ? 1.0 / m_singular_values(i) : 0;
     }
     jacobian_trans_inv = (m_svd_ptr->matrixV()) * (m_singular_values_inv_mat) * (m_svd_ptr->matrixU().transpose());
+}
+
+void DynamicSolver::GetWrench(const RokaeLoadPose& load, const KDL::JntArray& jnt_pos, const KDL::JntArray& jnt_ext_trq,
+                              KDL::Wrench& tcp_wrench) {
+    //求解雅可比
+    m_jnt_to_jac_solver->JntToJac(jnt_ext_trq, m_jac_measure_flan_in_base_out);
+    //计算可操作度
+    double mani = GetManipulate(m_jac_measure_flan_in_base_out);
+    if (mani < EPSILON5) {
+        KDL::SetToZero(m_jac_measure_flan_in_base_out);
+        return;
+    }
+    //求解frame flan_in_base
+    m_fkpos_ptr->JntToCart(jnt_pos, m_cart_pos_measure_flan_in_base_out);
+    //求解frame tcp_in_flan
+    m_tool_in_flan = load.GetKDLFrame();
+    //求解法兰雅可比转置的逆
+    GetJacobianTransInverse(m_jac_measure_flan_in_base_out, m_jacobian_trans_inv_out);
+    //计算flan的wrench
+    FCVectorXdToWrench(m_jacobian_trans_inv_out * jnt_ext_trq.data, m_flan_wrench_out);
+    //转换到TCP末端的Wrench
+    tcp_wrench = m_flan_wrench_out.RefPoint(m_tool_in_flan.p);
 }
 
 double DynamicSolver::GetManipulate(const KDL::Jacobian& jacobian) {

@@ -143,6 +143,9 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     }
 
     // 2.设置拖动模式
+    if (drag_type < 0 || drag_type > 3) {
+        return DRAGTYPE_ERROR;
+    }
     m_drag_type = drag_type;
 
     // 3.设置数据流计算负载参数(同一放到外部接口设置)
@@ -253,7 +256,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     return SOLVE_NOERROR;
 }
 
-int ForceControl::SetSensorLinearity(const std::vector<double> analog2trq_low) {
+int ForceControl::SetSensorLinearity(const std::vector<double>& analog2trq_low) {
     if (m_jnt_num != analog2trq_low.size()) {
         return SIZE_ERROR;
     }
@@ -263,7 +266,7 @@ int ForceControl::SetSensorLinearity(const std::vector<double> analog2trq_low) {
     return SOLVE_NOERROR;
 }
 
-int ForceControl::SetSensorBias(const std::vector<double> analog_bias) {
+int ForceControl::SetSensorBias(const std::vector<double>& analog_bias) {
     if (m_jnt_num != analog_bias.size()) {
         return SIZE_ERROR;
     }
@@ -272,7 +275,7 @@ int ForceControl::SetSensorBias(const std::vector<double> analog_bias) {
     return SOLVE_NOERROR;
 }
 
-int ForceControl::SetEncoderOffset(const std::vector<int32_t> encoder_offset) {
+int ForceControl::SetEncoderOffset(const std::vector<int32_t>& encoder_offset) {
     if (m_jnt_num != encoder_offset.size()) {
         return SIZE_ERROR;
     }
@@ -282,7 +285,7 @@ int ForceControl::SetEncoderOffset(const std::vector<int32_t> encoder_offset) {
     return SOLVE_NOERROR;
 }
 
-int ForceControl::SetSoftLimit(const std::vector<double> joint_range_min, const std::vector<double> joint_range_max) {
+int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const std::vector<double>& joint_range_max) {
     int res = SOLVE_NOERROR;
 
     // 长度检查
@@ -317,7 +320,7 @@ int ForceControl::SetSoftLimit(const std::vector<double> joint_range_min, const 
     return SOLVE_NOERROR;
 }
 
-int ForceControl::SetMaxTrqErrorThreshold(const std::vector<double> m_max_trq_error_threshold) {
+int ForceControl::SetMaxTrqErrorThreshold(const std::vector<double>& m_max_trq_error_threshold) {
     if (m_jnt_num != m_max_trq_error_threshold.size()) {
         return SIZE_ERROR;
     }
@@ -325,7 +328,7 @@ int ForceControl::SetMaxTrqErrorThreshold(const std::vector<double> m_max_trq_er
     return SOLVE_NOERROR;
 }
 
-int ForceControl::SetZetaGain(const std::vector<double> zeta_set) {
+int ForceControl::SetZetaGain(const std::vector<double>& zeta_set) {
     if (m_jnt_num != zeta_set.size()) {
         return SIZE_ERROR;
     }
@@ -457,12 +460,12 @@ int ForceControl::ResetFricByLoad(const RokaeLoad& load) {
     return SOLVE_NOERROR;
 }
 
-int ForceControl::ResetFcStatus(const std::vector<int8_t>& servo_mode) {
-    for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if (servo_mode[i] != POSITION_MODE) {
-            return SERVO_MODE_ERROR;
-        }
-    }
+int ForceControl::ResetFcStatus() {
+    // for (unsigned int i = 0; i < m_jnt_num; i++) {
+    //     if (servo_mode[i] != POSITION_MODE) {
+    //         return SERVO_MODE_ERROR;
+    //     }
+    // }
 
     // 1.重置内部状态参数
     m_enable_drag = false;
@@ -487,6 +490,13 @@ int ForceControl::ResetFcStatus(const std::vector<int8_t>& servo_mode) {
     SetImpedenceGain(m_drag_type);
 
     return SOLVE_NOERROR;
+}
+
+void ForceControl::FcStatusRefresh() {
+    // 重置内部状态参数
+    m_enable_drag = false;
+    m_is_first_drag = true;
+    return;
 }
 
 int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_feedback, const RokaeLoad& load_input,

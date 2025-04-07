@@ -82,7 +82,7 @@ int Axis_Convert::GetEncoderValue(const std::vector<double>& jnt_pos_rad, std::v
 }
 
 int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, std::vector<double>& jnt_pos_rad) {
-    if (encoder_value.size() != m_axis_num) {
+    if (encoder_value.size() != m_axis_num || jnt_pos_rad.size()!= m_axis_num) {
         return SIZE_ERROR;
     }
     //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
@@ -117,7 +117,7 @@ int Axis_Convert::GetVelRegValueForServo(const std::vector<double>& axis_vel_rad
 }
 
 int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, std::vector<double>& jnt_vel_rad) {
-    if (jnt_vel_rad.size() != m_axis_num) {
+    if (jnt_vel_rad.size() != m_axis_num || encoder_vel_value.size()!= m_axis_num) {
         return SIZE_ERROR;
     }
 
