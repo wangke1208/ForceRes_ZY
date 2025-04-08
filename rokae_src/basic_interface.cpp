@@ -55,7 +55,6 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     jnt_pos_kdl.resize(jnt_num);
     jnt_ext_trq.resize(jnt_num);
     tcp_wrench.Zero();
-    m_load.SetZero();
 
     return SOLVE_NOERROR;
 }
@@ -281,7 +280,7 @@ const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const K
     return dynamicsolver_ptr->GetInertTorque(load_params, q, ddq);
 }
 const KDL::JntArray& GetCoriolisTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq) {
-    return dynamicsolver_ptr->GetCoriolisTorque(load_params, q, dq);
+    return dynamicsolver_ptr->GetColioTorque(load_params, q, dq);
 }
 const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
                                     const KDL::JntArray& ddq) {
