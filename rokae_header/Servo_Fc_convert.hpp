@@ -30,9 +30,12 @@ class Axis_Convert {
     int SetEncoderBias(const std::vector<int>& encoder_bias_set);
     int GetVelRegValueForServo(const std::vector<double>& axis_vel_rad, std::vector<int16_t>& vel_reg_value);
     int GetAxisVel(const std::vector<int>& encoder_vel_value, std::vector<double>& jnt_vel_rad);
+    int GetAxisVel(const std::vector<int>& encoder_vel_value, KDL::JntArray& jnt_vel_rad);
 
     int GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
                     std::vector<double>& jnt_sensor_feedback);
+    int GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
+                    KDL::JntArray& jnt_sensor_feedback);
     int SetSensorBias(const std::vector<double>& sensor_bias_set);
     int SetSensorLinearity(const std::vector<double>& analog_low_set);
     int GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std::vector<double>& analog_average,

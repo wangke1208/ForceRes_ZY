@@ -77,6 +77,8 @@ class DynamicSolver {
     const KDL::JntArray& GetGraTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q);
     const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq);
     const KDL::JntArray& GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq);
+    const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
+                        const KDL::JntArray& ddq);
 
     void GetFlanJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian);  //计算雅可比矩阵
     void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian);
@@ -95,7 +97,7 @@ class DynamicSolver {
    private:
     unsigned int m_joint_num;
     KDL::RigidBodyInertia m_load_temp;
-
+    KDL::RigidBodyInertia m_load_temp_all;
     KDL::Vector m_gravity;  //重力矢量，默认-9.81
     
     KDL::JntArray m_zeros_jntarry;  //零

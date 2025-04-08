@@ -26,7 +26,6 @@ unsigned int jnt_num;  // 关节数
 KDL::JntArray jnt_pos_kdl;
 KDL::JntArray jnt_ext_trq;
 KDL::Wrench tcp_wrench;
-RokaeLoad m_load;
 int InitInterface(const Model::MechUnitType& robot_type) {
     // 1.初始化参数模块
     try {
@@ -101,7 +100,7 @@ int FcStop(const std::vector<int8_t>& servo_mode) {
 }
 
 //********************************力控参数设置接口******************************************
-int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<double> analog2trq_low) {
+int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog2trq_low) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
         return SERVO_MODE_ERROR;
@@ -114,7 +113,7 @@ int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<
     return (forcecontrol_ptr->SetSensorLinearity(analog2trq_low) && axisconvert_ptr->SetSensorLinearity(analog2trq_low));
 }
 
-int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<double> analog_bias) {
+int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog_bias) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
         return SERVO_MODE_ERROR;
@@ -281,17 +280,89 @@ const KDL::JntArray& GetGraTorque(const RokaeLoadInertia& load_params, const KDL
 const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& ddq) {
     return dynamicsolver_ptr->GetInertTorque(load_params, q, ddq);
 }
-const KDL::JntArray& GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq) {
-    return dynamicsolver_ptr->GetColioTorque(load_params, q, dq);
+const KDL::JntArray& GetCoriolisTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq) {
+    return dynamicsolver_ptr->GetCoriolisTorque(load_params, q, dq);
 }
-void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, KDL::Frame& tcp_pos) {
-    dynamicsolver_ptr->GetTcpPos(load, jnt_pos, tcp_pos);
+const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
+                                    const KDL::JntArray& ddq) {
+    return dynamicsolver_ptr->GetTotalTorque(load_params, q, dq, ddq);
 }
+void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, std::array<double, 6>& tcp_pos) {
+    static KDL::Frame tcp_frame_temp;
+    dynamicsolver_ptr->GetTcpPos(load, jnt_pos, tcp_frame_temp);
+    std::copy(tcp_frame_temp.p.data, tcp_frame_temp.p.data + 3, tcp_pos.begin());
+    tcp_frame_temp.M.GetRPY(tcp_pos[3], tcp_pos[4], tcp_pos[5]);
+}
+
 void JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H) {
     dynamicsolver_ptr->JntToMass(load_params, q, H);
 }
 void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian) {
     dynamicsolver_ptr->GetTcpJacobian(load, q, jacobian);
+}
+
+//*******************************获取实时内部状态*********************************/
+int GetAxisPosCurrent(std::vector<double>& jnt_pos_rad) {
+    if (jnt_pos_rad.size() != jnt_num) {
+        return SIZE_ERROR;
+    }
+    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.data.cbegin(),
+              forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.data.cend(), jnt_pos_rad.begin());
+    return SOLVE_NOERROR;
+}
+
+int GetAxisVelCurrent(std::vector<double>& jnt_vel_rad) {
+    if (jnt_vel_rad.size() != jnt_num) {
+        return SIZE_ERROR;
+    }
+    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.data.cbegin(),
+              forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.data.cend(), jnt_vel_rad.begin());
+    return SOLVE_NOERROR;
+}
+
+int GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback) {
+    if (jnt_trq_feedback.size() != jnt_num) {
+        return SIZE_ERROR;
+    }
+    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.data.cbegin(),
+              forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.data.cend(), jnt_trq_feedback.begin());
+    return SOLVE_NOERROR;
+}
+
+int GetTcpWrenchCurrent(std::array<double, 6>& ext_force) {
+    for (unsigned int i = 0; i < 3; i++) {
+        ext_force[i] = forcecontrol_ptr->GetFcStatusCopy().tcp_wrench.force[i];
+        ext_force[i + 3] = forcecontrol_ptr->GetFcStatusCopy().tcp_wrench.torque[i];
+    }
+    return SOLVE_NOERROR;
+}
+
+int GetTcpPosCurrent(std::array<double, 6>& tcp_pos) {
+    std::copy(forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.p.data,
+              forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.p.data + 3, tcp_pos.begin());
+    forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.M.GetRPY(tcp_pos[3], tcp_pos[4], tcp_pos[5]);
+    return SOLVE_NOERROR;
+}
+
+int GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis, Eigen::MatrixXd& mass_matrix) {
+    if (mass_matrix.rows() != jnt_num || mass_matrix.cols() != jnt_num || trq_gravity.size() != jnt_num ||
+        trq_coriolis.size() != jnt_num) {
+        return SIZE_ERROR;
+    }
+    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.data.cbegin(),
+              forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.data.cend(), trq_gravity.begin());
+    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_corlios_trq_measure.data.cbegin(),
+              forcecontrol_ptr->GetFcStatusCopy().jnt_corlios_trq_measure.data.cend(), trq_coriolis.begin());
+    mass_matrix = forcecontrol_ptr->GetFcStatusCopy().jnt_inertia_matrix_measure.data;
+    return SOLVE_NOERROR;
+}
+
+int GetJacobianCurrent(Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
+    if (jacobian.rows() != 6 || jacobian.cols() != jnt_num) {
+        return SIZE_ERROR;
+    }
+    jacobian = forcecontrol_ptr->GetFcStatusCopy().jac_measure_tcp_in_base.data;
+    return SOLVE_NOERROR;
 }
 
 //*******************************其他接口*********************************/

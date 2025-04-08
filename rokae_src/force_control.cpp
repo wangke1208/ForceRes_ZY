@@ -26,6 +26,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
       m_jnt_num(init_robot_ptr->GetJntNum()),
       m_chain(init_robot_ptr->GetChain()),
       m_fc_status_inner(init_robot_ptr->GetJntNum()),
+      m_fc_status_outer(init_robot_ptr->GetJntNum()),
       m_servo_data_fc_inner(init_robot_ptr->GetJntNum()),
       m_fc_inner_servo_data(init_robot_ptr->GetJntNum()) {
     // 初始化一些求解器
@@ -156,15 +157,18 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     // 5.设置阻抗相关增益(该接口暂不开放，内部参数固定设置)
     SetImpedenceGain(m_drag_type);
 
-    // 4.更新标志位
+    // 6.更新标志位
     m_enable_drag = true;
 
     return SOLVE_NOERROR;
 }
 
 void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
-    // 1.计算当前关节位置
+    // 1.计算当前关节位置&速度&传感器反馈
     m_servo_fc_convert_ptr->GetAxisPos(servo_data_fc_inner.pos_feedback, m_fc_status_inner.jnt_pos_measure);
+    m_servo_fc_convert_ptr->GetAxisVel(servo_data_fc_inner.vel_feedback, m_fc_status_inner.jnt_vel_measure);
+    m_servo_fc_convert_ptr->GetCobotTrq(servo_data_fc_inner.analog_ch1, servo_data_fc_inner.analog_ch2,
+                                        m_fc_status_inner.jnt_trq_sensor_measure);
 
     // 2.赋值拖动类型
     m_fc_status_inner.drag_type = m_drag_type;
@@ -252,6 +256,9 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     std::copy(m_fc_inner_servo_data.fric_cof.cbegin(), m_fc_inner_servo_data.fric_cof.cend(), fc_fric_cof_to_servo.begin());
     std::copy(m_fc_inner_servo_data.jnt_inertia.cbegin(), m_fc_inner_servo_data.jnt_inertia.cend(),
               fc_jnt_inertia_to_servo.begin());
+
+    // 7.外部数据copy
+    FcStatusCopy(m_fc_status_inner);
 
     return SOLVE_NOERROR;
 }
@@ -533,6 +540,16 @@ int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_fee
     int res = m_servo_fc_convert_ptr->GetAnalogBias(trq_gra_jntarray, analog_average, sensor_bias);
 
     return res;
+}
+
+//外部获取接口
+const FcStatusInner& ForceControl::GetFcStatusCopy() {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    return m_fc_status_outer;
+}
+void ForceControl::FcStatusCopy(const FcStatusInner& fc_status_in) {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_fc_status_outer = fc_status_in;
 }
 
 }  // namespace Control

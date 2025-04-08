@@ -68,6 +68,14 @@ void DynamicSolver::JntToMass(const RokaeLoadInertia& load_params, const KDL::Jn
     m_chain_dyn_params->JntToMass(GetKDLloadFromRokaeLoad(load_params), q, H);
 }
 
+const KDL::JntArray& DynamicSolver::GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,
+                                                   const KDL::JntArray& dq, const KDL::JntArray& ddq) {
+    m_load_temp_all.Zero();
+    m_load_temp_all = GetKDLloadFromRokaeLoad(load_params);
+    m_chain_dyn_solver->CartToJnt(q, dq, ddq, m_load_temp_all, m_trq_total);
+    return m_trq_total;
+}
+
 const KDL::JntArray& DynamicSolver::GetGraTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q) {
     m_load_temp.Zero();
     m_load_temp = GetKDLloadFromRokaeLoad(load_params);

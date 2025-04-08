@@ -126,7 +126,16 @@ int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, std::vec
     }
     return SOLVE_NOERROR;
 }
+int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, KDL::JntArray& jnt_vel_rad) {
+    if (jnt_vel_rad.rows() != m_axis_num || encoder_vel_value.size() != m_axis_num) {
+        return SIZE_ERROR;
+    }
 
+    for (unsigned int i = 0; i < m_axis_num; i++) {
+        jnt_vel_rad(i) = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_retio[i]);
+    }
+    return SOLVE_NOERROR;
+}
 /****************************************传感器相关************************************ */
 int Axis_Convert::GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
                               std::vector<double>& jnt_sensor_feedback) {
@@ -137,7 +146,15 @@ int Axis_Convert::GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std:
 
     return SOLVE_NOERROR;
 }
+int Axis_Convert::GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
+                              KDL::JntArray& jnt_sensor_feedback) {
+    for (uint32_t i = 0; i < m_axis_num; i++) {
+        jnt_sensor_feedback(i) =
+            ((analog_ch1[i] + analog_ch2[i]) / 2 - m_analog_bias[i]) / 1000.0 * m_analog2trq[i] / m_sensor_amplify[i];
+    }
 
+    return SOLVE_NOERROR;
+}
 int Axis_Convert::SetSensorBias(const std::vector<double>& sensor_bias_set) {
     if (sensor_bias_set.size() != m_axis_num) {
         return SIZE_ERROR;

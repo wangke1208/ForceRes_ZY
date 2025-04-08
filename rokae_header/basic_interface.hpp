@@ -81,7 +81,7 @@ int FcStop(const std::vector<int8_t>& servo_mode);
  * @param[in] analog2trq_low 传感器线性度
  * @return 错误码
  */
-int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<double> analog2trq_low);
+int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog2trq_low);
 
 /**
  * @brief 设置传感器零点
@@ -89,7 +89,7 @@ int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<
  * @param[in] analog_bias 传感器零点
  * @return
  */
-int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<double> analog_bias);
+int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog_bias);
 
 /**
  * @brief 设置编码器零点
@@ -225,15 +225,25 @@ const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const K
  * @param[in] dq 关节速度
  * @return 科氏力矩
  */
-const KDL::JntArray& GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq);
+const KDL::JntArray& GetCoriolisTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq);
 
+/**
+ * @brief 获取动力学全力矩
+ * @param[in] load_params 负载参数
+ * @param[in] q 关节位置
+ * @param[in] dq 关节速度
+ * @param[in] ddq 关节加速度
+ * @return 动力学全力矩
+ */
+const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
+                                    const KDL::JntArray& ddq);
 /**
  * @brief 获取 TCP 位置
  * @param[in] load 负载信息
  * @param[in] jnt_pos 关节位置
  * @param[out] tcp_pos TCP 位置
  */
-void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, KDL::Frame& tcp_pos);
+void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, std::array<double, 6>& tcp_pos);
 
 /**
  * @brief 从关节位置计算质量矩阵
@@ -250,6 +260,58 @@ void JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL:
  * @param[out] jacobian TCP 雅可比矩阵
  */
 void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian);
+
+//*******************************获取实时内部状态*********************************/
+/**
+ * @brief 获取当前关节位置
+ * @param[out] jnt_pos_rad 用于存储当前关节位置的向量，单位为弧度
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetAxisPosCurrent(std::vector<double>& jnt_pos_rad);
+
+/**
+ * @brief 获取当前关节速度
+ * @param[out] jnt_vel_rad 用于存储当前关节速度的向量，单位为弧度/秒
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetAxisVelCurrent(std::vector<double>& jnt_vel_rad);
+
+/**
+ * @brief 获取当前协作机器人关节扭矩反馈
+ * @param[out] jnt_trq_feedback 用于存储当前关节扭矩反馈的向量
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback);
+
+/**
+ * @brief 获取当前 TCP（工具中心点）的力和扭矩
+ * @param[out] ext_force 用于存储当前 TCP 力和扭矩的数组，长度为 6
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetTcpWrenchCurrent(std::array<double, 6>& ext_force);
+
+/**
+ * @brief 获取当前 TCP（工具中心点）的位置
+ * @param[out] tcp_pos 用于存储当前 TCP 位置的数组，长度为 6
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetTcpPosCurrent(std::array<double, 6>& tcp_pos);
+
+/**
+ * @brief 获取当前的重力扭矩、科里奥利力扭矩和惯性矩阵
+ * @param[out] trq_gravity 用于存储当前重力扭矩的向量
+ * @param[out] trq_coriolis 用于存储当前科里奥利力扭矩的向量
+ * @param[out] mass_matrix 用于存储当前惯性矩阵的 Eigen 矩阵
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis, Eigen::MatrixXd& mass_matrix);
+
+/**
+ * @brief 获取当前的 TCP 雅可比矩阵
+ * @param[out] jacobian 用于存储当前 TCP 雅可比矩阵的 Eigen 矩阵
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetJacobianCurrent(Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian);
 
 /**
  * @brief 判断伺服是否处于位置模式

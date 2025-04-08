@@ -15,6 +15,8 @@
 #define FORCE_CONTROL_H
 
 // 包含必要的头文件
+#include <mutex>
+
 #include "Servo_Fc_convert.hpp"
 #include "data_structure_define.hpp"
 #include "dynamic_solver.hpp"
@@ -284,6 +286,10 @@ class ForceControl {
     //一些获取状态的接口
     const bool& GetDragStatus() { return m_enable_drag; };  // 获取是否允许拖动
 
+    //外部数据操作接口
+    const FcStatusInner& GetFcStatusCopy();
+    void FcStatusCopy(const FcStatusInner& fc_status_in);
+
    private:
     // 内部计算变量
     unsigned int m_jnt_num;  // 关节数
@@ -318,6 +324,12 @@ class ForceControl {
     FcStatusTracker* m_fc_status_tracker_ptr;
     Servo_Fc_Convert* m_servo_fc_convert_ptr;
     Control::ForcePlanner* m_force_planner_ptr;
+
+    //外部数据copy
+    FcStatusInner m_fc_status_outer;
+
+    //加锁，防止同时读写
+    std::mutex m_mutex;
 };
 
 }  // namespace Control

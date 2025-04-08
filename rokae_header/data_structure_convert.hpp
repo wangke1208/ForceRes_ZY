@@ -24,7 +24,7 @@
 namespace RokaeApi {
 
 inline KDL::RigidBodyInertia GetKDLloadFromRokaeLoad(const Model::RokaeLoadInertia& in) {
-    return KDL::RigidBodyInertia(in.m, in.GetCOG(),
+    return KDL::RigidBodyInertia(in.mass, in.GetCOG(),
                                  KDL::RotationalInertia(in.m_inertia[0], in.m_inertia[1], in.m_inertia[2], in.m_inertia[3],
                                                         in.m_inertia[4], in.m_inertia[5]));
 }

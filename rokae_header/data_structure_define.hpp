@@ -604,6 +604,10 @@ struct FcStatusInner {
     Jacobian_trans_inv jac_trans_inv_measure_flan_in_base;
     double mani_measure;
 
+    //外部力wrench
+    KDL::Wrench flan_wrench;
+    KDL::Wrench tcp_wrench;
+
     //指令力雅可比
     KDL::Jacobian jac_command_flan_in_base;
     KDL::Jacobian jac_command_tcp_in_base;
@@ -650,6 +654,10 @@ struct FcStatusInner {
           jac_trans_measure_tcp_in_base(jnt_num, 6),
           jac_inv_measure_flan_in_base(jnt_num, 6),
           jac_trans_inv_measure_flan_in_base(6, jnt_num),
+          flan_wrench(KDL::Wrench::Zero()),
+          tcp_wrench(KDL::Wrench::Zero()),
+          jac_command_flan_in_base(jnt_num),
+          jac_command_tcp_in_base(jnt_num),
           mani_measure(0.0),
           jnt_trq_final_cmd(jnt_num) {}
 
@@ -693,6 +701,10 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(jac_trans_measure_tcp_in_base);
         SET_FC_STATUS_INFO(jac_inv_measure_flan_in_base);
         SET_FC_STATUS_INFO(jac_trans_inv_measure_flan_in_base);
+        SET_FC_STATUS_INFO(flan_wrench),
+        SET_FC_STATUS_INFO(tcp_wrench),
+        SET_FC_STATUS_INFO(jac_command_flan_in_base),
+        SET_FC_STATUS_INFO(jac_command_tcp_in_base),
         SET_FC_STATUS_INFO(mani_measure);
         SET_FC_STATUS_INFO(jnt_trq_final_cmd);
         return *this;

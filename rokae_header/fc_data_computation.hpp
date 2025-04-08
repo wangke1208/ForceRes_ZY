@@ -46,7 +46,7 @@ class FcStatusTracker {
     void UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data);
     int FcStatusUpdataCart();     //笛卡尔空间数据更新
     int FcStatusUpdataJoint();    //轴空间数据更新
-    int FcStatusUpdataDynamic();  //动力学部分数据更新
+    int FcStatusUpdataCommon();   //更新基础部分，用来外部获取
 
     const KDL::Frame& GetBaseInFcFrame() { return m_fc_frame; }
     int SetFcFrameType(const FcFrameType& fc_frame_type);
