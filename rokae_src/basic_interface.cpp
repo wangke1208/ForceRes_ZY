@@ -26,6 +26,7 @@ unsigned int jnt_num;  // 关节数
 KDL::JntArray jnt_pos_kdl;
 KDL::JntArray jnt_ext_trq;
 KDL::Wrench tcp_wrench;
+KDL::Vector gravity_vector;  //重力矢量
 int InitInterface(const Model::MechUnitType& robot_type) {
     // 1.初始化参数模块
     try {
@@ -215,6 +216,15 @@ int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>
     }
     //设置摩擦滑条系数
     return forcecontrol_ptr->SetFricGain(fric_gain_set);
+}
+
+int SetGravatity(const std::array<double, 3>& gravity) {
+    for (unsigned int i = 0; i < 3; i++) {
+        gravity_vector.data[i] = gravity[i];
+    }
+    dynamicsolver_ptr->SetGravity(gravity_vector);
+    forcecontrol_ptr->SetGravity(gravity_vector);
+    return SOLVE_NOERROR;
 }
 
 //*******************************功能接口*********************************/

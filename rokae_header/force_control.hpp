@@ -249,6 +249,16 @@ class ForceControl {
     int ResetFricByLoad(const RokaeLoad& load);
 
     /**
+     * @brief 修改重力矢量
+     *
+     * 此函数用于修改重力矢量
+     *
+     * @param[in] gravity 输入：重力矢量
+     * @return 无
+     */
+    void SetGravity(const Vector& gravity);
+
+    /**
      * @brief 重置力控内部状态
      *
      * 用于当Drag_Config或Fc_Update返回错误时调用。调用后需要，重新设置各种增益以及负载参数，零点和传感器相关参数不用重新设置

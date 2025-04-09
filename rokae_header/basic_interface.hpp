@@ -151,6 +151,13 @@ int SetKpGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& 
 int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& fric_gain_set);
 
 /**
+ * @brief 设置重力矢量
+ * @param[in] gravity 重力矢量
+ * @return
+ */
+int SetGravatity(const std::array<double, 3>& gravity);
+
+/**
  * @brief 校准扭矩传感器
  * @param[in] pos_encoder_feedback 输入：编码器反馈的位置数据
  * @param[in] load_input 输入：负载信息

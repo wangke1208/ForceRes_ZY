@@ -87,6 +87,7 @@ class DynamicSolver {
     double GetManipulate(const KDL::Jacobian& jacobian);                                            //计算可操作度
     void GetWrench(const RokaeLoadPose& load, const KDL::JntArray& jnt_pos, const KDL::JntArray& jnt_ext_trq,
                    KDL::Wrench& wrench);
+    void SetGravity(const KDL::Vector& gravity);
 
    private:
     KDL::Chain m_chain;

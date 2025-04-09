@@ -52,6 +52,7 @@ class FcStatusTracker {
     int SetFcFrameType(const FcFrameType& fc_frame_type);
     void SetFrameToolInFlan(const KDL::Frame& frame_tool_in_flan) { m_tool_in_flan = frame_tool_in_flan; }
     void ResetCalStatus();
+    void SetGravity(const Vector& gravity) { m_dynamic_solver->SetGravity(gravity); }
 
    private:
     DynamicSolver* m_dynamic_solver;

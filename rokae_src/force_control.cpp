@@ -467,6 +467,11 @@ int ForceControl::ResetFricByLoad(const RokaeLoad& load) {
     return SOLVE_NOERROR;
 }
 
+void ForceControl::SetGravity(const Vector& gravity) {
+    m_dynamicsolver_ptr->SetGravity(gravity);
+    m_fc_status_tracker_ptr->SetGravity(gravity);
+}
+
 int ForceControl::ResetFcStatus() {
     // for (unsigned int i = 0; i < m_jnt_num; i++) {
     //     if (servo_mode[i] != POSITION_MODE) {
@@ -503,6 +508,7 @@ void ForceControl::FcStatusRefresh() {
     // 重置内部状态参数
     m_enable_drag = false;
     m_is_first_drag = true;
+    m_fc_status_tracker_ptr->ResetCalStatus();
     return;
 }
 

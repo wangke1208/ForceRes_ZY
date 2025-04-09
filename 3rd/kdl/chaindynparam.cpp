@@ -43,6 +43,10 @@ namespace KDL {
         ag=-Twist(grav,Vector::Zero());
     }
 
+    void ChainDynParam::SetGravity(const Vector &grav_in) {
+        chainidsolver_gravity.SetGravity(grav_in);
+    }
+
     void ChainDynParam::updateInternalDataStructures() {
         nj = chain.getNrOfJoints();
         ns = chain.getNrOfSegments();

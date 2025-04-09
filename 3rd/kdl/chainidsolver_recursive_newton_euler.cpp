@@ -24,12 +24,27 @@
 
 namespace KDL{
 
-    ChainIdSolver_RNE::ChainIdSolver_RNE(const Chain& chain_,Vector grav):
-        chain(chain_),nj(chain.getNrOfJoints()),ns(chain.getNrOfSegments()),
-        X(ns),S(ns),v(ns),a(ns),f(ns)
-    {
-        ag=-Twist(grav,Vector::Zero());
-    }
+ChainIdSolver_RNE::ChainIdSolver_RNE(const Chain &chain_, Vector grav)
+    : chain(chain_),
+      nj(chain.getNrOfJoints()),
+      ns(chain.getNrOfSegments()),
+      X(ns),
+      S(ns),
+      v(ns),
+      a(ns),
+      f(ns),
+      ag_buffer(BUFFER_SIZE) {
+    ag_buffer[0] = -Twist(grav, Vector::Zero());
+    ag_buffer[1] = ag_buffer[0];
+    ag_active.store(0, std::memory_order_relaxed);
+}
+
+void ChainIdSolver_RNE::SetGravity(const Vector &grav_in) {
+    int current = ag_active.load(std::memory_order_relaxed);
+    int next = 1 - current;
+    ag_buffer[next] = -Twist(grav_in, Vector::Zero());
+    ag_active.store(next, std::memory_order_release);
+}
 
     void ChainIdSolver_RNE::updateInternalDataStructures() {
         nj = chain.getNrOfJoints();
@@ -49,6 +64,8 @@ namespace KDL{
         //Check sizes when in debug mode
         if(q.rows()!=nj || q_dot.rows()!=nj || q_dotdot.rows()!=nj || torques.rows()!=nj || f_ext.size()!=ns)
             return (error = E_SIZE_MISMATCH);
+        Twist ag = ag_buffer[ag_active.load(std::memory_order_acquire)];
+
         unsigned int j=0;
 
         //Sweep from root to leaf
@@ -106,6 +123,8 @@ namespace KDL{
         //Check sizes when in debug mode
         if(q.rows()!=nj || q_dot.rows()!=nj || q_dotdot.rows()!=nj || torques.rows()!=nj)
             return (error = E_SIZE_MISMATCH);
+
+        Twist ag = ag_buffer[ag_active.load(std::memory_order_acquire)];
         unsigned int j=0;
 
         //Sweep from root to leaf

@@ -194,5 +194,6 @@ void FcStatusTracker::UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data)
 }
 
 void FcStatusTracker::ResetCalStatus() { m_is_rot_angle_outof_range = false; }
+
 }  // namespace Control
 }  // namespace RokaeApi

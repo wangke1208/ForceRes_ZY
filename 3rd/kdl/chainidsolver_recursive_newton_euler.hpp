@@ -22,8 +22,11 @@
 #ifndef KDL_CHAIN_IKSOLVER_RECURSIVE_NEWTON_EULER_HPP
 #define KDL_CHAIN_IKSOLVER_RECURSIVE_NEWTON_EULER_HPP
 
+#include <mutex>
+
 #include "chainidsolver.hpp"
 
+#define BUFFER_SIZE 2
 namespace KDL{
     /**
      * \brief Recursive newton euler inverse dynamics solver
@@ -63,7 +66,14 @@ namespace KDL{
         /// @copydoc KDL::SolverI::updateInternalDataStructures
         virtual void updateInternalDataStructures();
 
-    private:
+        //设置重力矢量方向
+        /**
+         * Function to set the gravity vector.
+         * \param grav_in The new gravity vector.
+         */
+        void SetGravity(const Vector &grav_in);
+
+       private:
         const Chain& chain;
         unsigned int nj;
         unsigned int ns;
@@ -72,7 +82,9 @@ namespace KDL{
         std::vector<Twist> v;
         std::vector<Twist> a;
         std::vector<Wrench> f;
-        Twist ag;
+        std::vector<Twist> ag_buffer;
+        std::atomic<int> ag_active{0};  // 当前激活缓冲区索引（0 或 1）
+        std::mutex m_mutex;
     };
 }
 

@@ -169,5 +169,10 @@ double DynamicSolver::GetManipulate(const KDL::Jacobian& jacobian) {
     m_manipulate = sqrt((jacobian.data * jacobian.data.transpose()).determinant());
     return m_manipulate;
 }
+
+void DynamicSolver::SetGravity(const KDL::Vector& gravity) {
+    m_chain_dyn_params->SetGravity(m_gravity);
+    m_chain_dyn_solver->SetGravity(m_gravity);
+}
 }  // namespace Model
 }  // namespace RokaeApi
