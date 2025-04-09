@@ -74,7 +74,8 @@ enum SolverRes {
     LOAD_LIMIT_PARAMS_ERROR = -16,
     FC_FRAME_TYPE_ERROR = -17,
     ROBOT_INITIALIZE_ERROR = -18,
-    DRAG_STATUS_ERROR = -19
+    DRAG_STATUS_ERROR = -19,
+    EULER_PARAMS_ERROR = -20
 };
 
 enum ServoMode { SERVO_MODE_POS = 8, SERVO_MODE_TORQUE = 10 };
@@ -559,6 +560,7 @@ struct FcStatusInner {
     //笛卡尔指令
     KDL::Frame cart_pos_command_flan_in_base;  //旋转指令flan_in_base
     KDL::Frame cart_pos_command_tcp_in_base;   //旋转指令tcp_in_base
+    KDL::Frame base_in_flan;
     KDL::JntArray cart_pos_jnt_command;
     KDL::Twist cart_pos_following_error_tcp_in_base;     //位置+旋转误差 tcp_in_base
     KDL::Twist cart_pos_following_error_tcp_in_fcframe;  //位置+旋转误差 tcp_in_frame
@@ -622,6 +624,7 @@ struct FcStatusInner {
           jnt_acc_command(jnt_num),
           cart_pos_command_flan_in_base(KDL::Frame::Identity()),
           cart_pos_command_tcp_in_base(KDL::Frame::Identity()),
+          base_in_flan(KDL::Frame::Identity()),
           cart_pos_jnt_command(jnt_num),
           cart_pos_following_error_tcp_in_base(KDL::Twist::Zero()),
           cart_pos_following_error_tcp_in_fcframe(KDL::Twist::Zero()),
@@ -669,6 +672,7 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(jnt_acc_command);
         SET_FC_STATUS_INFO(cart_pos_command_flan_in_base);
         SET_FC_STATUS_INFO(cart_pos_command_tcp_in_base);
+        SET_FC_STATUS_INFO(base_in_flan);
         SET_FC_STATUS_INFO(cart_pos_jnt_command);
         SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_base);
         SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_fcframe);

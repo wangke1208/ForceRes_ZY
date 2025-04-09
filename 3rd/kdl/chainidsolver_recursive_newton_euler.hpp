@@ -22,8 +22,6 @@
 #ifndef KDL_CHAIN_IKSOLVER_RECURSIVE_NEWTON_EULER_HPP
 #define KDL_CHAIN_IKSOLVER_RECURSIVE_NEWTON_EULER_HPP
 
-#include <mutex>
-
 #include "chainidsolver.hpp"
 
 #define BUFFER_SIZE 2
@@ -84,7 +82,6 @@ namespace KDL{
         std::vector<Wrench> f;
         std::vector<Twist> ag_buffer;
         std::atomic<int> ag_active{0};  // 当前激活缓冲区索引（0 或 1）
-        std::mutex m_mutex;
     };
 }
 

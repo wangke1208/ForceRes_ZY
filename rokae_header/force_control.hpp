@@ -249,14 +249,14 @@ class ForceControl {
     int ResetFricByLoad(const RokaeLoad& load);
 
     /**
-     * @brief 修改重力矢量
+     * @brief 修改基坐标系和重力矢量
      *
-     * 此函数用于修改重力矢量
+     * 此函数用于修改基坐标系和重力矢量
      *
-     * @param[in] gravity 输入：重力矢量
+     * @param[in] base_in_world 输入：frame_base_in_world
      * @return 无
      */
-    void SetGravity(const Vector& gravity);
+    void SetBaseFrameAndGravity(const KDL::Frame& base_in_world, const KDL::Vector& gravity);
 
     /**
      * @brief 重置力控内部状态
@@ -325,6 +325,8 @@ class ForceControl {
     FcInner_To_Servo m_fc_inner_servo_data;
     FcStatusInner m_fc_status_inner;
     FcParamsInner* m_fc_params_inner_ptr;
+    KDL::Frame m_base_in_world;
+    KDL::Vector m_gravity_vector;
 
     // 求解器
     InitRobot* m_init_robot_ptr;

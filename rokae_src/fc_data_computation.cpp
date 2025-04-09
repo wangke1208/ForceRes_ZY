@@ -32,6 +32,10 @@ FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_st
     KDL::SetToZero(m_orient_delta_d_last);
     m_cart_stiffness.resize(6, 100.0);
     m_load.SetZero();
+    m_base_frame_buffer.resize(2);
+    m_base_frame_buffer[0] = KDL::Frame::Identity();
+    m_base_frame_buffer[1] = KDL::Frame::Identity();
+    m_frame_active.store(0, std::memory_order_relaxed);
 }
 
 FcStatusTracker::~FcStatusTracker() {
@@ -141,6 +145,8 @@ int FcStatusTracker::FcStatusUpdataCommon() {
     m_fkpos_ptr->JntToCart(FC->jnt_pos_measure, FC->cart_pos_measure_flan_in_base);
     // 2.笛卡尔反馈(tcp_in_base)
     FC->cart_pos_measure_tcp_in_base = FC->cart_pos_measure_flan_in_base * m_tool_in_flan;
+    // 3.更新base_in_world
+    FC->base_in_flan = m_base_frame_buffer[m_frame_active.load(std::memory_order_acquire)];
 
     //动力学计算部分
     // 1.重力矩
@@ -181,6 +187,13 @@ int FcStatusTracker::SetFcFrameType(const FcFrameType& fc_frame_type) {
     //设置力控坐标系
     m_fc_frame_type = fc_frame_type;
     return SOLVE_NOERROR;
+}
+
+void FcStatusTracker::SetBaseFrame(const KDL::Frame& base_frame) {
+    int current = m_frame_active.load(std::memory_order_relaxed);
+    int next = 1 - current;
+    m_base_frame_buffer[next] = base_frame;
+    m_frame_active.store(next, std::memory_order_release);
 }
 
 void FcStatusTracker::UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data) {

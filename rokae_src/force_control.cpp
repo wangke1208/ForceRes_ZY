@@ -48,7 +48,9 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_enable_drag = false;
     m_is_first_drag = true;
 
-    // 调整内部数据结构大小
+    // 调整基坐标系相关
+    m_gravity_vector = m_init_robot_ptr->GetGravity();
+    m_base_in_world.Identity();
 
     // 初始化参数
     m_servo_data_fc_inner.Resize(m_jnt_num);
@@ -467,9 +469,10 @@ int ForceControl::ResetFricByLoad(const RokaeLoad& load) {
     return SOLVE_NOERROR;
 }
 
-void ForceControl::SetGravity(const Vector& gravity) {
+void ForceControl::SetBaseFrameAndGravity(const KDL::Frame& base_in_world, const KDL::Vector& gravity) {
     m_dynamicsolver_ptr->SetGravity(gravity);
     m_fc_status_tracker_ptr->SetGravity(gravity);
+    m_fc_status_tracker_ptr->SetBaseFrame(base_in_world);
 }
 
 int ForceControl::ResetFcStatus() {

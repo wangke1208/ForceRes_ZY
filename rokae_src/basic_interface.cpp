@@ -27,6 +27,8 @@ KDL::JntArray jnt_pos_kdl;
 KDL::JntArray jnt_ext_trq;
 KDL::Wrench tcp_wrench;
 KDL::Vector gravity_vector;  //重力矢量
+KDL::Frame frame_base_in_world;  // 基坐标系在世界坐标系下的位置
+
 int InitInterface(const Model::MechUnitType& robot_type) {
     // 1.初始化参数模块
     try {
@@ -218,12 +220,16 @@ int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>
     return forcecontrol_ptr->SetFricGain(fric_gain_set);
 }
 
-int SetGravatity(const std::array<double, 3>& gravity) {
-    for (unsigned int i = 0; i < 3; i++) {
-        gravity_vector.data[i] = gravity[i];
+int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {
+    if (!ArrayToKdlFrame(base_poseture, frame_base_in_world)) {
+        return EULER_PARAMS_ERROR;
     }
+    //根据基坐标系方向确定重力矢量方向
+    gravity_vector = frame_base_in_world.M.Inverse() * KDL::Vector(0, 0, -9.8);
+    //更新非实时接口
     dynamicsolver_ptr->SetGravity(gravity_vector);
-    forcecontrol_ptr->SetGravity(gravity_vector);
+    //更新实时接口
+    forcecontrol_ptr->SetBaseFrameAndGravity(frame_base_in_world, gravity_vector);
     return SOLVE_NOERROR;
 }
 

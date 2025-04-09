@@ -53,6 +53,7 @@ class FcStatusTracker {
     void SetFrameToolInFlan(const KDL::Frame& frame_tool_in_flan) { m_tool_in_flan = frame_tool_in_flan; }
     void ResetCalStatus();
     void SetGravity(const Vector& gravity) { m_dynamic_solver->SetGravity(gravity); }
+    void SetBaseFrame(const KDL::Frame& base_frame);
 
    private:
     DynamicSolver* m_dynamic_solver;
@@ -74,6 +75,9 @@ class FcStatusTracker {
     KDL::Frame m_tool_in_flan;
     KDL::Frame m_fc_frame;  //力控坐标系，拖动情况下，力控坐标系均为工具坐标系
     FcFrameType m_fc_frame_type;
+    //动态基坐标系更改
+    std::vector<KDL::Frame> m_base_frame_buffer;
+    std::atomic<int> m_frame_active{0};  // 当前激活缓冲区索引（0 或 1）
 };
 
 }  // namespace Control

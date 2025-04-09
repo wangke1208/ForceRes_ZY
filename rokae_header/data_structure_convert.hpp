@@ -22,7 +22,8 @@
 #include "robot_config.hpp"
 
 namespace RokaeApi {
-
+// 定义角度转换因子
+constexpr double DEG_TO_RAD = PI / 180.0;
 inline KDL::RigidBodyInertia GetKDLloadFromRokaeLoad(const Model::RokaeLoadInertia& in) {
     return KDL::RigidBodyInertia(in.mass, in.GetCOG(),
                                  KDL::RotationalInertia(in.m_inertia[0], in.m_inertia[1], in.m_inertia[2], in.m_inertia[3],
@@ -66,6 +67,17 @@ inline void FCVectorXdToWrench(const Eigen::VectorXd& in, KDL::Wrench& out) {
         out.force(i) = in[i];
         out.torque(i) = in[i + 3];
     }
+}
+
+inline int ArrayToKdlFrame(const std::array<double, 6>& in, KDL::Frame& out) {
+    //对欧拉角进行限制
+    if (in[3] > 180 || in[3] < -180 || in[4] > 180 || in[4] < -180 || in[5] > 180 || in[5] < -180) {
+        return EULER_PARAMS_ERROR;
+    }
+    KDL::Vector pos_temp(in[0], in[1], in[2]);
+    out.p = pos_temp;
+    out.M = KDL::Rotation::RPY(in[3] * DEG_TO_RAD, in[4] * DEG_TO_RAD, in[5] * DEG_TO_RAD);
+    return SOLVE_NOERROR;
 }
 
 inline void VectorToRD(const std::vector<double>& in, Model::ModelParams::RobDimensions& out) {

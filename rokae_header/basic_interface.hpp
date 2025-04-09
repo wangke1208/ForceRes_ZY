@@ -151,11 +151,11 @@ int SetKpGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& 
 int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& fric_gain_set);
 
 /**
- * @brief 设置重力矢量
- * @param[in] gravity 重力矢量
+ * @brief 设置基坐标系和重力矢量
+ * @param[in] base_poseture 基坐标系方向(x,y,z,a,b,c)
  * @return
  */
-int SetGravatity(const std::array<double, 3>& gravity);
+int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture);
 
 /**
  * @brief 校准扭矩传感器
