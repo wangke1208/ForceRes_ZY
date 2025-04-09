@@ -22,15 +22,18 @@
 
 #include "fc_params.hpp"
 
-//一些宏定义
-#define DEFAULT_AXIS 6U
-#define DEFAULT_SEGMENT 7U
-
-#define PI 3.1415926535
-
 using namespace KDL;
 
 namespace RokaeApi {
+template <typename T>
+void ResizeVector(std::vector<T>& vec, unsigned int size, T default_value = T()) {
+    vec.resize(size, default_value);
+}
+
+// 常量定义
+constexpr unsigned int DEFAULT_AXIS = 6U;
+constexpr unsigned int DEFAULT_SEGMENT = 7U;
+constexpr double PI = 3.1415926535;
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, 6> Jacobian_trans;
 typedef Eigen::Matrix<double, Eigen::Dynamic, 6> Jacobian_inv;
@@ -43,7 +46,7 @@ const float EPSILON14 = 0.0000000000001;
 const float EPSILON13 = 0.000000000001;
 const float EPSILON12 = 0.00000000001;
 const float EPSILON11 = 0.0000000001;
-const float EPSILON = 0.0000000001;
+const float EPSILON10 = 0.0000000001;
 const float EPSILON9 = 0.000000001;
 const float EPSILON8 = 0.00000001;
 const float EPSILON7 = 0.0000001;
@@ -56,139 +59,115 @@ const float EPSILON1 = 0.1;
 
 enum SolverRes {
     SOLVE_NOERROR = 0,
-    ROBOTTYPE_ERROR = -1,
-    DRAGTYPE_ERROR = -2,
-    SERVO_MODE_ERROR = -3,
-    SIZE_ERROR = -4,
-    ERROR_DRAG_ENABLE = -5,
-    EXCESSIVE_TORQUE_ERROR = -6,
-    SENSOR_BIAS_ERROR = -7,
-    LOAD_PARAMS_ERROR = -8,
-    SOFT_LIMIT_PARAMS_ERROR = -9,
-    STARTDRAG_POS_OVER_LIMIT = -10,
-    AXIS_NUM_ERROR = -11,
-    GAIN_VALUE_ERROR = -12,
-    SENSOR_LINERALITY_ERROR = -13,
-    ERROR_RPY_CAL = -14,
-    INIT_ERROR = -15,
-    LOAD_LIMIT_PARAMS_ERROR = -16,
-    FC_FRAME_TYPE_ERROR = -17,
-    ROBOT_INITIALIZE_ERROR = -18,
-    DRAG_STATUS_ERROR = -19,
-    EULER_PARAMS_ERROR = -20
+    ERROR_FC_FRAME_TYPE = -1,
+    ERROR_DRAG_STATUS = -2,
+    ERROR_LOAD_LIMIT_PARAMS = -3,
+    ERROR_EULER_PARAMS = -4,
+    ERROR_SENSOR_LINERALITY_SET = -5,
+    ERROR_GAIN_VALUE_SET = -6,
+    ERROR_RPY_CAL = -7,
+    ERROR_DRAG_START_POS = -8,
+    ERROR_SOFT_LIMIT_PARAMS = -9,
+    ERROR_LOAD_PARAMS = -10,
+    ERROR_SENSOR_BIAS = -11,
+    ERROR_EXCESSIVE_TORQUE = -12,
+    ERROR_DRAG_ENABLE = -13,
+    ERROR_SIZE_WRONG = -14,
+    ERROR_ROBOTTYPE = -15,
+    ERROR_DRAGTYPE = -16,
+    ERROR_SERVO_MODE = -17
 };
-
-enum ServoMode { SERVO_MODE_POS = 8, SERVO_MODE_TORQUE = 10 };
 
 namespace Model {
 enum MechUnitType {
     UNKNOWN,
     SR3_C,  // XMS3-R580-W4G3B1C
 };
+
 struct ModelParams {
     struct Link_Inertial {
-        double mass;                      //质量,单位kg
-        std::vector<double> centroid;     //质心,单位mm
-        std::vector<double> moment;       //总惯量，单位kg.mm^2
-        std::vector<double> moment_link;  //连杆惯量，单位kg.mm^2
+        double mass = 0.0;                                                 // 质量,单位kg
+        std::vector<double> centroid = {0.0, 0.0, 0.0};                    // 质心,单位mm
+        std::vector<double> moment = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};       // 总惯量，单位kg.mm^2
+        std::vector<double> moment_link = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // 连杆惯量，单位kg.mm^2
 
-        Link_Inertial() : mass(0.0), centroid(3, 0.0), moment(6, 0.0), moment_link(6, 0.0){};
+        // 重置所有成员为零
         void SetZero() {
-            this->mass = 0.0;
-            this->centroid.assign(3, 0.0);
-            this->moment.assign(6, 0.0);
-            this->moment_link.assign(6, 0.0);
+            mass = 0.0;
+            centroid.assign(3, 0.0);
+            moment.assign(6, 0.0);
+            moment_link.assign(6, 0.0);
         }
     };
 
     enum Rot_Axis { ROT_NONE, ROT_X, ROT_Y, ROT_Z };
 
     struct Coord_Orientation {
-        Rot_Axis rot_axis;
-        double rot_angle;
+        Rot_Axis rot_axis;  // 旋转轴
+        double rot_angle;   // 旋转角度
     };
 
     struct RobDimensions {
-        double L01x;  // z 0,1 轴沿着base轴坐标系x方向的距离
-        double L01y;  // z 0,1 轴沿着base轴坐标系x方向的距离
-        double L01z;  // z 0,1 轴沿着base轴坐标系x方向的距离
-        double L12x;  // z 1,2 轴沿着base轴坐标系x方向的距离
-        double L12y;  // z 1,2 轴沿着base轴坐标系x方向的距离
-        double L12z;  // z 1,2 轴沿着base轴坐标系x方向的距离
-        double L23x;  // z 2,3 轴沿着base轴坐标系x方向的距离
-        double L23y;  // z 2,3 轴沿着base轴坐标系x方向的距离
-        double L23z;  // z 2,3 轴沿着base轴坐标系x方向的距离
-        double L34x;  // z 3,4 轴沿着base轴坐标系x方向的距离
-        double L34y;  // z 3,4 轴沿着base轴坐标系x方向的距离
-        double L34z;  // z 3,4 轴沿着base轴坐标系x方向的距离
-        double L45x;  // z 4,5 轴沿着base轴坐标系x方向的距离
-        double L45y;  // z 4,5 轴沿着base轴坐标系x方向的距离
-        double L45z;  // z 4,5 轴沿着base轴坐标系x方向的距离
-        double L56x;  // z 5,6 轴沿着base轴坐标系x方向的距离
-        double L56y;  // z 5,6 轴沿着base轴坐标系x方向的距离
-        double L56z;  // z 5,6 轴沿着base轴坐标系x方向的距离
-        double L67x;  // z 6,7 轴沿着base轴坐标系x方向的距离
-        double L67y;  // z 6,7 轴沿着base轴坐标系x方向的距离
-        double L67z;  // z 6,7 轴沿着base轴坐标系x方向的距离
-        double L78x;  // z 7,8 轴沿着base轴坐标系x方向的距离
-        double L78y;  // z 7,8 轴沿着base轴坐标系x方向的距离
-        double L78z;  // z 7,8 轴沿着base轴坐标系x方向的距离
+        double L01x = 0.0, L01y = 0.0, L01z = 0.0;  // 0,1 轴沿着base轴坐标系x, y, z方向的距离
+        double L12x = 0.0, L12y = 0.0, L12z = 0.0;  // 1,2 轴沿着base轴坐标系x, y, z方向的距离
+        double L23x = 0.0, L23y = 0.0, L23z = 0.0;  // 2,3 轴沿着base轴坐标系x, y, z方向的距离
+        double L34x = 0.0, L34y = 0.0, L34z = 0.0;  // 3,4 轴沿着base轴坐标系x, y, z方向的距离
+        double L45x = 0.0, L45y = 0.0, L45z = 0.0;  // 4,5 轴沿着base轴坐标系x, y, z方向的距离
+        double L56x = 0.0, L56y = 0.0, L56z = 0.0;  // 5,6 轴沿着base轴坐标系x, y, z方向的距离
+        double L67x = 0.0, L67y = 0.0, L67z = 0.0;  // 6,7 轴沿着base轴坐标系x, y, z方向的距离
+        double L78x = 0.0, L78y = 0.0, L78z = 0.0;  // 7,8 轴沿着base轴坐标系x, y, z方向的距离
 
-        // 添加RobDimensions的默认构造函数
-        RobDimensions() {}
-        RobDimensions(std::vector<double> rd) {
-            int joint_num_temp = rd.size() / 3;
-            L01x = rd[0];
-            L01y = rd[1];
-            L01z = rd[2];
-            L12x = rd[3];
-            L12y = rd[4];
-            L12z = rd[5];
-            L23x = rd[6];
-            L23y = rd[7];
-            L23z = rd[8];
-            L34x = rd[9];
-            L34y = rd[10];
-            L34z = rd[11];
-            if (joint_num_temp >= 4) {
+        // 默认构造函数
+        RobDimensions() = default;
+
+        // 使用std::vector初始化成员
+        RobDimensions(std::vector<double>& rd) {
+            if (rd.size() >= 24) {
+                L01x = rd[0];
+                L01y = rd[1];
+                L01z = rd[2];
+                L12x = rd[3];
+                L12y = rd[4];
+                L12z = rd[5];
+                L23x = rd[6];
+                L23y = rd[7];
+                L23z = rd[8];
+                L34x = rd[9];
+                L34y = rd[10];
+                L34z = rd[11];
                 L45x = rd[12];
                 L45y = rd[13];
                 L45z = rd[14];
-                if (joint_num_temp >= 5) {
-                    L56x = rd[15];
-                    L56y = rd[16];
-                    L56z = rd[17];
-                    if (joint_num_temp >= 6) {
-                        L67x = rd[18];
-                        L67y = rd[19];
-                        L67z = rd[20];
-                        if (joint_num_temp >= 7) {
-                            L78x = rd[21];
-                            L78y = rd[22];
-                            L78z = rd[23];
-                        }
-                    }
-                }
+                L56x = rd[15];
+                L56y = rd[16];
+                L56z = rd[17];
+                L67x = rd[18];
+                L67y = rd[19];
+                L67z = rd[20];
+                L78x = rd[21];
+                L78y = rd[22];
+                L78z = rd[23];
             }
         }
     };
-    unsigned int axis_num;
-    std::vector<Link_Inertial> link_inertia;
-    std::vector<KDL::Joint::JointType> joint_type;
-    std::vector<Coord_Orientation> coor_orient;
-    RobDimensions rob_dimensions;
-    std::vector<double> joint_range_min;  //软限位
-    std::vector<double> joint_range_max;
-    std::vector<double> joint_range_min_new;  //硬限位
-    std::vector<double> joint_range_max_new;
-    double max_load;
-    double max_load_tcp_length;
-    // ModelParams(){this->Resize(DEFAULT_SEGMENT);};
-    ModelParams(unsigned int segments_cnt) { this->Resize(segments_cnt); };
 
+    unsigned int axis_num;                          // 轴数量
+    std::vector<Link_Inertial> link_inertia;        // 连杆惯量
+    std::vector<KDL::Joint::JointType> joint_type;  // 关节类型
+    std::vector<Coord_Orientation> coor_orient;     // 坐标系
+    RobDimensions rob_dimensions;                   // 机器人尺寸
+    std::vector<double> joint_range_min;            // 软限位
+    std::vector<double> joint_range_max;            // 软限位
+    std::vector<double> joint_range_min_new;        // 硬限位
+    std::vector<double> joint_range_max_new;        // 硬限位
+    double max_load;                                // 最大负载
+    double max_load_tcp_length;                     // 最大负载末端执行器长度
+
+    // 构造函数
+    ModelParams(unsigned int segments_cnt) { this->Resize(segments_cnt); }
+
+    // Resize方法，调整各成员数组的大小
     void Resize(unsigned int segments_cnt) {
-        max_load = 0.0;
-        max_load_tcp_length = 0.3;
         axis_num = segments_cnt - 1;
         joint_type.resize(segments_cnt);
         coor_orient.resize(segments_cnt);
@@ -197,195 +176,169 @@ struct ModelParams {
         joint_range_max.resize(segments_cnt - 1);
         joint_range_min_new.resize(segments_cnt - 1);
         joint_range_max_new.resize(segments_cnt - 1);
+        max_load = 0.0;
+        max_load_tcp_length = 0.3;
     }
 };
 
 struct MechanicalParams {
-    //位置编码器
+    // 使用初始化列表，直接构造
     std::vector<int32_t> encoder_offset;
     std::vector<int> encoder_resolution;
-    //减速比
     std::vector<double> decel_ratio_high;
     std::vector<double> decel_ratio_low;
-    //传感器
     std::vector<double> analog2trq_high;
     std::vector<double> analog2trq_low;
     std::vector<double> analog_bias;
     std::vector<double> sensor_amplify;
-    //电机
     std::vector<double> rated_torque;
-    // MechanicalParams() { this->Resize(6); }  //默认6轴构造
-    MechanicalParams(unsigned int jnt_num) { Resize(jnt_num); }
 
-    void Resize(unsigned int jnt_num) {
-        encoder_offset.resize(jnt_num);
-        encoder_resolution.resize(jnt_num);
-        decel_ratio_high.resize(jnt_num);
-        decel_ratio_low.resize(jnt_num);
+    // 构造函数初始化
+    MechanicalParams(unsigned int jnt_num)
+        : encoder_offset(jnt_num),
+          encoder_resolution(jnt_num),
+          decel_ratio_high(jnt_num),
+          decel_ratio_low(jnt_num),
+          analog2trq_high(jnt_num),
+          analog2trq_low(jnt_num),
+          analog_bias(jnt_num),
+          sensor_amplify(jnt_num),
+          rated_torque(jnt_num) {}
 
-        analog2trq_high.resize(jnt_num);
-        analog2trq_low.resize(jnt_num);
-        analog_bias.resize(jnt_num);
-        sensor_amplify.resize(jnt_num);
-        rated_torque.resize(jnt_num);
+    template <typename T>
+    void SetMechStatusInfo(T& dest, const T& src) {
+        dest = src;
     }
 
-#define SET_MECH_STATUS_INFO(name) this->name = mec_param.name
-    MechanicalParams& operator=(const MechanicalParams mec_param) {
-        SET_MECH_STATUS_INFO(encoder_offset);
-        SET_MECH_STATUS_INFO(encoder_resolution);
-        SET_MECH_STATUS_INFO(decel_ratio_high);
-        SET_MECH_STATUS_INFO(decel_ratio_low);
-        SET_MECH_STATUS_INFO(analog2trq_high);
-        SET_MECH_STATUS_INFO(analog2trq_low);
-        SET_MECH_STATUS_INFO(analog_bias);
-        SET_MECH_STATUS_INFO(sensor_amplify);
-        SET_MECH_STATUS_INFO(rated_torque);
+    // 拷贝赋值函数优化
+    MechanicalParams& operator=(const MechanicalParams& mec_param) {
+        SetMechStatusInfo(encoder_offset, mec_param.encoder_offset);
+        SetMechStatusInfo(encoder_resolution, mec_param.encoder_resolution);
+        SetMechStatusInfo(decel_ratio_high, mec_param.decel_ratio_high);
+        SetMechStatusInfo(decel_ratio_low, mec_param.decel_ratio_low);
+        SetMechStatusInfo(analog2trq_high, mec_param.analog2trq_high);
+        SetMechStatusInfo(analog2trq_low, mec_param.analog2trq_low);
+        SetMechStatusInfo(analog_bias, mec_param.analog_bias);
+        SetMechStatusInfo(sensor_amplify, mec_param.sensor_amplify);
+        SetMechStatusInfo(rated_torque, mec_param.rated_torque);
         return *this;
     }
 };
 
-enum RobotType {
-    ROBT_INVALID_ROBOT,    // 0
-    ROBT_STANDARD_6_AXES,  // 1
-    ROBT_UR_6_AXES,        // 2
-    ROBT_XMATE_6_AXES,     // 3
-    ROBT_XMATE_7_AXES,     // 4
-    ROBT_RS_4_AXES,        // 5
-    ROBT_SCARA_4_AXES,     // 6
-    ROBT_XD_3_AXES,        // 7
-    ROBT_PCB_3_AXES,       // 8
-    ROBT_PCB_4_AXES,       // 9
-    ROBOT_XMATE_CR_6_AXES  // 10  注意SR机型和CR机型使用的是相同的字段
-};
-
 struct RokaeLoadInertia {
-    double mass;                      //质量，单位kg
-    KDL::Vector m_cog;                // 质心,单位m
-    KDL::Vector mx;                   // 一阶矩阵 单位kg.m
-    std::array<double, 6> m_inertia;  // 二阶矩阵,ix,iy,iz,ixy,ixz,iyz,单位kg.m^2
+    double mass{0.0};                   // 质量，单位kg
+    KDL::Vector m_cog{0.0, 0.0, 0.0};   // 质心，单位m
+    KDL::Vector mx{0.0, 0.0, 0.0};      // 一阶矩，单位kg·m
+    std::array<double, 6> m_inertia{};  // 二阶惯性矩阵，单位kg·m²
 
-    RokaeLoadInertia() : mass(0.0), m_cog(0.0, 0.0, 0.0), mx(0.0, 0.0, 0.0), m_inertia{0.0, 0.0, 0.0, 0.0, 0.0, 0.0} {}
+    // 默认构造
+    RokaeLoadInertia() = default;
 
-    RokaeLoadInertia(const double& mass, const KDL::Vector& cog) : mass(mass), m_cog(cog) {
+    // 质量 + 质心构造
+    RokaeLoadInertia(double mass, const KDL::Vector& cog) : mass(mass), m_cog(cog), mx(mass * cog) { m_inertia.fill(0.0); }
+
+    // 设置质量
+    void SetMass(double mass_val) noexcept {
+        mass = mass_val;
+        mx = mass * m_cog;
+    }
+
+    // 设置质心
+    void SetCOG(const KDL::Vector& cog) noexcept {
+        m_cog = cog;
         mx = mass * cog;
-        for (int i = 0; i < 6; i++) {
-            m_inertia[i] = 0.0;
+    }
+
+    // 设置惯性矩阵
+    void SetInertia(double ix, double iy, double iz, double ixy = 0.0, double ixz = 0.0, double iyz = 0.0) noexcept {
+        m_inertia = {ix, iy, iz, ixy, ixz, iyz};
+    }
+
+    // 清零
+    void SetZero() noexcept {
+        mass = 0.0;
+        m_cog = KDL::Vector::Zero();
+        mx = KDL::Vector::Zero();
+        m_inertia.fill(0.0);
+    }
+
+    // Getters
+    const double& GetMass() const noexcept { return mass; }
+    const KDL::Vector& GetCOG() const noexcept { return m_cog; }
+    const std::array<double, 6>& GetInertia() const noexcept { return m_inertia; }
+
+    // 拷贝赋值
+    RokaeLoadInertia& operator=(const RokaeLoadInertia& other) noexcept {
+        if (this != &other) {
+            mass = other.mass;
+            m_cog = other.m_cog;
+            mx = other.mx;
+            m_inertia = other.m_inertia;
         }
-    }
-    void SetMass(const double& mass) {
-        this->mass = mass;
-        this->mx = mass * this->m_cog;
-    }
-
-    void SetCOG(const KDL::Vector& cog) {
-        this->m_cog = cog;
-        this->mx = this->mass * cog;
-    }
-
-    void SetInertia(double ix, double iy, double iz, double ixy = 0, double ixz = 0, double iyz = 0) {
-        m_inertia[0] = ix;
-        m_inertia[1] = iy;
-        m_inertia[2] = iz;
-        m_inertia[3] = ixy;
-        m_inertia[4] = ixz;
-        m_inertia[5] = iyz;
-    }
-
-    void SetZero() {
-        this->mass = 0.0;
-        for (unsigned int i = 0; i < 3; ++i) {
-            this->m_cog(i) = 0.0;
-            this->mx(i) = 0.0;
-        }
-        for (unsigned int i = 0; i < 6; ++i) {
-            this->m_inertia[i] = 0.0;
-        }
-    }
-
-    const double& GetMass() const { return this->mass; }
-    const KDL::Vector& GetCOG() const { return this->m_cog; }
-    const std::array<double, 6>& GetInertia() const { return this->m_inertia; }
-
-    RokaeLoadInertia& operator=(const RokaeLoadInertia& load_input) {
-        this->mass = load_input.GetMass();
-        this->SetCOG(load_input.GetCOG());
-        this->SetInertia(load_input.m_inertia[0], load_input.m_inertia[1], load_input.m_inertia[2], load_input.m_inertia[3],
-                         load_input.m_inertia[4], load_input.m_inertia[5]);
         return *this;
     }
 };
 
 struct RokaeLoadPose {
-    KDL::Vector spatiapos;    //空间位置
-    KDL::Vector eulerangles;  //旋转欧拉角(弧度)
-    RokaeLoadPose() : spatiapos(0.0, 0.0, 0.0), eulerangles(0.0, 0.0, 0.0){};
-    RokaeLoadPose(const double& x, const double& y, const double& z, const double& a, const double& b, const double& c)
-        : spatiapos(x, y, z), eulerangles(a, b, c){};
-    const KDL::Frame& GetKDLFrame() const {
+    KDL::Vector spatiapos;    // 空间位置
+    KDL::Vector eulerangles;  // 旋转欧拉角(弧度)
+
+    // 默认构造函数
+    RokaeLoadPose() = default;
+
+    // 带参数的构造函数
+    RokaeLoadPose(double x, double y, double z, double a, double b, double c) : spatiapos(x, y, z), eulerangles(a, b, c) {}
+
+    // 获取KDL的Frame对象
+    KDL::Frame GetKDLFrame() const {
+        // 使用欧拉角构造旋转矩阵，并返回一个Frame对象
         KDL::Rotation rot = KDL::Rotation::RPY(eulerangles.x(), eulerangles.y(), eulerangles.z());
-        KDL::Frame frame(rot, spatiapos);
-        return frame;
+        return KDL::Frame(rot, spatiapos);  // 直接返回构造的Frame对象
     }
 
-    void SetSpatiaPos(const KDL::Vector& pos) {
-        this->spatiapos.x(pos[0]);
-        this->spatiapos.y(pos[1]);
-        this->spatiapos.z(pos[2]);
-    }
+    // 设置空间位置
+    void SetSpatiaPos(const KDL::Vector& pos) { spatiapos = pos; }
 
-    void SetRotAngle(const KDL::Vector& rot) {
-        this->eulerangles.x(rot[0]);
-        this->eulerangles.y(rot[1]);
-        this->eulerangles.z(rot[2]);
-    }
+    // 设置旋转欧拉角
+    void SetRotAngle(const KDL::Vector& rot) { eulerangles = rot; }
 
+    // 重置为零
     void SetZero() {
-        this->spatiapos.Zero();
-        this->eulerangles.Zero();
+        spatiapos.Zero();
+        eulerangles.Zero();
     }
-    RokaeLoadPose& operator=(const RokaeLoadPose& load_input) {
-        this->spatiapos = load_input.spatiapos;
-        this->eulerangles = load_input.eulerangles;
-        return *this;
-    }
+
+    // 拷贝赋值
+    RokaeLoadPose& operator=(const RokaeLoadPose& load_input) = default;
 };
 
 struct RokaeLoad {
-    RokaeLoadInertia m_rokae_load_inertia;  //动力学信息
-    RokaeLoadPose m_rokae_load_pose;        //位姿信息
+    RokaeLoadInertia m_rokae_load_inertia;  // 动力学信息
+    RokaeLoadPose m_rokae_load_pose;        // 位姿信息
 
-    RokaeLoad() {
-        m_rokae_load_inertia.SetZero();
-        m_rokae_load_pose.SetZero();
-    };
+    // 默认构造函数，直接初始化成员变量
+    RokaeLoad() = default;
+
+    // 设置零值
     void SetZero() {
         m_rokae_load_inertia.SetZero();
         m_rokae_load_pose.SetZero();
     }
-    void SetRokaeLoadInertia(const RokaeLoadInertia& load_inertia) { this->m_rokae_load_inertia = load_inertia; }
-    void SetRokaeLoadPose(const RokaeLoadPose& load_pose) { this->m_rokae_load_pose = load_pose; }
-    const RokaeLoadInertia& GetRokaeLoadInertia() { return this->m_rokae_load_inertia; }
-    const RokaeLoadPose& GetRokaeLoadPose() { return this->m_rokae_load_pose; }
-    RokaeLoad& operator=(const RokaeLoad& load_input) {
-        this->m_rokae_load_inertia = load_input.m_rokae_load_inertia;
-        this->m_rokae_load_pose = load_input.m_rokae_load_pose;
-        return *this;
-    }
-};
 
-struct Vector3D {
-    double m_x, m_y, m_z;
+    // 设置动力学信息
+    void SetRokaeLoadInertia(const RokaeLoadInertia& load_inertia) { m_rokae_load_inertia = load_inertia; }
 
-    // 构造函数
-    Vector3D(double x = 0.0, double y = 0.0, double z = 0.0) : m_x(x), m_y(y), m_z(z) {}
+    // 设置位姿信息
+    void SetRokaeLoadPose(const RokaeLoadPose& load_pose) { m_rokae_load_pose = load_pose; }
 
-    // 其他可能的成员函数，如加法、减法、点乘等（这里省略）
-    void SetToZero() {
-        m_x = 0.0;
-        m_y = 0.0;
-        m_z = 0.0;
-    }
+    // 获取动力学信息
+    const RokaeLoadInertia& GetRokaeLoadInertia() const { return m_rokae_load_inertia; }
+
+    // 获取位姿信息
+    const RokaeLoadPose& GetRokaeLoadPose() const { return m_rokae_load_pose; }
+
+    // 拷贝赋值
+    RokaeLoad& operator=(const RokaeLoad& load_input) = default;
 };
 
 }  // namespace Model
@@ -405,46 +358,33 @@ enum FcFrameType {
     FCFRAME_BASE    //基坐标系
 };
 
-enum ServoType {
-    POSTION_CONTROL,  //位置模式
-    FORCE_CONTROL,    //力矩模式
-    UNKNOWN
-};
-
 struct ProtectParams {
     unsigned int m_jnt_num;
-    //轴空间
+    // 轴空间
     std::vector<double> max_joint_stiff;
     std::vector<double> max_joint_damp;
     std::vector<double> max_joint_stiff_trq;
     std::vector<double> max_joint_damp_trq;
-    //笛卡尔空间(暂时忽略)
-
-    //保护功能
+    // 保护功能
     std::vector<double> max_mode_switch_trq;
     std::vector<double> soft_joint_limit_stiff;
     std::vector<double> soft_joint_limit_damp;
-    //以下参数暂不开放
-    // std::vector<double> virtual_wall_stiff;
-    // std::vector<double> prevent_mini_distance;
 
-    ProtectParams(unsigned int jnt_num = 6) : m_jnt_num(jnt_num){};  //默认为6轴
-    ~ProtectParams(){};
-    void InitProtectParams(unsigned int size) {
-        m_jnt_num = size;
-        max_joint_stiff.resize(m_jnt_num, 300.0);
-        max_joint_damp.resize(m_jnt_num, 10.0);
-        max_joint_stiff_trq.resize(m_jnt_num, 60.0);
-        max_joint_damp_trq.resize(m_jnt_num, 20.0);
-        max_mode_switch_trq.resize(m_jnt_num, 30.0);
-        soft_joint_limit_stiff.resize(m_jnt_num, 1000.0);
-        soft_joint_limit_damp.resize(m_jnt_num, 10.0);
-    }
+    // 使用 member initializer list 直接初始化
+    ProtectParams(unsigned int jnt_num = 6)
+        : m_jnt_num(jnt_num),
+          max_joint_stiff(jnt_num, 300.0),
+          max_joint_damp(jnt_num, 10.0),
+          max_joint_stiff_trq(jnt_num, 60.0),
+          max_joint_damp_trq(jnt_num, 20.0),
+          max_mode_switch_trq(jnt_num, 30.0),
+          soft_joint_limit_stiff(jnt_num, 1000.0),
+          soft_joint_limit_damp(jnt_num, 10.0) {}
 };
 
 struct GainParams {
     unsigned int m_jnt_num;
-    //轴空间
+    // 轴空间
     std::vector<double> joint_gain_kp;
     std::vector<double> joint_damp_zeta;
     std::vector<double> friction_cof_servo;
@@ -452,36 +392,29 @@ struct GainParams {
     std::vector<double> trans_drag_rot_damp;
     std::vector<double> rot_drag_trans_stiff;
     std::vector<double> rot_drag_trans_damp;
-    //笛卡尔空间暂不开放
-    //阻抗暂不开放
 
-    GainParams(unsigned int jnt_num = 6) : m_jnt_num(jnt_num){};  //默认为6轴
-    ~GainParams(){};
-    void InitGainParams(unsigned int size) {
-        m_jnt_num = size;
-        joint_gain_kp.resize(m_jnt_num, 1.0);
-        joint_damp_zeta.resize(m_jnt_num, 0.707);
-        friction_cof_servo.resize(m_jnt_num, 0.6);
-        trans_drag_rot_stiff.resize(6, 300.0);
-        trans_drag_rot_damp.resize(6, 5.0);
-        rot_drag_trans_stiff.resize(6, 2000);
-        rot_drag_trans_damp.resize(6, 10.0);
-    }
+    GainParams(unsigned int jnt_num = 6)
+        : m_jnt_num(jnt_num),
+          joint_gain_kp(jnt_num, 1.0),
+          joint_damp_zeta(jnt_num, 0.707),
+          friction_cof_servo(jnt_num, 0.6),
+          trans_drag_rot_stiff(6, 300.0),
+          trans_drag_rot_damp(6, 5.0),
+          rot_drag_trans_stiff(6, 2000),
+          rot_drag_trans_damp(6, 10.0) {}
 };
 
 struct ControlParams {
     ProtectParams m_protect_params;
     GainParams m_gain_params;
-    // ControlParams() { this->Resize(6); }
-    ControlParams(unsigned int jnt_num) {
-        m_protect_params.InitProtectParams(jnt_num);
-        m_gain_params.InitGainParams(jnt_num);
-    }
+
+    ControlParams(unsigned int jnt_num) : m_protect_params(jnt_num), m_gain_params(jnt_num) {}
+
+    // Resize 用于重新初始化
     void Resize(unsigned int jnt_num) {
-        m_protect_params.InitProtectParams(jnt_num);
-        m_gain_params.InitGainParams(jnt_num);
+        m_protect_params = ProtectParams(jnt_num);
+        m_gain_params = GainParams(jnt_num);
     }
-    ~ControlParams(){};
 };
 
 struct Servo_To_FcInner {
@@ -495,41 +428,42 @@ struct Servo_To_FcInner {
     Servo_To_FcInner(unsigned int jnt_num) { Resize(jnt_num); }
 
     void Resize(unsigned int jnt_num) {
-        pos_feedback.resize(jnt_num, 0);
-        vel_feedback.resize(jnt_num, 0);
-        trq_feedback.resize(jnt_num, 0);
-        analog_ch1.resize(jnt_num, 0);
-        analog_ch2.resize(jnt_num, 0);
-        mode_operation.resize(jnt_num, 0);
+        ResizeVector(pos_feedback, jnt_num);
+        ResizeVector(vel_feedback, jnt_num);
+        ResizeVector(trq_feedback, jnt_num);
+        ResizeVector(analog_ch1, jnt_num);
+        ResizeVector(analog_ch2, jnt_num);
+        ResizeVector(mode_operation, jnt_num);
     }
 };
 
 struct FcInner_To_Servo {
-    std::vector<int16_t> trq_cmd;          //关节扭矩指令
-    std::vector<int16_t> trq_feedforward;  //力矩前馈
-    std::vector<int16_t> k_p;              //关节力矩环带宽
-    std::vector<int16_t> k_d;              //关节阻尼比
-    std::vector<int16_t> k_p_reset_by_load;  //根据负载参数更新的关节力矩环带宽
-    std::vector<int16_t> k_d_reset_by_load;  //根据负载参数更新的关节阻尼比
-    std::vector<int16_t> edb_cof;          //传感器线性度
-    std::vector<int16_t> edb_o;            //传感器偏置
-    std::vector<int16_t> fric_cof;         //摩擦力补偿系数
-    std::vector<int16_t> jnt_inertia;      //关节惯量
+    std::vector<int16_t> trq_cmd;
+    std::vector<int16_t> trq_feedforward;
+    std::vector<int16_t> k_p;
+    std::vector<int16_t> k_d;
+    std::vector<int16_t> k_p_reset_by_load;
+    std::vector<int16_t> k_d_reset_by_load;
+    std::vector<int16_t> edb_cof;
+    std::vector<int16_t> edb_o;
+    std::vector<int16_t> fric_cof;
+    std::vector<int16_t> jnt_inertia;
 
     FcInner_To_Servo(unsigned int jnt_num) { Resize(jnt_num); }
 
     void Resize(unsigned int jnt_num) {
-        trq_cmd.resize(jnt_num, 0);
-        trq_feedforward.resize(jnt_num, 0);
-        k_p.resize(jnt_num, 2000);
-        k_d.resize(jnt_num, 70);
-        k_p_reset_by_load.resize(jnt_num, 2000);
-        k_d_reset_by_load.resize(jnt_num, 70);
-        edb_cof.resize(jnt_num, 100);
-        edb_o.resize(jnt_num, 0);
-        fric_cof.resize(jnt_num, 10);
-        jnt_inertia.resize(jnt_num, 700);
-        //对惯量做初值保护
+        ResizeVector(trq_cmd, jnt_num);
+        ResizeVector(trq_feedforward, jnt_num);
+        ResizeVector(k_p, jnt_num, static_cast<int16_t>(2000));  // Custom default for k_p
+        ResizeVector(k_d, jnt_num, static_cast<int16_t>(70));    // Custom default for k_d
+        ResizeVector(k_p_reset_by_load, jnt_num, static_cast<int16_t>(2000));
+        ResizeVector(k_d_reset_by_load, jnt_num, static_cast<int16_t>(70));
+        ResizeVector(edb_cof, jnt_num, static_cast<int16_t>(100));
+        ResizeVector(edb_o, jnt_num, static_cast<int16_t>(0));
+        ResizeVector(fric_cof, jnt_num, static_cast<int16_t>(10));
+        ResizeVector(jnt_inertia, jnt_num, static_cast<int16_t>(700));
+
+        // Apply specific initialization for 6 joints
         if (jnt_num == 6) {
             jnt_inertia = {600, 500, 400, 300, 200, 100};
         }

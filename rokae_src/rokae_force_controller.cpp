@@ -39,7 +39,7 @@
          m_drag_type = DragType::DRAG_JOINT;
          break;
      default:
-         return DRAGTYPE_ERROR;
+         return ERROR_DRAGTYPE;
      }
      m_load.m = load_params->m;
      KDL::Vector cog_temp(load_params->m_cog.m_x, load_params->m_cog.m_y, load_params->m_cog.m_z);

@@ -39,7 +39,7 @@ int InitInterface(const Model::MechUnitType& robot_type) {
         }
     } catch (const std::exception& e) {
         std::cerr << "Failed to initialize InitRobot: " << e.what() << std::endl;
-        return ROBOT_INITIALIZE_ERROR;
+        return ERROR_ROBOTTYPE;
     }
 
     // 2.初始化力控模块
@@ -94,7 +94,7 @@ int FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector
 int FcStop(const std::vector<int8_t>& servo_mode) {
     for (unsigned int i = 0; i < jnt_num; i++) {
         if (servo_mode[i] != POSITION_MODE) {
-            return SERVO_MODE_ERROR;
+            return ERROR_SERVO_MODE;
         }
     }
     forcecontrol_ptr->FcStatusRefresh();
@@ -105,11 +105,11 @@ int FcStop(const std::vector<int8_t>& servo_mode) {
 int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog2trq_low) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置线性度
     return (forcecontrol_ptr->SetSensorLinearity(analog2trq_low) && axisconvert_ptr->SetSensorLinearity(analog2trq_low));
@@ -118,11 +118,11 @@ int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<
 int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog_bias) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置传感器零点
     return (forcecontrol_ptr->SetSensorBias(analog_bias) && axisconvert_ptr->SetSensorBias(analog_bias));
@@ -131,11 +131,11 @@ int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<doubl
 int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<int32_t>& encoder_offset) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置编码器零点
     return (forcecontrol_ptr->SetEncoderOffset(encoder_offset) && axisconvert_ptr->SetEncoderBias(encoder_offset));
@@ -145,11 +145,11 @@ int SetSoftLimit(const std::vector<int8_t>& servo_mode, const std::vector<double
                  const std::vector<double>& joint_range_max) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置软限位
     return forcecontrol_ptr->SetSoftLimit(joint_range_min, joint_range_max);
@@ -158,11 +158,11 @@ int SetSoftLimit(const std::vector<int8_t>& servo_mode, const std::vector<double
 int SetMaxTrqErrorThreshold(const std::vector<int8_t>& servo_mode, const std::vector<double>& m_max_trq_error_threshold) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置最大扭矩误差阈值
     return forcecontrol_ptr->SetMaxTrqErrorThreshold(m_max_trq_error_threshold);
@@ -171,11 +171,11 @@ int SetMaxTrqErrorThreshold(const std::vector<int8_t>& servo_mode, const std::ve
 int SetLoadLimit(const std::vector<int8_t>& servo_mode, const double& max_load_mass, const double& max_load_tcp_length) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置负载限制
     return forcecontrol_ptr->SetLoadLimit(max_load_mass, max_load_tcp_length);
@@ -184,11 +184,11 @@ int SetLoadLimit(const std::vector<int8_t>& servo_mode, const double& max_load_m
 int SetFcLoad(const std::vector<int8_t>& servo_mode, const RokaeLoad& load) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置力控负载
     return forcecontrol_ptr->SetFcLoad(load);
@@ -197,11 +197,11 @@ int SetFcLoad(const std::vector<int8_t>& servo_mode, const RokaeLoad& load) {
 int SetKpGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& kp_gain_set) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置kp滑条系数
     return forcecontrol_ptr->SetKpGain(kp_gain_set);
@@ -210,11 +210,11 @@ int SetKpGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& 
 int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& fric_gain_set) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //设置摩擦滑条系数
     return forcecontrol_ptr->SetFricGain(fric_gain_set);
@@ -222,7 +222,7 @@ int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>
 
 int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {
     if (!ArrayToKdlFrame(base_poseture, frame_base_in_world)) {
-        return EULER_PARAMS_ERROR;
+        return ERROR_EULER_PARAMS;
     }
     //根据基坐标系方向确定重力矢量方向
     gravity_vector = frame_base_in_world.M.Inverse() * KDL::Vector(0, 0, -9.8);
@@ -240,11 +240,11 @@ int CalibrateTrqSensor(const std::vector<int8_t>& servo_mode, const std::vector<
                        std::vector<double>& sensor_bias) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
     if (forcecontrol_ptr->GetDragStatus() != true) {
-        return DRAG_STATUS_ERROR;
+        return ERROR_DRAG_STATUS;
     }
     //进行校准
     return forcecontrol_ptr->CalibrateTrqSensor(pos_encoder_feedback, load_input, analog_array_ch1, analog_array_ch2,
@@ -254,14 +254,14 @@ int CalibrateTrqSensor(const std::vector<int8_t>& servo_mode, const std::vector<
 //*******************************关节状态*********************************/
 int GetAxisPos(const std::vector<int>& encoder_value, std::vector<double>& jnt_pos_rad) {
     if (encoder_value.size() != jnt_num || jnt_pos_rad.size() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     return axisconvert_ptr->GetAxisPos(encoder_value, jnt_pos_rad);
 }
 
 int GetAxisVel(const std::vector<int>& encoder_vel_value, std::vector<double>& jnt_vel_rad) {
     if (jnt_vel_rad.size() != jnt_num || encoder_vel_value.size() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     return axisconvert_ptr->GetAxisVel(encoder_vel_value, jnt_vel_rad);
 }
@@ -269,7 +269,7 @@ int GetAxisVel(const std::vector<int>& encoder_vel_value, std::vector<double>& j
 int GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
                 std::vector<double>& jnt_trq_feedback) {
     if (jnt_trq_feedback.size() != jnt_num || analog_ch1.size() != jnt_num || analog_ch2.size() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     return axisconvert_ptr->GetCobotTrq(analog_ch1, analog_ch2, jnt_trq_feedback);
 }
@@ -319,7 +319,7 @@ void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian
 //*******************************获取实时内部状态*********************************/
 int GetAxisPosCurrent(std::vector<double>& jnt_pos_rad) {
     if (jnt_pos_rad.size() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.data.cbegin(),
               forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.data.cend(), jnt_pos_rad.begin());
@@ -328,7 +328,7 @@ int GetAxisPosCurrent(std::vector<double>& jnt_pos_rad) {
 
 int GetAxisVelCurrent(std::vector<double>& jnt_vel_rad) {
     if (jnt_vel_rad.size() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.data.cbegin(),
               forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.data.cend(), jnt_vel_rad.begin());
@@ -337,7 +337,7 @@ int GetAxisVelCurrent(std::vector<double>& jnt_vel_rad) {
 
 int GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback) {
     if (jnt_trq_feedback.size() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.data.cbegin(),
               forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.data.cend(), jnt_trq_feedback.begin());
@@ -362,7 +362,7 @@ int GetTcpPosCurrent(std::array<double, 6>& tcp_pos) {
 int GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis, Eigen::MatrixXd& mass_matrix) {
     if (mass_matrix.rows() != jnt_num || mass_matrix.cols() != jnt_num || trq_gravity.size() != jnt_num ||
         trq_coriolis.size() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.data.cbegin(),
               forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.data.cend(), trq_gravity.begin());
@@ -374,7 +374,7 @@ int GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double
 
 int GetJacobianCurrent(Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
     if (jacobian.rows() != 6 || jacobian.cols() != jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     jacobian = forcecontrol_ptr->GetFcStatusCopy().jac_measure_tcp_in_base.data;
     return SOLVE_NOERROR;

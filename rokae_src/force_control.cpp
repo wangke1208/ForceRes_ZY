@@ -103,9 +103,9 @@ int ForceControl::Fcinit() {
                                 m_init_robot_ptr->GetModelParams().max_load_tcp_length);
         }};
 
-    for (const auto& call : func_calls) {
-        if (call() != SOLVE_NOERROR) {
-            return INIT_ERROR;
+    for (const auto& result : func_calls) {
+        if (result() != SOLVE_NOERROR) {
+            return result();
         }
     }
     return SOLVE_NOERROR;
@@ -123,7 +123,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     // 1.1 处于位置模式下
     if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
                     [](int8_t servo_type) { return servo_type != POSITION_MODE; })) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
 
     // 1.2 计算当前位置
@@ -142,12 +142,12 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     // 1.4 当前机器人位置不处在软限位保护范围内
     if (m_force_protect_ptr->IsInForceControlArea(VectorToJntArray(jnt_pos_rad_temp), m_joint_range_max_inner,
                                                   m_joint_range_min_inner)) {
-        return STARTDRAG_POS_OVER_LIMIT;
+        return ERROR_DRAG_START_POS;
     }
 
     // 2.设置拖动模式
     if (drag_type < 0 || drag_type > 3) {
-        return DRAGTYPE_ERROR;
+        return ERROR_DRAGTYPE;
     }
     m_drag_type = drag_type;
 
@@ -218,7 +218,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     // 1.1 当前非力矩模式不允许调用本接口(双重保护,避免drag_config后又置为位置模式)
     if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
                     [](int8_t servo_type) { return servo_type != TORQUE_MODE; })) {
-        return SERVO_MODE_ERROR;
+        return ERROR_SERVO_MODE;
     }
 
     // 2.读取伺服数据并转换为Fc内部变量
@@ -267,7 +267,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
 
 int ForceControl::SetSensorLinearity(const std::vector<double>& analog2trq_low) {
     if (m_jnt_num != analog2trq_low.size()) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     m_fc_params_inner_ptr->m_hardware_params.SetParam("analog2trq_low", m_init_robot_ptr->GetMechanicalParams().analog2trq_low);
     m_servo_fc_convert_ptr->SetSensorLinearity(analog2trq_low);
@@ -277,7 +277,7 @@ int ForceControl::SetSensorLinearity(const std::vector<double>& analog2trq_low) 
 
 int ForceControl::SetSensorBias(const std::vector<double>& analog_bias) {
     if (m_jnt_num != analog_bias.size()) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     m_fc_params_inner_ptr->m_hardware_params.SetParam("analog_bias", m_init_robot_ptr->GetMechanicalParams().analog_bias);
     m_servo_fc_convert_ptr->SetSensorBias(analog_bias);
@@ -286,7 +286,7 @@ int ForceControl::SetSensorBias(const std::vector<double>& analog_bias) {
 
 int ForceControl::SetEncoderOffset(const std::vector<int32_t>& encoder_offset) {
     if (m_jnt_num != encoder_offset.size()) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     std::vector<double> encoder_offset_temp(encoder_offset.begin(), encoder_offset.end());
     m_fc_params_inner_ptr->m_hardware_params.SetParam("encoder_offset", (encoder_offset_temp));
@@ -299,10 +299,10 @@ int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const
 
     // 长度检查
     if (joint_range_min.size() != m_jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     if (joint_range_max.size() != m_jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
 
     // 数据有效性检查
@@ -311,7 +311,7 @@ int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const
         if (joint_range_min[i] < 0 || joint_range_max[i] > 0 || 
             joint_range_min[i] < m_init_robot_ptr->GetModelParams().joint_range_min_new[i] ||
             joint_range_max[i] > m_init_robot_ptr->GetModelParams().joint_range_max_new[i]) {
-            return SOFT_LIMIT_PARAMS_ERROR;
+            return ERROR_SOFT_LIMIT_PARAMS;
         }
     }
 
@@ -331,7 +331,7 @@ int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const
 
 int ForceControl::SetMaxTrqErrorThreshold(const std::vector<double>& m_max_trq_error_threshold) {
     if (m_jnt_num != m_max_trq_error_threshold.size()) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     m_fc_params_inner_ptr->m_protect_params.SetParam("max_mode_switch_trq", m_max_trq_error_threshold);
     return SOLVE_NOERROR;
@@ -339,11 +339,11 @@ int ForceControl::SetMaxTrqErrorThreshold(const std::vector<double>& m_max_trq_e
 
 int ForceControl::SetZetaGain(const std::vector<double>& zeta_set) {
     if (m_jnt_num != zeta_set.size()) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     for (unsigned int i = 0; i < zeta_set.size(); i++) {
         if (zeta_set[i] < 0 or zeta_set[i] > 1.5) {
-            return GAIN_VALUE_ERROR;
+            return ERROR_GAIN_VALUE_SET;
         }
     }
     m_fc_params_inner_ptr->m_function_params.SetParam("joint_servo_dmap_kv", zeta_set);
@@ -353,7 +353,7 @@ int ForceControl::SetZetaGain(const std::vector<double>& zeta_set) {
 
 int ForceControl::SetImpedenceGain(const DragType& drag_type) {
     if (m_drag_type != drag_type) {
-        return DRAGTYPE_ERROR;
+        return ERROR_DRAGTYPE;
     }
 
     // 1.先设置默认拖动参数
@@ -378,7 +378,7 @@ int ForceControl::SetImpedenceGain(const DragType& drag_type) {
 
 int ForceControl::SetLoadLimit(const double& max_load_mass, const double& max_load_tcp_length) {
     if (max_load_mass <= 0 || max_load_tcp_length <= 0) {
-        return LOAD_LIMIT_PARAMS_ERROR;
+        return ERROR_LOAD_LIMIT_PARAMS;
     }
     m_load_mass_limit[0] = max_load_mass;
     m_load_tcp_length_limit[0] = max_load_tcp_length;
@@ -392,9 +392,9 @@ int ForceControl::SetFcLoad(const RokaeLoad& load) {
     // 判断负载参数是否合理
     if (load.m_rokae_load_inertia.mass >
         m_fc_params_inner_ptr->m_protect_params.m_params["max_load_mass"].at(0)) {  // 工具质量限制，小于最大负载
-        return LOAD_PARAMS_ERROR;
+        return ERROR_LOAD_PARAMS;
     } else if (load.m_rokae_load_inertia.GetCOG().Norm() > 0.3) {  // 工具TCP长度限制
-        return LOAD_PARAMS_ERROR;
+        return ERROR_LOAD_PARAMS;
     }
 
     KDL::Vector rpy_rad = load.m_rokae_load_pose.eulerangles / 180.0 * PI;
@@ -411,11 +411,11 @@ int ForceControl::SetFcLoad(const RokaeLoad& load) {
 
 int ForceControl::SetKpGain(const std::vector<double>& kp_gain_set) {
     if (m_jnt_num != kp_gain_set.size()) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     for (unsigned int i = 0; i < kp_gain_set.size(); i++) {
         if (kp_gain_set[i] < 0 or kp_gain_set[i] > 1) {
-            return GAIN_VALUE_ERROR;
+            return ERROR_GAIN_VALUE_SET;
         }
     }
     m_fc_params_inner_ptr->m_function_params.SetParam("kp_gain_set", kp_gain_set);
@@ -425,11 +425,11 @@ int ForceControl::SetKpGain(const std::vector<double>& kp_gain_set) {
 
 int ForceControl::SetFricGain(const std::vector<double>& fric_gain_set) {
     if (m_jnt_num != fric_gain_set.size()) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     for (unsigned int i = 0; i < fric_gain_set.size(); i++) {
         if (fric_gain_set[i] < 0 or fric_gain_set[i] > 1) {
-            return GAIN_VALUE_ERROR;
+            return ERROR_GAIN_VALUE_SET;
         }
     }
     m_fc_params_inner_ptr->m_function_params.SetParam("fri_gain_set", fric_gain_set);
@@ -478,7 +478,7 @@ void ForceControl::SetBaseFrameAndGravity(const KDL::Frame& base_in_world, const
 int ForceControl::ResetFcStatus() {
     // for (unsigned int i = 0; i < m_jnt_num; i++) {
     //     if (servo_mode[i] != POSITION_MODE) {
-    //         return SERVO_MODE_ERROR;
+    //         return ERROR_SERVO_MODE;
     //     }
     // }
 
@@ -522,7 +522,7 @@ int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_fee
     // 长度检查
     if (pos_encoder_feedback.size() != m_jnt_num || analog_array_ch1.size() != m_jnt_num ||
         analog_array_ch2.size() != m_jnt_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
 
     KDL::JntArray trq_gra_jntarray;

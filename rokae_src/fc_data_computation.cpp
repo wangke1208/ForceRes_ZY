@@ -56,7 +56,7 @@ int FcStatusTracker::FcStatusUpdata() {
         return FcStatusUpdataCart();
 
     default:
-        return DRAGTYPE_ERROR;
+        return ERROR_DRAGTYPE;
     }
 }
 
@@ -182,7 +182,7 @@ void FcStatusTracker::SetLoad(const RokaeLoad& load) {
 
 int FcStatusTracker::SetFcFrameType(const FcFrameType& fc_frame_type) {
     if (fc_frame_type > 3 || fc_frame_type < 0) {
-        return FC_FRAME_TYPE_ERROR;
+        return ERROR_FC_FRAME_TYPE;
     }
     //设置力控坐标系
     m_fc_frame_type = fc_frame_type;

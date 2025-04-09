@@ -62,6 +62,7 @@ inline std::vector<double>& JntArrayToVector(const KDL::JntArray& in) {
     return out;
 }
 
+// 向量与Wrench转换函数
 inline void FCVectorXdToWrench(const Eigen::VectorXd& in, KDL::Wrench& out) {
     for (unsigned int i = 0; i < 3; i++) {
         out.force(i) = in[i];
@@ -69,10 +70,11 @@ inline void FCVectorXdToWrench(const Eigen::VectorXd& in, KDL::Wrench& out) {
     }
 }
 
+// 数组与KDL::Frame转换函数
 inline int ArrayToKdlFrame(const std::array<double, 6>& in, KDL::Frame& out) {
     //对欧拉角进行限制
     if (in[3] > 180 || in[3] < -180 || in[4] > 180 || in[4] < -180 || in[5] > 180 || in[5] < -180) {
-        return EULER_PARAMS_ERROR;
+        return ERROR_EULER_PARAMS;
     }
     KDL::Vector pos_temp(in[0], in[1], in[2]);
     out.p = pos_temp;
@@ -80,6 +82,7 @@ inline int ArrayToKdlFrame(const std::array<double, 6>& in, KDL::Frame& out) {
     return SOLVE_NOERROR;
 }
 
+// 向量与RobDimensions转换函数
 inline void VectorToRD(const std::vector<double>& in, Model::ModelParams::RobDimensions& out) {
     int joint_num = in.size() / 3;
     std::array<double*, 24> out_pointers = {&out.L01x, &out.L01y, &out.L01z, &out.L12x, &out.L12y, &out.L12z,
@@ -92,13 +95,14 @@ inline void VectorToRD(const std::vector<double>& in, Model::ModelParams::RobDim
     }
 }
 
+// 配置参数转换函数
 inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model::ModelParams& model_out,
                                       Model::MechanicalParams& mec_out, Control::ControlParams& control_out) {
     //判断参数是否可转换(TODO:先简单判断下，后续再优化)
     if (in.model_config_params.AXIS_NUM != model_out.axis_num ||
         in.mechanical_config_params.ENCODER_OFFESET.size() != mec_out.encoder_offset.size() ||
         in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC.size() != control_out.m_gain_params.joint_gain_kp.size())
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
 
     // 1.0模型参数
     for (unsigned int i = 0; i < model_out.axis_num + 1; i++) {

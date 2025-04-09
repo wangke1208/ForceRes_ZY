@@ -62,7 +62,7 @@ Axis_Convert::Axis_Convert(unsigned int axis_num, const Model::MechanicalParams&
 
 int Axis_Convert::SetEncoderBias(const std::vector<int>& encoder_bias_set) {
     if(encoder_bias_set.size()!= m_axis_num) {
-        return SIZE_ERROR; 
+        return ERROR_SIZE_WRONG;
     }
     for(unsigned int i = 0; i < m_axis_num; i++) {
         m_motorside_encoder_offset[i] = encoder_bias_set[i]; 
@@ -83,7 +83,7 @@ int Axis_Convert::GetEncoderValue(const std::vector<double>& jnt_pos_rad, std::v
 
 int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, std::vector<double>& jnt_pos_rad) {
     if (encoder_value.size() != m_axis_num || jnt_pos_rad.size()!= m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
     for (unsigned i = 0; i < m_axis_num; i++) {
@@ -95,7 +95,7 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, std::vector<
 
 int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, KDL::JntArray& jnt_pos_rad) {
     if (encoder_value.size() != m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
     for (unsigned i = 0; i < m_axis_num; i++) {
@@ -107,7 +107,7 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, KDL::JntArra
 
 int Axis_Convert::GetVelRegValueForServo(const std::vector<double>& axis_vel_rad, std::vector<int16_t>& vel_reg_value) {
     if (axis_vel_rad.size() != m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
 
     for (uint32_t i = 0; i < m_axis_num; ++i) {
@@ -118,7 +118,7 @@ int Axis_Convert::GetVelRegValueForServo(const std::vector<double>& axis_vel_rad
 
 int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, std::vector<double>& jnt_vel_rad) {
     if (jnt_vel_rad.size() != m_axis_num || encoder_vel_value.size()!= m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
 
     for (unsigned int i = 0; i < m_axis_num; i++) {
@@ -128,7 +128,7 @@ int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, std::vec
 }
 int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, KDL::JntArray& jnt_vel_rad) {
     if (jnt_vel_rad.rows() != m_axis_num || encoder_vel_value.size() != m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
 
     for (unsigned int i = 0; i < m_axis_num; i++) {
@@ -157,11 +157,11 @@ int Axis_Convert::GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std:
 }
 int Axis_Convert::SetSensorBias(const std::vector<double>& sensor_bias_set) {
     if (sensor_bias_set.size() != m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     for (unsigned int i = 0; i < m_axis_num; i++) {
         if (sensor_bias_set[i] <= 0.0 || sensor_bias_set[i] >= 5000.0) {
-            return SENSOR_BIAS_ERROR;
+            return ERROR_SENSOR_BIAS;
         }
     }
     std::copy(sensor_bias_set.cbegin(), sensor_bias_set.cend(), m_analog_bias.begin());
@@ -170,11 +170,11 @@ int Axis_Convert::SetSensorBias(const std::vector<double>& sensor_bias_set) {
 
 int Axis_Convert::SetSensorLinearity(const std::vector<double>& analog_low_set) {
     if (analog_low_set.size() != m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     for (unsigned int i = 0; i < m_axis_num; i++) {
         if (analog_low_set[i] < 1.75 || analog_low_set[i] > 2.75) {
-            return SENSOR_LINERALITY_ERROR;
+            return ERROR_SENSOR_LINERALITY_SET;
         }
     }
     std::copy(analog_low_set.cbegin(), analog_low_set.cend(), m_analog2trq_low.begin());
@@ -188,7 +188,7 @@ int Axis_Convert::SetSensorLinearity(const std::vector<double>& analog_low_set) 
 int Axis_Convert::GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std::vector<double>& analog_average,
                                 std::vector<double>& analog_bias) {
     if (trq_gra_jntarray.rows() != m_axis_num || analog_average.size() != m_axis_num || analog_bias.size() != m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     for (unsigned int i = 0; i < m_axis_num; i++) {
         analog_bias[i] =
@@ -197,7 +197,7 @@ int Axis_Convert::GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std
         if ((analog_bias[i] > 3750) or (analog_bias[i] < 1250)) {
             //辨识失败均返回0
             analog_bias.assign(m_axis_num, 0.0);
-            return SENSOR_BIAS_ERROR;
+            return ERROR_SENSOR_BIAS;
         }
     }
     return SOLVE_NOERROR;
@@ -218,7 +218,7 @@ int Servo_Fc_Convert::ServoData2FcInner(const std::vector<int8_t>& pdo_mode_oper
     if (pdo_mode_operation_0x6061.size() != m_axis_num || pdo_analog_ch1_0x2401.size() != m_axis_num ||
         pdo_analog_ch2_0x2402.size() != m_axis_num || pdo_trq_feedback_0x2406.size() != m_axis_num ||
         pdo_pos_feedback_0x6064.size() != m_axis_num || pdo_vel_feedback_0x606C.size() != m_axis_num) {
-        return SIZE_ERROR;
+        return ERROR_SIZE_WRONG;
     }
     //将伺服的PDO数据转换为FcInner数据
     std::copy(pdo_mode_operation_0x6061.cbegin(), pdo_mode_operation_0x6061.cend(), servo_data_fcinner.mode_operation.begin());
