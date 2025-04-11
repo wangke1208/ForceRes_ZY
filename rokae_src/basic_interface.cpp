@@ -29,6 +29,19 @@ KDL::Wrench tcp_wrench;
 KDL::Vector gravity_vector;  //重力矢量
 KDL::Frame frame_base_in_world;  // 基坐标系在世界坐标系下的位置
 
+//计算运动学&动力学的临时变量
+KDL::JntArray q_temp;
+KDL::JntArray qd_temp;
+KDL::JntArray qdd_temp;
+KDL::JntArray trq_total_temp;
+KDL::JntArray trq_gravity_temp;
+KDL::JntArray trq_coriolis_temp;
+KDL::JntArray trq_inertia_temp;
+KDL::JntArray trq_ext_temp;
+KDL::Frame tcp_frame_temp;
+KDL::Jacobian jacobian_temp;
+KDL::JntSpaceInertiaMatrix inertia_matrix_temp;
+
 int InitInterface(const Model::MechUnitType& robot_type) {
     // 1.初始化参数模块
     try {
@@ -59,6 +72,17 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     jnt_ext_trq.resize(jnt_num);
     tcp_wrench.Zero();
 
+    q_temp.resize(jnt_num);
+    qd_temp.resize(jnt_num);
+    qdd_temp.resize(jnt_num);
+    trq_total_temp.resize(jnt_num);
+    trq_gravity_temp.resize(jnt_num);
+    trq_coriolis_temp.resize(jnt_num);
+    trq_inertia_temp.resize(jnt_num);
+
+    tcp_frame_temp.Identity();
+    jacobian_temp.resize(jnt_num);
+    inertia_matrix_temp.resize(jnt_num);
     return SOLVE_NOERROR;
 }
 
@@ -288,32 +312,83 @@ void GetTcpWrench(const RokaeLoadPose& load, const std::vector<double>& jnt_pos,
 }
 
 //*******************************模型接口*********************************/
-const KDL::JntArray& GetGraTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q) {
-    return dynamicsolver_ptr->GetGraTorque(load_params, q);
+int GetGraTorque(const RokaeLoad& load_params, const std::vector<double>& q, std::vector<double>& trq_gravity) {
+    if (q.size() != jnt_num || trq_gravity.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(q, q_temp);
+    trq_gravity_temp = dynamicsolver_ptr->GetGraTorque(load_params.m_rokae_load_inertia, q_temp);
+    JntArrayToVector(trq_gravity_temp, trq_gravity);
+    return SOLVE_NOERROR;
 }
 
-const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& ddq) {
-    return dynamicsolver_ptr->GetInertTorque(load_params, q, ddq);
+int GetInertTorque(const RokaeLoad& load_params, const std::vector<double>& q, const std::vector<double>& ddq,
+                   std::vector<double>& trq_inertia) {
+    if (q.size() != jnt_num || ddq.size() != jnt_num || trq_inertia.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(q, q_temp);
+    VectorToJntArray(ddq, qd_temp);
+    trq_inertia_temp = dynamicsolver_ptr->GetInertTorque(load_params.m_rokae_load_inertia, q_temp, qd_temp);
+    JntArrayToVector(trq_inertia_temp, trq_inertia);
+    return SOLVE_NOERROR;
 }
-const KDL::JntArray& GetCoriolisTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq) {
-    return dynamicsolver_ptr->GetColioTorque(load_params, q, dq);
+
+int GetCoriolisTorque(const RokaeLoad& load_params, const std::vector<double>& q, const std::vector<double>& dq,
+                      std::vector<double>& trq_coriolis) {
+    if (q.size() != jnt_num || dq.size() != jnt_num || trq_coriolis.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(q, q_temp);
+    VectorToJntArray(dq, qd_temp);
+    trq_coriolis_temp = dynamicsolver_ptr->GetColioTorque(load_params.m_rokae_load_inertia, q_temp, qd_temp);
+    JntArrayToVector(trq_coriolis_temp, trq_coriolis);
+    return SOLVE_NOERROR;
 }
-const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
-                                    const KDL::JntArray& ddq) {
-    return dynamicsolver_ptr->GetTotalTorque(load_params, q, dq, ddq);
+
+int GetTotalTorque(const RokaeLoad& load_params, const std::vector<double>& q, const std::vector<double>& dq,
+                   const std::vector<double>& ddq, std::vector<double>& trq_total) {
+    if (q.size() != jnt_num || dq.size() != jnt_num || ddq.size() != jnt_num || trq_total.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(q, q_temp);
+    VectorToJntArray(dq, qd_temp);
+    VectorToJntArray(ddq, qdd_temp);
+    trq_total_temp = dynamicsolver_ptr->GetTotalTorque(load_params.m_rokae_load_inertia, q_temp, qd_temp, qdd_temp);
+    JntArrayToVector(trq_total_temp, trq_total);
+    return SOLVE_NOERROR;
 }
-void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, std::array<double, 6>& tcp_pos) {
-    static KDL::Frame tcp_frame_temp;
-    dynamicsolver_ptr->GetTcpPos(load, jnt_pos, tcp_frame_temp);
+
+int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos) {
+    if (jnt_pos.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(jnt_pos, q_temp);
+    dynamicsolver_ptr->GetTcpPos(load, q_temp, tcp_frame_temp);
     std::copy(tcp_frame_temp.p.data, tcp_frame_temp.p.data + 3, tcp_pos.begin());
     tcp_frame_temp.M.GetRPY(tcp_pos[3], tcp_pos[4], tcp_pos[5]);
+    return SOLVE_NOERROR;
 }
 
-void JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H) {
-    dynamicsolver_ptr->JntToMass(load_params, q, H);
+int JntToMass(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
+    if (jnt_pos.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(jnt_pos, q_temp);
+    dynamicsolver_ptr->JntToMass(load_params, q_temp, inertia_matrix_temp);
+    mass_matrix = inertia_matrix_temp.data;
+    return SOLVE_NOERROR;
 }
-void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian) {
-    dynamicsolver_ptr->GetTcpJacobian(load, q, jacobian);
+
+int GetTcpJacobian(const RokaeLoad& load, const std::vector<double>& jnt_pos,
+                   Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
+    if (jnt_pos.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(jnt_pos, q_temp);
+    dynamicsolver_ptr->GetTcpJacobian(load, q_temp, jacobian_temp);
+    jacobian = jacobian_temp.data;
+    return SOLVE_NOERROR;
 }
 
 //*******************************获取实时内部状态*********************************/

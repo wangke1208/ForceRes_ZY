@@ -211,63 +211,72 @@ void GetTcpWrench(const RokaeLoadPose& load, const std::vector<double>& jnt_pos,
 /**
  * @brief 获取重力扭矩
  * @param[in] load_params 负载参数
- * @param[in] q 关节位置
- * @return[out] 重力矩
+ * @param[in] q 关节位置，使用 std::vector<double> 表示
+ * @param[out] trq_gravity 重力矩，使用 std::vector<double> 存储
+ * @return 错误码，参考 SolverRes 枚举
  */
-const KDL::JntArray& GetGraTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q);
+int GetGraTorque(const RokaeLoad& load_params, const std::vector<double>& q, std::vector<double>& trq_gravity);
 
 /**
  * @brief 获取惯性扭矩
  * @param[in] load_params 负载参数
- * @param[in] q 关节位置
- * @param[in] ddq 关节加速度
- * @return 惯性力矩
+ * @param[in] q 关节位置，使用 std::vector<double> 表示
+ * @param[in] ddq 关节加速度，使用 std::vector<double> 表示
+ * @param[out] trq_inertia 惯性力矩，使用 std::vector<double> 存储
+ * @return 错误码，参考 SolverRes 枚举
  */
-const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& ddq);
+int GetInertTorque(const RokaeLoad& load_params, const std::vector<double>& q, const std::vector<double>& ddq,
+                   std::vector<double>& trq_inertia);
 
 /**
  * @brief 获取科里奥利扭矩
  * @param[in] load_params 负载参数
- * @param[in] q 关节位置
- * @param[in] dq 关节速度
- * @return 科氏力矩
+ * @param[in] q 关节位置，使用 std::vector<double> 表示
+ * @param[in] dq 关节速度，使用 std::vector<double> 表示
+ * @param[out] trq_coriolis 科氏力矩，使用 std::vector<double> 存储
+ * @return 错误码，参考 SolverRes 枚举
  */
-const KDL::JntArray& GetCoriolisTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq);
+int GetCoriolisTorque(const RokaeLoad& load_params, const std::vector<double>& q, const std::vector<double>& dq,
+                      std::vector<double>& trq_coriolis);
 
 /**
  * @brief 获取动力学全力矩
  * @param[in] load_params 负载参数
- * @param[in] q 关节位置
- * @param[in] dq 关节速度
- * @param[in] ddq 关节加速度
- * @return 动力学全力矩
+ * @param[in] q 关节位置，使用 std::vector<double> 表示
+ * @param[in] dq 关节速度，使用 std::vector<double> 表示
+ * @param[in] ddq 关节加速度，使用 std::vector<double> 表示
+ * @param[out] trq_total 动力学全力矩，使用 std::vector<double> 存储
+ * @return 错误码，参考 SolverRes 枚举
  */
-const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
-                                    const KDL::JntArray& ddq);
+int GetTotalTorque(const RokaeLoad& load_params, const std::vector<double>& q, const std::vector<double>& dq,
+                   const std::vector<double>& ddq, std::vector<double>& trq_total);
+
 /**
  * @brief 获取 TCP 位置
  * @param[in] load 负载信息
- * @param[in] jnt_pos 关节位置
- * @param[out] tcp_pos TCP 位置
+ * @param[in] jnt_pos 关节位置，使用 std::vector<double> 表示
+ * @param[out] tcp_pos TCP 位置，使用 std::array<double, 6> 存储
+ * @return 错误码，参考 SolverRes 枚举
  */
-void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, std::array<double, 6>& tcp_pos);
+int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos);
 
 /**
  * @brief 从关节位置计算质量矩阵
  * @param[in] load_params 负载参数
- * @param[in] q 关节位置
- * @param[out] H 关节空间惯性矩阵
+ * @param[in] jnt_pos 关节位置
+ * @param[out] mass_matrix 关节空间惯性矩阵
+ * @return 错误码，参考 SolverRes 枚举
  */
-void JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H);
+int JntToMass(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix);
 
 /**
  * @brief 获取 TCP 雅可比矩阵
  * @param[in] load 负载信息
- * @param[in] q 关节位置
+ * @param[in] jnt_pos 关节位置
  * @param[out] jacobian TCP 雅可比矩阵
+ * @return 错误码，参考 SolverRes 枚举
  */
-void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian);
-
+int GetTcpJacobian(const RokaeLoad& load, const std::vector<double>& jnt_pos, Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian);
 //*******************************获取实时内部状态*********************************/
 /**
  * @brief 获取当前关节位置
