@@ -75,7 +75,8 @@ enum SolverRes {
     ERROR_SIZE_WRONG = -14,
     ERROR_ROBOTTYPE = -15,
     ERROR_DRAGTYPE = -16,
-    ERROR_SERVO_MODE = -17
+    ERROR_SERVO_MODE = -17,
+    ERROR_ALREADY_INIT = -18
 };
 
 namespace Model {
@@ -229,13 +230,14 @@ struct RokaeLoadInertia {
     double mass{0.0};                   // 质量，单位kg
     KDL::Vector m_cog{0.0, 0.0, 0.0};   // 质心，单位m
     KDL::Vector mx{0.0, 0.0, 0.0};      // 一阶矩，单位kg·m
-    std::array<double, 6> m_inertia{};  // 二阶惯性矩阵，单位kg·m²
+    std::array<double, 6> m_inertia{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // 二阶惯性矩阵，单位kg·m²
 
     // 默认构造
     RokaeLoadInertia() = default;
 
     // 质量 + 质心构造
-    RokaeLoadInertia(double mass, const KDL::Vector& cog) : mass(mass), m_cog(cog), mx(mass * cog) { m_inertia.fill(0.0); }
+    RokaeLoadInertia(double mass, const KDL::Vector& cog, const std::array<double, 6> inertia = {0, 0, 0, 0, 0, 0})
+        : mass(mass), m_cog(cog), mx(mass * cog), m_inertia(inertia) {}
 
     // 设置质量
     void SetMass(double mass_val) noexcept {
@@ -280,8 +282,8 @@ struct RokaeLoadInertia {
 };
 
 struct RokaeLoadPose {
-    KDL::Vector spatiapos;    // 空间位置
-    KDL::Vector eulerangles;  // 旋转欧拉角(弧度)
+    KDL::Vector spatiapos{0.0, 0.0, 0.0};    // 空间位置
+    KDL::Vector eulerangles{0.0, 0.0, 0.0};  // 旋转欧拉角(弧度)
 
     // 默认构造函数
     RokaeLoadPose() = default;
@@ -318,6 +320,8 @@ struct RokaeLoad {
 
     // 默认构造函数，直接初始化成员变量
     RokaeLoad() = default;
+    RokaeLoad(const RokaeLoadInertia& load_inertia, const RokaeLoadPose& load_pose)
+        : m_rokae_load_inertia(load_inertia), m_rokae_load_pose(load_pose) {}
 
     // 设置零值
     void SetZero() {

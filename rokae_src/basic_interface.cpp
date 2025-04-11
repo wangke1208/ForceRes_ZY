@@ -23,6 +23,8 @@ std::shared_ptr<Axis_Convert> axisconvert_ptr;
 std::shared_ptr<DynamicSolver> dynamicsolver_ptr;
 
 unsigned int jnt_num;  // 关节数
+bool is_initialized = false;  // 初始化标志
+
 KDL::JntArray jnt_pos_kdl;
 KDL::JntArray jnt_ext_trq;
 KDL::Wrench tcp_wrench;
@@ -43,6 +45,7 @@ KDL::Jacobian jacobian_temp;
 KDL::JntSpaceInertiaMatrix inertia_matrix_temp;
 
 int InitInterface(const Model::MechUnitType& robot_type) {
+    if (is_initialized) return ERROR_ALREADY_INIT;
     // 1.初始化参数模块
     try {
         initrobot_ptr = std::make_shared<InitRobot>(robot_type);
@@ -83,6 +86,8 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     tcp_frame_temp.Identity();
     jacobian_temp.resize(jnt_num);
     inertia_matrix_temp.resize(jnt_num);
+
+    is_initialized = true;
     return SOLVE_NOERROR;
 }
 
@@ -369,10 +374,14 @@ int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::ar
     dynamicsolver_ptr->GetTcpPos(load, q_temp, tcp_frame_temp);
     std::copy(tcp_frame_temp.p.data, tcp_frame_temp.p.data + 3, tcp_pos.begin());
     tcp_frame_temp.M.GetRPY(tcp_pos[3], tcp_pos[4], tcp_pos[5]);
+    //弧度转角度
+    for (unsigned int i = 0; i < 3; i++) {
+        tcp_pos[i + 3] = tcp_pos[i + 3] * RAD_TO_DEG;
+    }
     return SOLVE_NOERROR;
 }
 
-int JntToMass(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
+int GetMassMatrix(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
     if (jnt_pos.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
     }
@@ -433,6 +442,10 @@ int GetTcpPosCurrent(std::array<double, 6>& tcp_pos) {
     std::copy(forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.p.data,
               forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.p.data + 3, tcp_pos.begin());
     forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.M.GetRPY(tcp_pos[3], tcp_pos[4], tcp_pos[5]);
+    //弧度转角度
+    for (unsigned int i = 0; i < 3; i++) {
+        tcp_pos[i + 3] = tcp_pos[i + 3] * RAD_TO_DEG;
+    }
     return SOLVE_NOERROR;
 }
 
@@ -468,6 +481,40 @@ bool IsInPositionMode(const std::vector<int8_t>& servo_mode) {
         }
     }
     return true;
+}
+
+//*****************************Deinit接口*******************************/
+void DeinitInterface() {
+    // 清空智能指针，释放资源
+    forcecontrol_ptr.reset();
+    initrobot_ptr.reset();
+    axisconvert_ptr.reset();
+    dynamicsolver_ptr.reset();
+
+    // 重置变量
+    jnt_num = DEFAULT_AXIS;
+    is_initialized = false;
+
+    tcp_wrench = KDL::Wrench::Zero();
+    gravity_vector = KDL::Vector::Zero();
+    frame_base_in_world = KDL::Frame::Identity();
+    tcp_frame_temp = KDL::Frame::Identity();
+
+    jnt_pos_kdl = KDL::JntArray(DEFAULT_AXIS);
+    jnt_ext_trq = KDL::JntArray(DEFAULT_AXIS);
+    q_temp = KDL::JntArray(DEFAULT_AXIS);
+    qd_temp = KDL::JntArray(DEFAULT_AXIS);
+    qdd_temp = KDL::JntArray(DEFAULT_AXIS);
+    trq_total_temp = KDL::JntArray(DEFAULT_AXIS);
+    trq_gravity_temp = KDL::JntArray(DEFAULT_AXIS);
+    trq_coriolis_temp = KDL::JntArray(DEFAULT_AXIS);
+    trq_inertia_temp = KDL::JntArray(DEFAULT_AXIS);
+    trq_ext_temp = KDL::JntArray(DEFAULT_AXIS);
+
+    jacobian_temp.resize(DEFAULT_AXIS);
+    inertia_matrix_temp.resize(DEFAULT_AXIS);
+    jacobian_temp.data.setZero();
+    inertia_matrix_temp.data.setZero();
 }
 
 }  // namespace BasicInterface

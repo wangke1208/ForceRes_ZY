@@ -24,7 +24,6 @@ namespace Model {
 // 常量定义
 const unsigned int SIX_AXIS_ROBOT = 6;
 const unsigned int SEVEN_AXIS_ROBOT = 7;
-const unsigned int DEFAULT_JNT_NUM = 6;
 const unsigned int DEFAULT_CART_PARAMS_SIZE = 6;
 const unsigned int SIZE_LINK_INERITA = 6;
 const unsigned int SIZE_LINK_CENTROID = 3;
@@ -37,7 +36,7 @@ struct ControlConfigParams {
     std::vector<double> ROTATION_DAMPING_OF_TRANSLATION_DRAGGING;
     std::vector<double> TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING;
     std::vector<double> TRANSLATION_DAMPING_OF_ROTATION_DRAGGING;
-    ControlConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
+    ControlConfigParams(unsigned int jnt_num = DEFAULT_AXIS);
     void Resize(unsigned int jnt_num);
 };
 
@@ -52,14 +51,14 @@ struct MechanicalConfigParams {
     std::vector<double> SENSOR_AMPLIFY;
     std::vector<double> RATED_TORQUE;
 
-    MechanicalConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
+    MechanicalConfigParams(unsigned int jnt_num = DEFAULT_AXIS);
     void Resize(unsigned int jnt_num);
 };
 
 struct ProtectConfigParams {
     std::vector<double> SWITCH_THRESHOLD_OF_TORQUE_CONTROL;
 
-    ProtectConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
+    ProtectConfigParams(unsigned int jnt_num = DEFAULT_AXIS);
     void Resize(unsigned int jnt_num);
 };
 
@@ -81,7 +80,7 @@ struct ModelConfigParams {
     std::vector<double> JOINT_RANGE_MIN_NEW;
     std::vector<double> JOINT_RANGE_MAX_NEW;
 
-    ModelConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
+    ModelConfigParams(unsigned int jnt_num = DEFAULT_AXIS);
     void Resize(unsigned int jnt_num);
 };
 
@@ -91,7 +90,7 @@ struct RobotConfiguration {
     ProtectConfigParams protect_config_params;
     ModelConfigParams model_config_params;
 
-    RobotConfiguration(unsigned int jnt_num = DEFAULT_JNT_NUM);
+    RobotConfiguration(unsigned int jnt_num = DEFAULT_AXIS);
     RobotConfiguration(MechUnitType robot_type);
     void Resize(unsigned int jnt_num);
 };

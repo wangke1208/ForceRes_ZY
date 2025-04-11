@@ -30,6 +30,13 @@ namespace BasicInterface {
 int InitInterface(const Model::MechUnitType& robot_type);
 
 /**
+ * @brief 清空初始化数据，释放空间
+ * @return 错误码
+ */
+
+void DeinitInterface();
+
+/**
  * @brief 配置拖动相关参数
  * @param[in] pos_encoder_from_servo 来自伺服的编码器位置数据PDO_0x6064
  * @param[in] servo_mode_from_servo 来自伺服的伺服模式数据PDO_0x6061
@@ -267,7 +274,7 @@ int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::ar
  * @param[out] mass_matrix 关节空间惯性矩阵
  * @return 错误码，参考 SolverRes 枚举
  */
-int JntToMass(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix);
+int GetMassMatrix(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix);
 
 /**
  * @brief 获取 TCP 雅可比矩阵

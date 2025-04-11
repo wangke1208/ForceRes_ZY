@@ -24,6 +24,7 @@
 namespace RokaeApi {
 // 定义角度转换因子
 constexpr double DEG_TO_RAD = PI / 180.0;
+constexpr double RAD_TO_DEG = 180.0 / PI;
 inline KDL::RigidBodyInertia GetKDLloadFromRokaeLoad(const Model::RokaeLoadInertia& in) {
     return KDL::RigidBodyInertia(in.mass, in.GetCOG(),
                                  KDL::RotationalInertia(in.m_inertia[0], in.m_inertia[1], in.m_inertia[2], in.m_inertia[3],
