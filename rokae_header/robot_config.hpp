@@ -21,7 +21,15 @@
 #include "./data_structure_define.hpp"
 namespace RokaeApi {
 namespace Model {
-struct ControlConifgParams {
+// 常量定义
+const unsigned int SIX_AXIS_ROBOT = 6;
+const unsigned int SEVEN_AXIS_ROBOT = 7;
+const unsigned int DEFAULT_JNT_NUM = 6;
+const unsigned int DEFAULT_CART_PARAMS_SIZE = 6;
+const unsigned int SIZE_LINK_INERITA = 6;
+const unsigned int SIZE_LINK_CENTROID = 3;
+const unsigned int SIZE_LINK_RD = 3;
+struct ControlConfigParams {
     std::vector<double> CTRL_BANDWIDTH_SERVO_EXEC;  // 拖动带宽
     std::vector<double> CTRL_ZETA_SERVO_EXEC;       // 拖动阻尼比
     std::vector<double> FRICTION_COF_DRAG;          // 拖动摩擦力系数
@@ -29,12 +37,11 @@ struct ControlConifgParams {
     std::vector<double> ROTATION_DAMPING_OF_TRANSLATION_DRAGGING;
     std::vector<double> TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING;
     std::vector<double> TRANSLATION_DAMPING_OF_ROTATION_DRAGGING;
-    ControlConifgParams();
-    ControlConifgParams(unsigned int jnt_num);
+    ControlConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
     void Resize(unsigned int jnt_num);
 };
 
-struct MechanicalConifgParams {
+struct MechanicalConfigParams {
     std::vector<int> ENCODER_OFFESET;
     std::vector<int> ENCODER_RESOLUTION;
     std::vector<double> REDUCTION_RATIO_NUMERATOR;
@@ -45,20 +52,18 @@ struct MechanicalConifgParams {
     std::vector<double> SENSOR_AMPLIFY;
     std::vector<double> RATED_TORQUE;
 
-    MechanicalConifgParams();
-    MechanicalConifgParams(unsigned int jnt_num);
+    MechanicalConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
     void Resize(unsigned int jnt_num);
 };
 
-struct ProtectConifgParams {
+struct ProtectConfigParams {
     std::vector<double> SWITCH_THRESHOLD_OF_TORQUE_CONTROL;
 
-    ProtectConifgParams();
-    ProtectConifgParams(unsigned int jnt_num);
+    ProtectConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
     void Resize(unsigned int jnt_num);
 };
 
-struct ModelConifgParams {
+struct ModelConfigParams {
     std::string ROBOT_NAME;
     unsigned int AXIS_NUM;
     double MAX_LOAD;
@@ -76,19 +81,17 @@ struct ModelConifgParams {
     std::vector<double> JOINT_RANGE_MIN_NEW;
     std::vector<double> JOINT_RANGE_MAX_NEW;
 
-    ModelConifgParams();
-    ModelConifgParams(unsigned int jnt_num);
+    ModelConfigParams(unsigned int jnt_num = DEFAULT_JNT_NUM);
     void Resize(unsigned int jnt_num);
 };
 
 struct RobotConfiguration {
-    ControlConifgParams control_config_params;
-    MechanicalConifgParams mechanical_config_params;
-    ProtectConifgParams protect_config_params;
-    ModelConifgParams model_config_params;
+    ControlConfigParams control_config_params;
+    MechanicalConfigParams mechanical_config_params;
+    ProtectConfigParams protect_config_params;
+    ModelConfigParams model_config_params;
 
-    RobotConfiguration();
-    RobotConfiguration(unsigned int jnt_num);
+    RobotConfiguration(unsigned int jnt_num = DEFAULT_JNT_NUM);
     RobotConfiguration(MechUnitType robot_type);
     void Resize(unsigned int jnt_num);
 };

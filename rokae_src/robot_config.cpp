@@ -16,24 +16,21 @@
 
 namespace RokaeApi {
 namespace Model {
-ControlConifgParams::ControlConifgParams() { this->Resize(6); }//默认6轴
 
-ControlConifgParams::ControlConifgParams(unsigned int jnt_num)
+ControlConfigParams::ControlConfigParams(unsigned int jnt_num)
     : CTRL_BANDWIDTH_SERVO_EXEC(jnt_num, 0.0), CTRL_ZETA_SERVO_EXEC(jnt_num, 0.0), FRICTION_COF_DRAG(jnt_num, 0.0) {}
 
-void ControlConifgParams::Resize(unsigned int jnt_num) {
+void ControlConfigParams::Resize(unsigned int jnt_num) {
     CTRL_BANDWIDTH_SERVO_EXEC.resize(jnt_num, 0.0);
     CTRL_ZETA_SERVO_EXEC.resize(jnt_num, 0.0);
     FRICTION_COF_DRAG.resize(jnt_num, 0.0);
-    ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING.resize(6, 0.0);
-    ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.resize(6, 0.0);
-    TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING.resize(6, 0.0);
-    TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.resize(6, 0.0);
+    ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
+    ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
+    TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
+    TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
 }
 
-MechanicalConifgParams::MechanicalConifgParams() { this->Resize(6); }
-
-MechanicalConifgParams::MechanicalConifgParams(unsigned int jnt_num)
+MechanicalConfigParams::MechanicalConfigParams(unsigned int jnt_num)
     : ENCODER_OFFESET(jnt_num, 0),
       ENCODER_RESOLUTION(jnt_num, 0),
       REDUCTION_RATIO_NUMERATOR(jnt_num, 0.0),
@@ -44,7 +41,7 @@ MechanicalConifgParams::MechanicalConifgParams(unsigned int jnt_num)
       SENSOR_AMPLIFY(jnt_num, 0.0),
       RATED_TORQUE(jnt_num, 0.0) {}
 
-void MechanicalConifgParams::Resize(unsigned int jnt_num) {
+void MechanicalConfigParams::Resize(unsigned int jnt_num) {
     ENCODER_OFFESET.resize(jnt_num, 0);
     ENCODER_RESOLUTION.resize(jnt_num, 0);
     REDUCTION_RATIO_NUMERATOR.resize(jnt_num, 0.0);
@@ -56,15 +53,12 @@ void MechanicalConifgParams::Resize(unsigned int jnt_num) {
     RATED_TORQUE.resize(jnt_num, 0.0);
 }
 
-ProtectConifgParams::ProtectConifgParams() { this->Resize(6); }
+ProtectConfigParams::ProtectConfigParams(unsigned int jnt_num)
+    : SWITCH_THRESHOLD_OF_TORQUE_CONTROL(jnt_num, 0.0) {}
 
-ProtectConifgParams::ProtectConifgParams(unsigned int jnt_num) : SWITCH_THRESHOLD_OF_TORQUE_CONTROL(jnt_num, 0.0) {}
+void ProtectConfigParams::Resize(unsigned int jnt_num) { SWITCH_THRESHOLD_OF_TORQUE_CONTROL.resize(jnt_num, 0.0); }
 
-void ProtectConifgParams::Resize(unsigned int jnt_num) { SWITCH_THRESHOLD_OF_TORQUE_CONTROL.resize(jnt_num, 0.0); }
-
-ModelConifgParams::ModelConifgParams() { Resize(6); }
-
-ModelConifgParams::ModelConifgParams(unsigned int jnt_num)
+ModelConfigParams::ModelConfigParams(unsigned int jnt_num)
     : AXIS_NUM(jnt_num),
       MAX_LOAD(0.0),
       MAX_LOAD_TCP_LENGTH(0.3),
@@ -75,7 +69,7 @@ ModelConifgParams::ModelConifgParams(unsigned int jnt_num)
       LINK_CENTROID(jnt_num, 0.0),
       LINK_MOMENT_OF_INERTIA(jnt_num, 0.0),
       LINK_MOMENT_OF_INERTIA_LOW(jnt_num, 0.0),
-      ROBOT_DIMENSIONS((1 + jnt_num) * 3, 0.0),
+      ROBOT_DIMENSIONS((1 + jnt_num) * SIZE_LINK_RD, 0.0),
       JOINT_RANGE_MIN_CUSTOMIZE(jnt_num, 0.0),
       JOINT_RANGE_MAX_CUSTOMIZE(jnt_num, 0.0),
       JOINT_RANGE_MIN_NEW(jnt_num, 0.0),
@@ -83,7 +77,7 @@ ModelConifgParams::ModelConifgParams(unsigned int jnt_num)
     ROBOT_NAME = "UNKNOWN";
 }
 
-void ModelConifgParams::Resize(unsigned int jnt_num) {
+void ModelConfigParams::Resize(unsigned int jnt_num) {
     ROBOT_NAME = "UNKNOWN";
     AXIS_NUM = jnt_num;
     MAX_LOAD = 0.0;
@@ -92,17 +86,15 @@ void ModelConifgParams::Resize(unsigned int jnt_num) {
     ROT_AXIS.resize(jnt_num + 1, 0);
     ROT_ANGLE.resize(jnt_num + 1, 0.0);
     LINK_MASS.resize(jnt_num, 0.0);
-    LINK_CENTROID.resize(3 * (jnt_num + 1), 0.0);
-    LINK_MOMENT_OF_INERTIA.resize(6 * (jnt_num + 1), 0.0);
-    LINK_MOMENT_OF_INERTIA_LOW.resize(6 * (jnt_num + 1), 0.0);
-    ROBOT_DIMENSIONS.resize((1 + jnt_num) * 3, 0.0);
+    LINK_CENTROID.resize(SIZE_LINK_CENTROID * (jnt_num + 1), 0.0);
+    LINK_MOMENT_OF_INERTIA.resize(SIZE_LINK_INERITA * (jnt_num + 1), 0.0);
+    LINK_MOMENT_OF_INERTIA_LOW.resize(SIZE_LINK_INERITA * (jnt_num + 1), 0.0);
+    ROBOT_DIMENSIONS.resize((1 + jnt_num) * SIZE_LINK_RD, 0.0);
     JOINT_RANGE_MIN_CUSTOMIZE.resize(jnt_num, 0.0);
     JOINT_RANGE_MAX_CUSTOMIZE.resize(jnt_num, 0.0);
     JOINT_RANGE_MIN_NEW.resize(jnt_num, 0.0);
     JOINT_RANGE_MAX_NEW.resize(jnt_num, 0.0);
 }
-
-RobotConfiguration::RobotConfiguration() {}
 
 RobotConfiguration::RobotConfiguration(unsigned int jnt_num)
     : control_config_params(jnt_num),
@@ -113,8 +105,8 @@ RobotConfiguration::RobotConfiguration(unsigned int jnt_num)
 RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
     switch (robot_type) {
     case MechUnitType::SR3_C:
-        this->Resize(6);
-        // ModelConifgParams
+        this->Resize(SIX_AXIS_ROBOT);
+        // ModelConfigParams
         model_config_params.ROBOT_NAME = "XMS3-R580-W4G3B1C";
         model_config_params.AXIS_NUM = 6;
         model_config_params.MAX_LOAD = 4.5;

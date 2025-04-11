@@ -250,6 +250,8 @@ int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {
     }
     //根据基坐标系方向确定重力矢量方向
     gravity_vector = frame_base_in_world.M.Inverse() * KDL::Vector(0, 0, -9.8);
+    //更新初始化接口(没有实际用处，但是保持一致)
+    initrobot_ptr->SetGravity(gravity_vector);
     //更新非实时接口
     dynamicsolver_ptr->SetGravity(gravity_vector);
     //更新实时接口

@@ -128,7 +128,7 @@ struct FunctionParamsInner : public FcParamsInnerBase {
     void InitParams(unsigned int jnt_num) override {
         m_jnt_num = jnt_num;
         ADD_PARAM_VECTOR(kp_gain_set, 1.0, jnt_num);
-        ADD_PARAM_VECTOR(fri_gain_set, 0.5, jnt_num)
+        ADD_PARAM_VECTOR(fri_gain_set, 0.5, jnt_num);
         ADD_PARAM_VECTOR(joint_servo_kp, 10.0, jnt_num);
         ADD_PARAM_VECTOR(joint_servo_friction, 0.6, jnt_num)
         ADD_PARAM_VECTOR(joint_servo_dmap_kv, 0.0, jnt_num);
@@ -171,19 +171,19 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         if (trans_stiff.size() != 3 || trans_damp.size() != 3) {
             return false;
         }
-        std::vector<double> rot_damp_temp(3);  // TODO:没有加上根据负载调节阻尼的部分
+        std::array<double, 3> rot_damp_temp;  // TODO:没有加上根据负载调节阻尼的部分
         for (int i = 0; i < 3; i++) {
             rot_damp_temp[i] = std::sqrt(trans_stiff[i]) * 2 * 0.5;
         }
-        return FixedX(trans_stiff[0], trans_damp[0]) && FixedY(trans_stiff[1], trans_damp[1]) &&
-               FixedZ(trans_stiff[2], trans_damp[2]);
+        return FixedX(trans_stiff[0], rot_damp_temp[0]) && FixedY(trans_stiff[1], rot_damp_temp[1]) &&
+               FixedZ(trans_stiff[2], rot_damp_temp[2]);
     }
 
     bool SetRotParams(const std::vector<double>& rot_stiff, const std::vector<double>& rot_damp) {
         if (rot_stiff.size() != 3 || rot_damp.size() != 3) {
             return false;
         }
-        std::vector<double> rot_damp_temp(3);
+        std::array<double, 3> rot_damp_temp;
         for (int i = 0; i < 3; i++) {
             rot_damp_temp[i] = std::sqrt(rot_stiff[i]) * 2 * 2.0;
         }

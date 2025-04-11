@@ -20,7 +20,7 @@ Axis_Convert::Axis_Convert(unsigned int axis_num, const Model::MechanicalParams&
     m_axis_num = axis_num;
     m_motorside_encoder_offset.resize(m_axis_num);
     m_motorside_encoder_resolution.resize(m_axis_num);
-    m_motorside_reduce_retio.resize(axis_num);
+    m_motorside_reduce_ratio.resize(axis_num);
     m_motorside_reduce_retio_high.resize(axis_num);
     m_motorside_reduce_retio_low.resize(axis_num);
     m_rated_torque.resize(m_axis_num);
@@ -49,11 +49,11 @@ Axis_Convert::Axis_Convert(unsigned int axis_num, const Model::MechanicalParams&
     std::copy(mec_params_input.sensor_amplify.cbegin(), mec_params_input.sensor_amplify.cend(), m_sensor_amplify.begin());
 
     // std::transform(m_motorside_reduce_retio_high.begin(), m_motorside_reduce_retio_high.end(),
-    //                m_motorside_reduce_retio_low.begin(), m_motorside_reduce_retio.begin(),
+    //                m_motorside_reduce_retio_low.begin(), m_motorside_reduce_ratio.begin(),
     //                [](double high, double low) { return high / low; });
 
     for (unsigned int i = 0; i < m_axis_num; i++) {
-        m_motorside_reduce_retio[i] = m_motorside_reduce_retio_high[i] / m_motorside_reduce_retio_low[i];
+        m_motorside_reduce_ratio[i] = m_motorside_reduce_retio_high[i] / m_motorside_reduce_retio_low[i];
         m_jnt_to_encoder_scale[i] = static_cast<double>(m_motorside_encoder_resolution[i]) / (2.0 * PI);
         m_encoder_to_jnt_scale[i] = 2.0 * PI / m_motorside_encoder_resolution[i];
         m_analog2trq[i] = m_analog2trq_high[i] / m_analog2trq_low[i];
@@ -76,7 +76,7 @@ int Axis_Convert::GetEncoderValue(const std::vector<double>& jnt_pos_rad, std::v
     int res = SOLVE_NOERROR;
     for (uint32_t i = 0; i < m_axis_num; i++) {
         encoder_value[i] =
-            jnt_pos_rad[i] * m_motorside_reduce_retio[i] * m_jnt_to_encoder_scale[i] + m_motorside_encoder_offset[i];
+            jnt_pos_rad[i] * m_motorside_reduce_ratio[i] * m_jnt_to_encoder_scale[i] + m_motorside_encoder_offset[i];
     }
     return res;
 }
@@ -88,7 +88,7 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, std::vector<
     //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
     for (unsigned i = 0; i < m_axis_num; i++) {
         jnt_pos_rad[i] =
-            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_retio[i]);
+            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_ratio[i]);
     }
     return SOLVE_NOERROR;
 }
@@ -100,7 +100,7 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, KDL::JntArra
     //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
     for (unsigned i = 0; i < m_axis_num; i++) {
         jnt_pos_rad(i) =
-            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_retio[i]);
+            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_ratio[i]);
     }
     return SOLVE_NOERROR;
 }
@@ -111,7 +111,7 @@ int Axis_Convert::GetVelRegValueForServo(const std::vector<double>& axis_vel_rad
     }
 
     for (uint32_t i = 0; i < m_axis_num; ++i) {
-        vel_reg_value[i] = static_cast<int16_t>(axis_vel_rad[i] * m_motorside_reduce_retio[i] * 30 / PI);
+        vel_reg_value[i] = static_cast<int16_t>(axis_vel_rad[i] * m_motorside_reduce_ratio[i] * 30 / PI);
     }
     return SOLVE_NOERROR;
 }
@@ -122,7 +122,7 @@ int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, std::vec
     }
 
     for (unsigned int i = 0; i < m_axis_num; i++) {
-        jnt_vel_rad[i] = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_retio[i]);
+        jnt_vel_rad[i] = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_ratio[i]);
     }
     return SOLVE_NOERROR;
 }
@@ -132,7 +132,7 @@ int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, KDL::Jnt
     }
 
     for (unsigned int i = 0; i < m_axis_num; i++) {
-        jnt_vel_rad(i) = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_retio[i]);
+        jnt_vel_rad(i) = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_ratio[i]);
     }
     return SOLVE_NOERROR;
 }
@@ -194,7 +194,7 @@ int Axis_Convert::GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std
         analog_bias[i] =
             analog_average[i] - (trq_gra_jntarray(i) * m_sensor_amplify[i] * 1000 * m_analog2trq_low[i]) / m_analog2trq_high[i];
         //传感器零点一般不会超过2.5V±50%的误差，如果超过，就意味着传感器失效或负载信息错误。
-        if ((analog_bias[i] > 3750) or (analog_bias[i] < 1250)) {
+        if ((analog_bias[i] > SENSOR_ZERO_POINT_MAX) or (analog_bias[i] < SENSOR_ZERO_POINT_MIN)) {
             //辨识失败均返回0
             analog_bias.assign(m_axis_num, 0.0);
             return ERROR_SENSOR_BIAS;
@@ -237,10 +237,10 @@ void Servo_Fc_Convert::FcData2ServoData(const Control::FcStatusInner& fc_status_
     //整合到m_fc_to_servo
     for (unsigned int i = 0; i < m_axis_num; i++) {
         fc_inner_servo_data.trq_cmd[i] =
-            (int16_t)(fc_status_inner.jnt_trq_final_cmd(i) * KDL::sign(m_motorside_reduce_retio[i]) / 1000.0 * 32768.0);
+            (int16_t)(fc_status_inner.jnt_trq_final_cmd(i) * KDL::sign(m_motorside_reduce_ratio[i]) / 1000.0 * 32768.0);
         //前馈力矩为0
         fc_inner_servo_data.trq_feedforward[i] =
-            (int16_t)(m_zero_feedforward_trq[i] * 1000 / (m_rated_torque[i] * m_motorside_reduce_retio[i]));
+            (int16_t)(m_zero_feedforward_trq[i] * 1000 / (m_rated_torque[i] * m_motorside_reduce_ratio[i]));
         fc_inner_servo_data.k_p[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_kp")[i] * 100);
         fc_inner_servo_data.k_d[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_dmap_kv")[i] * 100);
         fc_inner_servo_data.edb_cof[i] = (int16_t)(2.25 / fabs(m_analog2trq_low[i]) * 100.0);

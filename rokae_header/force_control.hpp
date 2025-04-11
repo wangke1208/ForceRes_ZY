@@ -293,11 +293,33 @@ class ForceControl {
                            const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
                            const std::vector<std::array<int16_t, 200>>& analog_array_ch2, std::vector<double>& sensor_bias);
 
-    //一些获取状态的接口
-    const bool& GetDragStatus() { return m_enable_drag; };  // 获取是否允许拖动
+    // 一些获取状态的接口
+    /**
+     * @brief 获取是否允许拖动的状态
+     *
+     * 此函数用于获取当前力控模块是否允许拖动的状态。
+     *
+     * @return 布尔引用，表示是否进行了config。true 表示进行了，false 表示未进行。
+     */
+    const bool& GetDragStatus() { return m_enable_drag; };
 
-    //外部数据操作接口
+    // 外部数据操作接口
+    /**
+     * @brief 获取力控内部状态的副本
+     *
+     * 此函数用于获取力控内部状态的副本，供外部使用。
+     *
+     * @return 力控内部状态的常量引用。
+     */
     const FcStatusInner& GetFcStatusCopy();
+
+    /**
+     * @brief Copy力控内部状态
+     *
+     *
+     *
+     * @param[in] fc_status_in 力控内部状态。
+     */
     void FcStatusCopy(const FcStatusInner& fc_status_in);
 
    private:
