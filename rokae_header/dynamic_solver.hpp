@@ -3,13 +3,14 @@
  * All Rights Reserved.
  *
  * Information in this file is the intellectual property of Rokae Technology Co., Ltd,
- * And may contains trade secrets that must be stored and viewed confidentially.
+ * and may contain trade secrets that must be stored and viewed confidentially.
  *
- * @file: dynamic_solver.hpp
- * @author: wangke
- * @date: 2024/4/25
- * @brief: 动力学解算模块
+ * @file    dynamic_solver.hpp
+ * @author  wangke
+ * @date    2024/4/25
+ * @brief   动力学解算模块
  */
+
 #ifndef DYNAMIC_SOLVER_H
 #define DYNAMIC_SOLVER_H
 
@@ -26,110 +27,189 @@
 #include "data_structure_define.hpp"
 #include "initialize.hpp"
 
-
 using namespace KDL;
+
 namespace RokaeApi {
 namespace Model {
+
 class DynamicSolver {
    public:
+    /**
+     * @brief 构造函数
+     *
+     * @param[in] chain KDL关节链
+     * @param[in] gravity 重力向量
+     */
     DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity);
+
+    /**
+     * @brief 析构函数
+     */
     ~DynamicSolver();
 
-    //运动学接口
     /**
      * @brief 计算TCP位置
      *
-     * @param[in] load:负载信息
+     * @param[in] load 负载信息
+     * @param[in] jnt_pos 关节角度
+     * @param[out] tcp_pos TCP在基坐标系下的位置
      */
     void GetTcpPos(const RokaeLoad& load, const KDL::JntArray& jnt_pos, KDL::Frame& tcp_pos);
 
     /**
-     * @brief 计算连杆惯量
+     * @brief 计算法兰处雅可比矩阵
      *
-     * @param[in] load_params:负载信息（质量、质心、一阶矩、二阶矩）
-     * @param[in] q:关节角度(弧度)
-     * @param[out] H:惯量阵
+     * @param[in] q 关节角度
+     * @param[out] jacobian 法兰雅可比矩阵
+     */
+    void GetFlanJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian);
+
+    /**
+     * @brief 计算TCP处雅可比矩阵
      *
-     * @return 无
+     * @param[in] load 负载信息
+     * @param[in] q 关节角度
+     * @param[out] jacobian TCP雅可比矩阵
+     */
+    void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian);
+
+    /**
+     * @brief 计算雅可比矩阵的转置
+     *
+     * @param[in] jacobian 输入雅可比矩阵
+     * @param[out] jacobian_trans 雅可比矩阵转置
+     */
+    void GetJacobianTrans(const KDL::Jacobian& jacobian, Jacobian_trans& jacobian_trans);
+
+    /**
+     * @brief 计算雅可比矩阵转置的逆
+     *
+     * @param[in] jacobian 输入雅可比矩阵
+     * @param[out] jacobian_trans_inv 雅可比矩阵转置的逆
+     */
+    void GetJacobianTransInverse(KDL::Jacobian& jacobian, Jacobian_trans_inv& jacobian_trans_inv);
+
+    /**
+     * @brief 计算可操作度
+     *
+     * @param[in] jacobian 雅可比矩阵
+     *
+     * @return 可操作度值
+     */
+    double GetManipulate(const KDL::Jacobian& jacobian);
+
+    /**
+     * @brief 通过末端外力反解得到末端力
+     *
+     * @param[in] load 负载信息
+     * @param[in] jnt_pos 关节角度
+     * @param[in] jnt_ext_trq 关节外部力矩
+     * @param[out] wrench 输出末端力
+     */
+    void GetWrench(const RokaeLoadPose& load, const KDL::JntArray& jnt_pos, const KDL::JntArray& jnt_ext_trq,
+                   KDL::Wrench& wrench);
+
+    /**
+     * @brief 计算连杆惯量阵
+     *
+     * @param[in] load_params 负载信息（质量、质心、一阶矩、二阶矩）
+     * @param[in] q 关节角度(弧度)
+     * @param[out] H 惯量阵
      */
     void JntToMass(const RokaeLoadInertia& load_params, const KDL::JntArray& q, KDL::JntSpaceInertiaMatrix& H);
 
     /**
-     * @brief 计算动力学总力矩，，包括重力、科式力、惯性力
+     * @brief 计算动力学总力矩，包括重力、惯性力、科氏力
      *
-     * @param[in] load_params:初始化用到的相关参数，包括关节类型、RD参数等
-     * @param[in] q:关节角度(弧度)
-     * @param[in] dq:关节角速度
-     * @param[in] ddq:关节角加速度
+     * @param[in] load_params 初始化用到的相关参数
+     * @param[in] q 关节角度(弧度)
+     * @param[in] dq 关节角速度
+     * @param[in] ddq 关节角加速度
      *
-     * @return 动力学总力矩(KDL::JntArray)
+     * @return 总力矩(KDL::JntArray)
      */
-    const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq, const KDL::JntArray& ddq);
+    const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
+                                        const KDL::JntArray& ddq);
 
     /**
      * @brief 计算重力矩
      *
-     * @param[in] load_params:初始化用到的相关参数，包括关节类型、RD参数等
-     * @param[in] q:关节角度(弧度)
+     * @param[in] load_params 初始化用到的相关参数
+     * @param[in] q 关节角度(弧度)
      *
      * @return 重力矩(KDL::JntArray)
      */
     const KDL::JntArray& GetGraTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q);
-    const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& ddq);
-    const KDL::JntArray& GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q,const KDL::JntArray& dq);
-    const KDL::JntArray& GetTotalTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq,
-                        const KDL::JntArray& ddq);
 
-    void GetFlanJacobian(const KDL::JntArray& q, KDL::Jacobian& jacobian);  //计算雅可比矩阵
-    void GetTcpJacobian(const RokaeLoad& load, const KDL::JntArray& q, KDL::Jacobian& jacobian);
-    void GetJacobianTrans(const KDL::Jacobian& jacobian, Jacobian_trans& jacobian_trans);  //计算雅可比矩阵的转置
-    void GetJacobianTransInverse(KDL::Jacobian& jacobian, Jacobian_trans_inv& jacobian_trans_inv);  //计算雅可比矩阵转置的逆
-    double GetManipulate(const KDL::Jacobian& jacobian);                                            //计算可操作度
-    void GetWrench(const RokaeLoadPose& load, const KDL::JntArray& jnt_pos, const KDL::JntArray& jnt_ext_trq,
-                   KDL::Wrench& wrench);
+    /**
+     * @brief 计算惯性力矩
+     *
+     * @param[in] load_params 初始化用到的相关参数
+     * @param[in] q 关节角度(弧度)
+     * @param[in] ddq 关节角加速度
+     *
+     * @return 惯性力矩(KDL::JntArray)
+     */
+    const KDL::JntArray& GetInertTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& ddq);
+
+    /**
+     * @brief 计算科氏力矩
+     *
+     * @param[in] load_params 初始化用到的相关参数
+     * @param[in] q 关节角度(弧度)
+     * @param[in] dq 关节角速度
+     *
+     * @return 科氏力矩(KDL::JntArray)
+     */
+    const KDL::JntArray& GetColioTorque(const RokaeLoadInertia& load_params, const KDL::JntArray& q, const KDL::JntArray& dq);
+
+    /**
+     * @brief 设置重力向量
+     *
+     * @param[in] gravity 重力向量
+     */
     void SetGravity(const KDL::Vector& gravity);
 
    private:
+    // KDL 基础结构
     KDL::Chain m_chain;
     KDL::ChainDynParam* m_chain_dyn_params;
     KDL::ChainIdSolver_RNE* m_chain_dyn_solver;
     KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;
+    KDL::ChainJntToJacSolver* m_jnt_to_jac_solver;
 
-   private:
+    // 动力学缓存数据
     unsigned int m_joint_num;
+    KDL::Vector m_gravity;
     KDL::RigidBodyInertia m_load_temp;
     KDL::RigidBodyInertia m_load_temp_all;
-    KDL::Vector m_gravity;  //重力矢量，默认-9.81
-    
-    KDL::JntArray m_zeros_jntarry;  //零
-    KDL::JntArray m_trq_gravity;   //重力矩
-    KDL::JntArray m_trq_inertia;   //惯性力矩
-    KDL::JntArray m_trq_coriolis;  //科式力矩
-    KDL::JntArray m_trq_total;     //全力矩
+    KDL::JntArray m_zeros_jntarry;
+    KDL::JntArray m_trq_gravity;
+    KDL::JntArray m_trq_inertia;
+    KDL::JntArray m_trq_coriolis;
+    KDL::JntArray m_trq_total;
+    KDL::Frame temp;
 
-   private:
-    //雅可比矩阵相关
-    double m_manipulate;  //可操作度
+    // 雅可比矩阵与奇异值分析
+    KDL::Jacobian m_jacobian;
+    Jacobian_trans m_jacobian_trans;
+    double m_manipulate;
     int m_singular_num;
     double m_tolerance;
     Eigen::VectorXd m_singular_values;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> m_singular_values_inv_mat;
-    KDL::ChainJntToJacSolver* m_jnt_to_jac_solver;  // KDL雅可比求解器
-    KDL::Jacobian m_jacobian;                       //雅可比矩阵
-    Jacobian_trans m_jacobian_trans;                //雅可比矩阵转置
     Eigen::JacobiSVD<Eigen::MatrixXd>* m_svd_ptr;
 
-    //对外输出需要用到的变量
+    // 对外输出
     KDL::Jacobian m_jac_measure_flan_in_base_out;
     KDL::Jacobian m_jac_measure_tcp_in_base_out;
     Jacobian_trans_inv m_jacobian_trans_inv_out;
     KDL::Frame m_cart_pos_measure_flan_in_base_out;
     KDL::Frame m_tool_in_flan;
-    KDL::Frame temp;
     KDL::Wrench m_flan_wrench_out;
 };
 
 }  // namespace Model
 }  // namespace RokaeApi
 
-#endif
+#endif  // DYNAMIC_SOLVER_H
