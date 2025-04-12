@@ -174,9 +174,8 @@ int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture);
  * @return 输出：成功返回 SOLVE_NOERROR，失败返回相应的错误码
  */
 int CalibrateTrqSensor(const std::vector<int8_t>& servo_mode, const std::vector<int32_t>& pos_encoder_feedback,
-                       const RokaeLoad& load_input, const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch1,
-                       const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch2,
-                       std::vector<double>& sensor_bias);
+                       const RokaeLoad& load_input, const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
+                       const std::vector<std::array<int16_t, 200>>& analog_array_ch2, std::vector<double>& sensor_bias);
 
 /**
  * @brief 获取关节位置
@@ -212,7 +211,7 @@ int GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std::vector<int16_
  * @param[in] jnt_gra_trq 关节重力扭矩
  * @param[out] ext_force 外部力和扭矩
  */
-void GetTcpWrench(const RokaeLoadPose& load, const std::vector<double>& jnt_pos, const std::vector<double>& jnt_trq_feedback,
+void GetTcpWrench(const RokaeLoad& load, const std::vector<double>& jnt_pos, const std::vector<double>& jnt_trq_feedback,
                   const std::vector<double>& jnt_gra_trq, std::array<double, 6>& ext_force);
 
 /**
@@ -274,7 +273,7 @@ int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::ar
  * @param[out] mass_matrix 关节空间惯性矩阵
  * @return 错误码，参考 SolverRes 枚举
  */
-int GetMassMatrix(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix);
+int GetMassMatrix(const RokaeLoad& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix);
 
 /**
  * @brief 获取 TCP 雅可比矩阵

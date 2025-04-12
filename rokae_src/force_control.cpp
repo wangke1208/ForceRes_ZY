@@ -479,8 +479,8 @@ void ForceControl::FcStatusRefresh() {
 //==================== 传感器标定 ====================
 
 int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_feedback, const RokaeLoad& load_input,
-                                     const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch1,
-                                     const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch2,
+                                     const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
+                                     const std::vector<std::array<int16_t, 200>>& analog_array_ch2,
                                      std::vector<double>& sensor_bias) {
     // 长度检查
     if (pos_encoder_feedback.size() != m_jnt_num || analog_array_ch1.size() != m_jnt_num ||
@@ -502,10 +502,10 @@ int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_fee
 
     // 3.提取200次电压数据的平均值
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        for (unsigned int j = 0; j < ANALOG_DATA_COUNT; j++) {
+        for (unsigned int j = 0; j < 200; j++) {
             analog_average[i] += double((analog_array_ch1[i][j] + analog_array_ch2[i][j]) / 2);
         }
-        analog_average[i] /= ANALOG_DATA_COUNT;
+        analog_average[i] /= 200;
     }
 
     // 4.计算传感器零点
@@ -515,7 +515,8 @@ int ForceControl::CalibrateTrqSensor(const std::vector<int32_t>& pos_encoder_fee
 
 //==================== 外部接口 ====================
 
-const FcStatusInner& ForceControl::GetFcStatusCopy() {
+// TODO:这里不返回引用，直接返回值，进行深拷贝避免导致脏数据，后续看性能要求可改为C++17的shared_mutex
+FcStatusInner ForceControl::GetFcStatusCopy() {
     std::lock_guard<std::mutex> lock(m_mutex);
     return m_fc_status_outer;
 }

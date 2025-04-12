@@ -74,7 +74,8 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     jnt_pos_kdl.resize(jnt_num);
     jnt_ext_trq.resize(jnt_num);
     tcp_wrench.Zero();
-
+    frame_base_in_world.Identity();
+    gravity_vector = initrobot_ptr->GetGravity();
     q_temp.resize(jnt_num);
     qd_temp.resize(jnt_num);
     qdd_temp.resize(jnt_num);
@@ -266,9 +267,8 @@ int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {
 
 //*******************************功能接口*********************************/
 int CalibrateTrqSensor(const std::vector<int8_t>& servo_mode, const std::vector<int32_t>& pos_encoder_feedback,
-                       const RokaeLoad& load_input, const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch1,
-                       const std::vector<std::array<int16_t, ANALOG_DATA_COUNT>>& analog_array_ch2,
-                       std::vector<double>& sensor_bias) {
+                       const RokaeLoad& load_input, const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
+                       const std::vector<std::array<int16_t, 200>>& analog_array_ch2, std::vector<double>& sensor_bias) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {
         return ERROR_SERVO_MODE;
@@ -305,13 +305,14 @@ int GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std::vector<int16_
     return axisconvert_ptr->GetCobotTrq(analog_ch1, analog_ch2, jnt_trq_feedback);
 }
 
-void GetTcpWrench(const RokaeLoadPose& load, const std::vector<double>& jnt_pos, const std::vector<double>& jnt_trq_feedback,
+void GetTcpWrench(const RokaeLoad& load, const std::vector<double>& jnt_pos, const std::vector<double>& jnt_trq_feedback,
                   const std::vector<double>& jnt_gra_trq, std::array<double, 6>& ext_force) {
     for (unsigned int i = 0; i < jnt_num; i++) {
         jnt_pos_kdl(i) = jnt_pos[i];
         jnt_ext_trq(i) = jnt_gra_trq[i] - jnt_trq_feedback[i];
     }
-    dynamicsolver_ptr->GetWrench(load, jnt_pos_kdl, jnt_ext_trq, tcp_wrench);
+    tcp_wrench.Zero();
+    dynamicsolver_ptr->GetWrench(load.m_rokae_load_pose, jnt_pos_kdl, jnt_ext_trq, tcp_wrench);
     for (unsigned int i = 0; i < 3; i++) {
         ext_force[i] = tcp_wrench.force(i);
         ext_force[i + 3] = tcp_wrench.torque(i);
@@ -381,12 +382,12 @@ int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::ar
     return SOLVE_NOERROR;
 }
 
-int GetMassMatrix(const RokaeLoadInertia& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
+int GetMassMatrix(const RokaeLoad& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
     if (jnt_pos.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
     }
     VectorToJntArray(jnt_pos, q_temp);
-    dynamicsolver_ptr->JntToMass(load_params, q_temp, inertia_matrix_temp);
+    dynamicsolver_ptr->JntToMass(load_params.m_rokae_load_inertia, q_temp, inertia_matrix_temp);
     mass_matrix = inertia_matrix_temp.data;
     return SOLVE_NOERROR;
 }

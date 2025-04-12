@@ -34,7 +34,6 @@ namespace Control {
  */
 static constexpr int POSITION_MODE = 8;
 static constexpr int TORQUE_MODE = 10;
-static constexpr int ANALOG_DATA_COUNT = 200;
 
 class ForceControl {
    private:
@@ -309,9 +308,9 @@ class ForceControl {
      *
      * 此函数用于获取力控内部状态的副本，供外部使用。
      *
-     * @return 力控内部状态的常量引用。
+     * @return 力控内部状态的副本。
      */
-    const FcStatusInner& GetFcStatusCopy();
+    FcStatusInner GetFcStatusCopy();
 
     /**
      * @brief Copy力控内部状态
