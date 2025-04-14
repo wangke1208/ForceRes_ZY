@@ -46,7 +46,7 @@ void DeinitInterface();
  * @return 错误码，参考 SolverRes 枚举
  */
 int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
-               const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const DragType& drag_type);
+               const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const Control::DragType& drag_type);
 
 /**
  * @brief 更新力控数据

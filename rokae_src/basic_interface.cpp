@@ -155,7 +155,12 @@ int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<doubl
         return ERROR_DRAG_STATUS;
     }
     //设置传感器零点
-    return (forcecontrol_ptr->SetSensorBias(analog_bias) && axisconvert_ptr->SetSensorBias(analog_bias));
+    auto res1 = forcecontrol_ptr->SetSensorBias(analog_bias);
+    auto res2 = axisconvert_ptr->SetSensorBias(analog_bias);
+    if (res1 != SOLVE_NOERROR || res2 != SOLVE_NOERROR) {
+        return res1;
+    }
+    return SOLVE_NOERROR;
 }
 
 int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<int32_t>& encoder_offset) {
@@ -168,7 +173,12 @@ int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<in
         return ERROR_DRAG_STATUS;
     }
     //设置编码器零点
-    return (forcecontrol_ptr->SetEncoderOffset(encoder_offset) && axisconvert_ptr->SetEncoderBias(encoder_offset));
+    auto res1 = forcecontrol_ptr->SetEncoderOffset(encoder_offset);
+    auto res2 = axisconvert_ptr->SetEncoderBias(encoder_offset);
+    if (res1 != SOLVE_NOERROR || res2 != SOLVE_NOERROR) {
+        return res1;
+    }
+    return SOLVE_NOERROR;
 }
 
 int SetSoftLimit(const std::vector<int8_t>& servo_mode, const std::vector<double>& joint_range_min,

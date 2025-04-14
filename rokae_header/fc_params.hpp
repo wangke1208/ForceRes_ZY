@@ -99,7 +99,7 @@ struct HardwareParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(joint_angle_limit_max, 180.0, jnt_num);
         ADD_PARAM_VECTOR(joint_angle_limit_min, -180.0, jnt_num);
     }
-    void ResetParamsToDefault() override;
+    void ResetParamsToDefault() override{};
 };
 
 struct ProtectParamsInner : public FcParamsInnerBase {
@@ -120,7 +120,7 @@ struct ProtectParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(max_load_mass, 7, 1);
         ADD_PARAM_VECTOR(max_load_tcp_length, 0.3, 1);
     }
-    void ResetParamsToDefault() override;
+    void ResetParamsToDefault() override{};
 };
 struct FunctionParamsInner : public FcParamsInnerBase {
     FunctionParamsInner(unsigned int jnt_num = 7) : FcParamsInnerBase(jnt_num){};

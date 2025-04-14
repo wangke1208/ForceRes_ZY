@@ -186,7 +186,7 @@ void DynamicSolver::GetWrench(const RokaeLoadPose& load,
 }
 
 double DynamicSolver::GetManipulate(const KDL::Jacobian& jacobian) {
-    m_manipulate = sqrt((jacobian.data * jacobian.data.transpose()).determinant());
+    m_manipulate = KDL::sqrt((jacobian.data * jacobian.data.transpose()).determinant());
     return m_manipulate;
 }
 

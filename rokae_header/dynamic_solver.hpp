@@ -22,7 +22,7 @@
 #include <3rd/kdl/jntarray.hpp>
 #include <3rd/kdl/jntspaceinertiamatrix.hpp>
 #include <Eigen/SVD>
-
+#include <Eigen/LU>
 #include "rokae_header/data_structure_convert.hpp"
 #include "rokae_header/data_structure_define.hpp"
 #include "rokae_header/initialize.hpp"

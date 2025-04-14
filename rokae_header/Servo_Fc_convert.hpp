@@ -187,8 +187,7 @@ class Servo_Fc_Convert : public Axis_Convert {
      * @param [in] axis_num 轴数
      * @param [in] mec_params_input 机械参数输入
      */
-    Servo_Fc_Convert(unsigned int axis_num, const Model::MechanicalParams& mec_params_input)
-        : Axis_Convert(axis_num, mec_params_input){};
+    Servo_Fc_Convert(unsigned int axis_num, const Model::MechanicalParams& mec_params_input);
 
     /**
      * @brief 将伺服数据转换为FcInner数据

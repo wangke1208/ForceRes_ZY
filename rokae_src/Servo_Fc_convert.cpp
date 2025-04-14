@@ -204,7 +204,7 @@ int Axis_Convert::GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std
 
 /****************************************伺服数据和Fc数据转换类************************************ */
 Servo_Fc_Convert::Servo_Fc_Convert(unsigned int axis_num, const Model::MechanicalParams& mec_params_input)
-    : Axis_Convert(axis_num, mec_params_input), m_zero_feedforward_trq(axis_num, 0){};
+    : Axis_Convert(axis_num, mec_params_input), m_zero_feedforward_trq(axis_num, 0){}
 
 int Servo_Fc_Convert::ServoData2FcInner(const std::vector<int8_t>& pdo_mode_operation_0x6061,
                                         const std::vector<int16_t>& pdo_analog_ch1_0x2401,

@@ -41,22 +41,22 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, 6> Jacobian_inv;
 typedef Eigen::Matrix<double, 6, Eigen::Dynamic> Jacobian_trans_inv;
 
 //精度
-const float EPSILON16 = 0.000000000000001;
-const float EPSILON15 = 0.00000000000001;
-const float EPSILON14 = 0.0000000000001;
-const float EPSILON13 = 0.000000000001;
-const float EPSILON12 = 0.00000000001;
-const float EPSILON11 = 0.0000000001;
-const float EPSILON10 = 0.0000000001;
-const float EPSILON9 = 0.000000001;
-const float EPSILON8 = 0.00000001;
-const float EPSILON7 = 0.0000001;
-const float EPSILON6 = 0.000001;
-const float EPSILON5 = 0.00001;
-const float EPSILON4 = 0.0001;
-const float EPSILON3 = 0.001;
-const float EPSILON2 = 0.01;
-const float EPSILON1 = 0.1;
+const double EPSILON16 = 0.000000000000001;
+const double EPSILON15 = 0.00000000000001;
+const double EPSILON14 = 0.0000000000001;
+const double EPSILON13 = 0.000000000001;
+const double EPSILON12 = 0.00000000001;
+const double EPSILON11 = 0.0000000001;
+const double EPSILON10 = 0.0000000001;
+const double EPSILON9 = 0.000000001;
+const double EPSILON8 = 0.00000001;
+const double EPSILON7 = 0.0000001;
+const double EPSILON6 = 0.000001;
+const double EPSILON5 = 0.00001;
+const double EPSILON4 = 0.0001;
+const double EPSILON3 = 0.001;
+const double EPSILON2 = 0.01;
+const double EPSILON1 = 0.1;
 
 enum SolverRes {
     SOLVE_NOERROR = 0,
