@@ -11,19 +11,22 @@
  * @brief: 力控计算模块
  */
 
-#ifndef FORCE_CONTROL_H
-#define FORCE_CONTROL_H
+#ifndef ROKAE_HEADER_FORCE_CONTROL_H
+#define ROKAE_HEADER_FORCE_CONTROL_H
 
 // 包含必要的头文件
+#include <algorithm>
+#include <functional>
 #include <mutex>
 
-#include "Servo_Fc_convert.hpp"
-#include "data_structure_define.hpp"
-#include "dynamic_solver.hpp"
-#include "fc_data_computation.hpp"
-#include "force_planner.hpp"
-#include "force_protect.hpp"
-#include "initialize.hpp"
+#include "rokae_header/Servo_Fc_convert.hpp"
+#include "rokae_header/data_structure_define.hpp"
+#include "rokae_header/dynamic_solver.hpp"
+#include "rokae_header/fc_data_computation.hpp"
+#include "rokae_header/force_planner.hpp"
+#include "rokae_header/force_protect.hpp"
+#include "rokae_header/initialize.hpp"
+
 
 namespace RokaeApi {
 namespace Control {

@@ -14,10 +14,10 @@
 #ifndef ROKAE_HEADER_BASIC_INTERFACE_HPP_
 #define ROKAE_HEADER_BASIC_INTERFACE_HPP_
 
-#include "force_control.hpp"
 #include <memory>
 
-
+#include "rokae_header/force_control.hpp"
+#include "rokae_header/version.hpp"
 
 namespace RokaeApi {
 namespace BasicInterface {
@@ -176,6 +176,11 @@ int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture);
 int CalibrateTrqSensor(const std::vector<int8_t>& servo_mode, const std::vector<int32_t>& pos_encoder_feedback,
                        const RokaeLoad& load_input, const std::vector<std::array<int16_t, 200>>& analog_array_ch1,
                        const std::vector<std::array<int16_t, 200>>& analog_array_ch2, std::vector<double>& sensor_bias);
+/**
+ * @brief 获取算法库版本
+ * @return 输出：算法库版本号
+ */
+const char* GetVersion();
 
 /**
  * @brief 获取关节位置

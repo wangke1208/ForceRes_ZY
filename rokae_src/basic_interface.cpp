@@ -484,6 +484,8 @@ bool IsInPositionMode(const std::vector<int8_t>& servo_mode) {
     return true;
 }
 
+const char* GetVersion() { return VERSION; }
+
 //*****************************Deinit接口*******************************/
 void DeinitInterface() {
     // 清空智能指针，释放资源

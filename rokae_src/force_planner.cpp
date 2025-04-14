@@ -11,55 +11,52 @@
  * @brief: 力控相关功能计算模块
  */
 
- #include "rokae_header/force_planner.hpp"
- #include <algorithm>
- #include <cmath>
- 
- #define FC m_fc_status_ptr
- 
- namespace RokaeApi {
- namespace Control {
- 
- // --------------------- 构造函数 ---------------------
- ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_ptr,
-                            FcParamsInner* fc_params_inner_ptr)
-     : m_init_robot_ptr(init_robot_ptr), m_fc_status_ptr(fc_status_ptr), m_fc_params_inner_ptr(fc_params_inner_ptr) {
-     m_jnt_num = m_init_robot_ptr->GetJntNum();
- 
-     // 初始化关节和笛卡尔的刚度、阻尼向量
-     m_jnt_stiff.resize(m_jnt_num, 0.0);
-     m_jnt_damp.resize(m_jnt_num, 0.0);
-     m_cart_stiff.resize(6, 100.0);
-     m_cart_damp.resize(6, 10.0);
- 
-     // 笛卡尔阻抗力
-     m_function_cart_imp_trq.resize(6);
-     m_function_cart_imp_stiff_trq.resize(6);
-     m_function_cart_imp_damp_trq.resize(6);
- 
-     // 其他
-     m_function_imp_trq.resize(m_jnt_num);      // 最终输出的阻抗力
-     m_function_trq_ref.resize(m_jnt_num);        // 最终力矩指令
-     m_function_jnt_gravity.resize(m_jnt_num);    // 重力补偿
-     m_function_jnt_zero_trq.resize(m_jnt_num);
-     m_function_jnt_zero_trq.data.setZero();
- 
-     // 初始化关节软限位边界相关向量
-     m_lower_bound.resize(m_jnt_num, -180);
-     m_upper_bound.resize(m_jnt_num, 180);
-     m_lower_monitor_bound.resize(m_jnt_num, -180);
-     m_upper_monitor_bound.resize(m_jnt_num, 180);
- 
-     // 初始化软限位保护力相关向量
-     m_protect_force_damp.resize(m_jnt_num);
-     m_protect_force_stiff.resize(m_jnt_num);
-     m_function_jnt_limit_trq.resize(m_jnt_num);
-     fc_params_inner_ptr->m_function_params.GetParams("soft_limit_stiff", m_protect_force_stiff);
-     fc_params_inner_ptr->m_function_params.GetParams("soft_limit_damp", m_protect_force_damp);
- 
-     // 初始化角度阈值常量
-     m_pre_protect_angle = 5 * KDL::deg2rad;
-     m_jnt_pos_safety_threshold = 10 * KDL::deg2rad;
+#include "rokae_header/force_planner.hpp"
+
+#define FC m_fc_status_ptr
+
+namespace RokaeApi {
+namespace Control {
+
+// --------------------- 构造函数 ---------------------
+ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_ptr, FcParamsInner* fc_params_inner_ptr)
+    : m_init_robot_ptr(init_robot_ptr), m_fc_status_ptr(fc_status_ptr), m_fc_params_inner_ptr(fc_params_inner_ptr) {
+    m_jnt_num = m_init_robot_ptr->GetJntNum();
+
+    // 初始化关节和笛卡尔的刚度、阻尼向量
+    m_jnt_stiff.resize(m_jnt_num, 0.0);
+    m_jnt_damp.resize(m_jnt_num, 0.0);
+    m_cart_stiff.resize(6, 100.0);
+    m_cart_damp.resize(6, 10.0);
+
+    // 笛卡尔阻抗力
+    m_function_cart_imp_trq.resize(6);
+    m_function_cart_imp_stiff_trq.resize(6);
+    m_function_cart_imp_damp_trq.resize(6);
+
+    // 其他
+    m_function_imp_trq.resize(m_jnt_num);      // 最终输出的阻抗力
+    m_function_trq_ref.resize(m_jnt_num);      // 最终力矩指令
+    m_function_jnt_gravity.resize(m_jnt_num);  // 重力补偿
+    m_function_jnt_zero_trq.resize(m_jnt_num);
+    m_function_jnt_zero_trq.data.setZero();
+
+    // 初始化关节软限位边界相关向量
+    m_lower_bound.resize(m_jnt_num, -180);
+    m_upper_bound.resize(m_jnt_num, 180);
+    m_lower_monitor_bound.resize(m_jnt_num, -180);
+    m_upper_monitor_bound.resize(m_jnt_num, 180);
+
+    // 初始化软限位保护力相关向量
+    m_protect_force_damp.resize(m_jnt_num);
+    m_protect_force_stiff.resize(m_jnt_num);
+    m_function_jnt_limit_trq.resize(m_jnt_num);
+    fc_params_inner_ptr->m_function_params.GetParams("soft_limit_stiff", m_protect_force_stiff);
+    fc_params_inner_ptr->m_function_params.GetParams("soft_limit_damp", m_protect_force_damp);
+
+    // 初始化角度阈值常量
+    m_pre_protect_angle = 5 * KDL::deg2rad;
+    m_jnt_pos_safety_threshold = 10 * KDL::deg2rad;
  }
  
  // --------------------- 析构函数 ---------------------

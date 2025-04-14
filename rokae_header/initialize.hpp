@@ -11,13 +11,13 @@
  * @brief: 机器人初始化模块，负责创建机器人模型及配置
  */
 
-#ifndef INITIALIZE_H
-#define INITIALIZE_H
+#ifndef ROKAE_HEADER_INITIALIZE_H
+#define ROKAE_HEADER_INITIALIZE_H
 
-#include <KDL/chain.hpp>
+#include "3rd/kdl/chain.hpp"
+#include "rokae_header/data_structure_convert.hpp"
+#include "rokae_header/robot_config.hpp"
 
-#include "data_structure_convert.hpp"
-#include "robot_config.hpp"
 
 namespace RokaeApi {
 

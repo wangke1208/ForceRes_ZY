@@ -13,10 +13,10 @@
 #ifndef ROKAE_HEADER_FC_DATA_COMPUTATION_HPP_
 #define ROKAE_HEADER_FC_DATA_COMPUTATION_HPP_
 
-#include "data_structure_define.hpp"
-#include "dynamic_solver.hpp"
-#include "fc_params.hpp"
-#include "initialize.hpp"
+#include "rokae_header/data_structure_define.hpp"
+#include "rokae_header/dynamic_solver.hpp"
+#include "rokae_header/fc_params.hpp"
+#include "rokae_header/initialize.hpp"
 
 using namespace RokaeApi::Model;
 

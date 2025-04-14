@@ -11,15 +11,17 @@
  * @brief: 数据类型转化相关的一些工具函数
  */
 
-#ifndef DATA_STRUCTURE_CONVERT_H
-#define DATA_STRUCTURE_CONVERT_H
-#include <../3rd/kdl/jntarray.hpp>
-#include <../3rd/kdl/rigidbodyinertia.hpp>
+#ifndef ROKAE_HEADER_DATA_STRUCTURE_CONVERT_H_
+#define ROKAE_HEADER_DATA_STRUCTURE_CONVERT_H_
+
+#include <3rd/kdl/jntarray.hpp>
+#include <3rd/kdl/rigidbodyinertia.hpp>
 #include <algorithm>
 #include <iostream>
 #include <vector>
 
-#include "robot_config.hpp"
+#include "rokae_header/robot_config.hpp"
+
 
 namespace RokaeApi {
 // 定义角度转换因子

@@ -12,7 +12,7 @@
  * @brief: 初始化模块
  */
 
-#include "../rokae_header/initialize.hpp"
+#include "rokae_header/initialize.hpp"
 
 namespace RokaeApi {
 

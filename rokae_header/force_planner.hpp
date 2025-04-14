@@ -14,6 +14,9 @@
 #ifndef ROKAE_HEADER_FORCE_PLANNER_HPP_
 #define ROKAE_HEADER_FORCE_PLANNER_HPP_
 
+#include <algorithm>
+#include <cmath>
+
 #include "rokae_header/fc_data_computation.hpp"
 
 namespace RokaeApi {

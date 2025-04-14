@@ -11,8 +11,8 @@
  * @brief   动力学解算模块
  */
 
-#ifndef DYNAMIC_SOLVER_H
-#define DYNAMIC_SOLVER_H
+#ifndef ROKAE_HEADER_DYNAMIC_SOLVER_H
+#define ROKAE_HEADER_DYNAMIC_SOLVER_H
 
 #include <3rd/kdl/chain.hpp>
 #include <3rd/kdl/chaindynparam.hpp>
@@ -23,9 +23,9 @@
 #include <3rd/kdl/jntspaceinertiamatrix.hpp>
 #include <Eigen/SVD>
 
-#include "data_structure_convert.hpp"
-#include "data_structure_define.hpp"
-#include "initialize.hpp"
+#include "rokae_header/data_structure_convert.hpp"
+#include "rokae_header/data_structure_define.hpp"
+#include "rokae_header/initialize.hpp"
 
 using namespace KDL;
 

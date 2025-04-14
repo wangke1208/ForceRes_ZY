@@ -1,3 +1,15 @@
+/**
+ * Copyright(C) 2024 Rokae Technology Co., Ltd.
+ * All Rights Reserved.
+ *
+ * Information in this file is the intellectual property of Rokae Technology Co., Ltd,
+ * And may contains trade secrets that must be stored and viewed confidentially.
+ *
+ * @file: dynamic_solver.cpp
+ * @author: wangke
+ * @date: 2025/4/7
+ * @brief: 动力学求解接口
+ */
 #include "rokae_header/dynamic_solver.hpp"
 
 namespace RokaeApi {

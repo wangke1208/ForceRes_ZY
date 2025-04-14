@@ -12,13 +12,15 @@
  * @brief: 机型文件配置参数
  */
 
-#ifndef ROBOT_CONFIG_HPP
-#define ROBOT_CONFIG_HPP
+#ifndef ROKAE_HEADER_ROBOT_CONFIG_HPP
+#define ROKAE_HEADER_ROBOT_CONFIG_HPP
 
 #include <string>
 #include <vector>
 
-#include "./data_structure_define.hpp"
+#include "rokae_header/data_structure_define.hpp"
+
+
 namespace RokaeApi {
 namespace Model {
 // 常量定义

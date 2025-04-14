@@ -11,16 +11,17 @@
  * @brief: 和数据结构定义
  */
 
-#ifndef DATA_STRUCTURE_DEFINE_H
-#define DATA_STRUCTURE_DEFINE_H
-#include <../3rd/kdl/chain.hpp>
-#include <../3rd/kdl/chaindynparam.hpp>
-#include <../3rd/kdl/jntarray.hpp>
-#include <../3rd/kdl/jntspaceinertiamatrix.hpp>
-#include <../3rd/kdl/joint.hpp>
+#ifndef ROKAE_HEADER_DATA_STRUCTURE_DEFINE_H
+#define ROKAE_HEADER_DATA_STRUCTURE_DEFINE_H
+
+#include <3rd/kdl/chain.hpp>
+#include <3rd/kdl/chaindynparam.hpp>
+#include <3rd/kdl/jntarray.hpp>
+#include <3rd/kdl/jntspaceinertiamatrix.hpp>
+#include <3rd/kdl/joint.hpp>
 #include <vector>
 
-#include "fc_params.hpp"
+#include "rokae_header/fc_params.hpp"
 
 using namespace KDL;
 

@@ -11,7 +11,7 @@
  * @brief: 伺服力控转换接口
  */
 
-#include "../rokae_header/Servo_Fc_convert.hpp"
+#include "rokae_header/Servo_Fc_convert.hpp"
 
 namespace RokaeApi {
 /****************************************轴转换类************************************ */
@@ -97,7 +97,6 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, KDL::JntArra
     if (encoder_value.size() != m_axis_num) {
         return ERROR_SIZE_WRONG;
     }
-    //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
     for (unsigned i = 0; i < m_axis_num; i++) {
         jnt_pos_rad(i) =
             ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_ratio[i]);

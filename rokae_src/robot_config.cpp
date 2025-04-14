@@ -12,7 +12,7 @@
  * @brief: 机型文件配置参数
  */
 
-#include "../rokae_header/robot_config.hpp"
+#include "rokae_header/robot_config.hpp"
 
 namespace RokaeApi {
 namespace Model {

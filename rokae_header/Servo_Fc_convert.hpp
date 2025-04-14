@@ -11,8 +11,8 @@
  * @brief: 伺服力控转换接口
  */
 
-#ifndef SERVO_FC_CONVERT_H
-#define SERVO_FC_CONVERT_H
+#ifndef ROKAE_HEADER_SERVO_FC_CONVERT_H
+#define ROKAE_HEADER_SERVO_FC_CONVERT_H
 
 #include "rokae_header/data_structure_define.hpp"
 
