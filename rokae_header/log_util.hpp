@@ -1,10 +1,22 @@
 #pragma once
 #include <3rd/spdlog/async.h>
 #include <3rd/spdlog/sinks/rotating_file_sink.h>
+#include <3rd/spdlog/sinks/stdout_color_sinks.h>
 #include <3rd/spdlog/spdlog.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
+#include <iostream>
+#include <memory>
+#include <string>
+
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#endif
 
 namespace RokaeApi {
+
 // 日志的配置项
 struct LogConfig {
     std::string level;
@@ -12,6 +24,43 @@ struct LogConfig {
     int64_t size;
     int count;
 };
+
+// 工具函数：判断路径是否存在
+inline bool path_exists(const std::string& path) {
+#ifdef _WIN32
+    return _access(path.c_str(), 0) == 0;
+#else
+    struct stat info;
+    return stat(path.c_str(), &info) == 0;
+#endif
+}
+
+// 工具函数：创建单层目录
+inline bool create_dir(const std::string& path) {
+#ifdef _WIN32
+    return _mkdir(path.c_str()) == 0 || errno == EEXIST;
+#else
+    return mkdir(path.c_str(), 0755) == 0 || errno == EEXIST;
+#endif
+}
+
+// 工具函数：递归创建多层目录
+inline bool create_dirs(const std::string& path) {
+    std::string current;
+    for (size_t i = 0; i < path.size(); ++i) {
+        char c = path[i];
+        current += c;
+        if (c == '/' || c == '\\') {
+            if (!path_exists(current)) {
+                if (!create_dir(current)) return false;
+            }
+        }
+    }
+    if (!path_exists(current)) {
+        return create_dir(current);
+    }
+    return true;
+}
 
 // 日志的单例模式
 class new_Logger {
@@ -21,7 +70,6 @@ class new_Logger {
         return &instance;
     }
 
-    // c++14返回值可设置为auto
     std::shared_ptr<spdlog::logger> getLogger() { return loggerPtr; }
 
     void Init(const LogConfig& conf);
@@ -46,4 +94,5 @@ class new_Logger {
 #define LOG_WARN(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::warn, __VA_ARGS__)
 #define LOG_ERROR(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::err, __VA_ARGS__)
 #define LOG_CRITICAL(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::critical, __VA_ARGS__)
+
 }  // namespace RokaeApi

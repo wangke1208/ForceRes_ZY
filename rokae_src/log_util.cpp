@@ -3,35 +3,46 @@
 namespace RokaeApi {
 
 void new_Logger::Init(const LogConfig& conf) {
-    //自定义的sink，日志的名字是file_logger
-    loggerPtr = spdlog::rotating_logger_mt<spdlog::async_factory>("file_logger", conf.path.c_str(), conf.size, conf.count);
+    // 先确保目录存在
+    size_t lastSlash = conf.path.find_last_of("/\\");
+    if (lastSlash != std::string::npos) {
+        std::string dir = conf.path.substr(0, lastSlash);
+        if (!create_dirs(dir)) {
+            std::cerr << "[Logger Error] Failed to create log directory: " << dir << std::endl;
+            return;
+        }
+    }
 
-    //设置格式
-    //参见文档 https://github.com/gabime/spdlog/wiki/3.-Custom-formatting
-    //[%Y-%m-%d %H:%M:%S.%e] 时间
-    //[%l] 日志级别
-    //[%t] 线程
-    //[%s] 文件
-    //[%#] 行号
-    //[%!] 函数
-    //[%v] 实际文本
-    loggerPtr->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [thread %t] [%s %!:%#] %v");
+    try {
+        // 创建文件 sink（日志轮转）
+        auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(conf.path, conf.size, conf.count);
 
-    // 设置日志级别
-    loggerPtr->set_level(spdlog::level::from_str(conf.level));
-    // 设置刷新日志的日志级别，当出现level或更高级别日志时，立刻刷新日志到  disk
-    loggerPtr->flush_on(spdlog::level::from_str(conf.level));
+        // 创建控制台 sink（彩色输出）
+        auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+
+        // 设置两个 sink 的日志等级一致
+        spdlog::level::level_enum log_level = spdlog::level::from_str(conf.level);
+        file_sink->set_level(log_level);
+        console_sink->set_level(log_level);
+
+        // 合并 sink
+        std::vector<spdlog::sink_ptr> sinks { file_sink, console_sink };
+        loggerPtr = std::make_shared<spdlog::logger>("multi_sink", sinks.begin(), sinks.end());
+
+        // 设置异步输出（可选）
+        spdlog::register_logger(loggerPtr);
+
+        // 设置日志格式
+        loggerPtr->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [thread %t] [%s %!:%#] %v");
+
+        // 设置日志等级
+        loggerPtr->set_level(log_level);
+        loggerPtr->flush_on(log_level);
+    } catch (const spdlog::spdlog_ex& ex) {
+        std::cerr << "[Logger Exception] Init failed: " << ex.what() << std::endl;
+    }
 }
 
-/*
- * trace 0
- * debug 1
- * info 2
- * warn 3
- * error 4
- * critical 5
- * off 6 (not use)
- */
 std::string new_Logger::GetLogLevel() {
     auto level = loggerPtr->level();
     return spdlog::level::to_string_view(level).data();
@@ -46,4 +57,5 @@ void new_Logger::SetLogLevel(const std::string& log_level) {
         loggerPtr->flush_on(level);
     }
 }
+
 }  // namespace RokaeApi
