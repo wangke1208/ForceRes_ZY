@@ -104,7 +104,7 @@ RobotConfiguration::RobotConfiguration(unsigned int jnt_num)
 
 RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
     switch (robot_type) {
-    case MechUnitType::SR3_C:
+    case MechUnitType::DEFALUT_SENVEN_AXIS:
         this->Resize(SIX_AXIS_ROBOT);
         // ModelConfigParams
         model_config_params.ROBOT_NAME = "XMS3-R580-W4G3B1C";

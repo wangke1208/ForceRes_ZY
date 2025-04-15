@@ -20,6 +20,7 @@
 #include <3rd/kdl/jntspaceinertiamatrix.hpp>
 #include <3rd/kdl/joint.hpp>
 #include <vector>
+#include <array>
 
 #include "rokae_header/fc_params.hpp"
 
@@ -83,7 +84,7 @@ enum SolverRes {
 namespace Model {
 enum MechUnitType {
     UNKNOWN,
-    SR3_C,  // XMS3-R580-W4G3B1C
+    DEFALUT_SENVEN_AXIS,  // XMS3-R580-W4G3B1C
 };
 
 struct ModelParams {
