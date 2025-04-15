@@ -1,73 +1,49 @@
 #include "rokae_header/log_util.hpp"
 
-#include <3rd/spdlog/sinks/rotating_file_sink.h>
-#include <3rd/spdlog/sinks/stdout_color_sinks.h>
-
-#include <filesystem>
-#include <iostream>
-
-#ifdef _WIN32
-#include <direct.h>
-#else
-#include <sys/stat.h>
-#include <sys/types.h>
-#endif
-
 namespace RokaeApi {
 
-std::shared_ptr<spdlog::logger> LogUtil::logger = nullptr;
+void new_Logger::Init(const LogConfig& conf) {
+    //自定义的sink，日志的名字是file_logger
+    loggerPtr = spdlog::rotating_logger_mt<spdlog::async_factory>("file_logger", conf.path.c_str(), conf.size, conf.count);
 
-void LogUtil::initLogger(const std::string& logPath) {
-    if (logger) return;
+    //设置格式
+    //参见文档 https://github.com/gabime/spdlog/wiki/3.-Custom-formatting
+    //[%Y-%m-%d %H:%M:%S.%e] 时间
+    //[%l] 日志级别
+    //[%t] 线程
+    //[%s] 文件
+    //[%#] 行号
+    //[%!] 函数
+    //[%v] 实际文本
+    loggerPtr->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [thread %t] [%s %!:%#] %v");
 
-    createDirectoryIfNotExists(logPath);
-
-    try {
-        auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-            logPath + "/RokaeLog.txt", MAX_LOG_FILE_SIZE, MAX_LOG_FILES);
-
-        auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-
-        // 设置 sink 格式
-        file_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
-        console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-
-        std::vector<spdlog::sink_ptr> sinks { console_sink, file_sink };
-
-        logger = std::make_shared<spdlog::logger>("combined_logger", sinks.begin(), sinks.end());
-        spdlog::register_logger(logger);
-        logger->set_level(spdlog::level::info);
-        logger->flush_on(spdlog::level::info);
-    } catch (const spdlog::spdlog_ex& ex) {
-        std::cerr << "Log initialization failed: " << ex.what() << std::endl;
-    }
+    // 设置日志级别
+    loggerPtr->set_level(spdlog::level::from_str(conf.level));
+    // 设置刷新日志的日志级别，当出现level或更高级别日志时，立刻刷新日志到  disk
+    loggerPtr->flush_on(spdlog::level::from_str(conf.level));
 }
 
-void LogUtil::logInfo(const std::string& message) {
-    if (logger) {
-        logger->info(message);
-    }
+/*
+ * trace 0
+ * debug 1
+ * info 2
+ * warn 3
+ * error 4
+ * critical 5
+ * off 6 (not use)
+ */
+std::string new_Logger::GetLogLevel() {
+    auto level = loggerPtr->level();
+    return spdlog::level::to_string_view(level).data();
 }
 
-void LogUtil::logError(const std::string& message) {
-    if (logger) {
-        logger->error(message);
+void new_Logger::SetLogLevel(const std::string& log_level) {
+    auto level = spdlog::level::from_str(log_level);
+    if (level == spdlog::level::off) {
+        LOG_WARN("Given invalid log level {}", log_level);
+    } else {
+        loggerPtr->set_level(level);
+        loggerPtr->flush_on(level);
     }
 }
-
-void LogUtil::createDirectoryIfNotExists(const std::string& path) {
-#ifdef _WIN32
-    if (_mkdir(path.c_str()) != 0 && errno != EEXIST) {
-        std::cerr << "Error creating directory: " << path << std::endl;
-    }
-#else
-    struct stat st = {0};
-    if (stat(path.c_str(), &st) == -1) {
-        if (mkdir(path.c_str(), 0755) != 0) {
-            std::cerr << "Error creating directory: " << path << std::endl;
-        }
-    }
-#endif
-}
-
 }  // namespace RokaeApi

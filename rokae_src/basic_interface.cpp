@@ -48,8 +48,13 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     if (is_initialized) return ERROR_ALREADY_INIT;
 
     // 0.初始化日志模块
-    std::string log_path = "log";
-    LogUtil::initLogger(log_path);
+    LogConfig conf_log;
+    conf_log.level = "trace";
+    conf_log.path = "../log/Rokae_LOG.log";
+    conf_log.size = 10 * 1024 * 1024;  // 10MB
+    conf_log.count = 10;               // 最多保留100个文件
+    INITLOG(conf_log);
+    LOG_INFO("********************************** INITLOG");
     // 1.初始化参数模块
     try {
         initrobot_ptr = std::make_shared<InitRobot>(robot_type);
@@ -61,7 +66,6 @@ int InitInterface(const Model::MechUnitType& robot_type) {
         std::cerr << "Failed to initialize InitRobot: " << e.what() << std::endl;
         return ERROR_ROBOTTYPE;
     }
-    LogUtil::logInfo("InitRobot initialized successfully");
     // 2.初始化力控模块
     forcecontrol_ptr = std::make_shared<Control::ForceControl>(initrobot_ptr.get());
     auto res_forcecontrol = forcecontrol_ptr->Fcinit();
