@@ -19,10 +19,11 @@
 #include <3rd/kdl/jntarray.hpp>
 #include <3rd/kdl/jntspaceinertiamatrix.hpp>
 #include <3rd/kdl/joint.hpp>
-#include <vector>
 #include <array>
+#include <vector>
 
 #include "rokae_header/fc_params.hpp"
+#include "rokae_header/log_util.hpp"
 
 using namespace KDL;
 

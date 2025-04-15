@@ -22,7 +22,6 @@ DynamicSolver::DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity
     m_chain_dyn_solver = new KDL::ChainIdSolver_RNE(m_chain, m_gravity);
     m_jnt_to_jac_solver = new KDL::ChainJntToJacSolver(m_chain);
     m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(m_chain);
-    m_svd_ptr = new Eigen::JacobiSVD<Eigen::MatrixXd>(m_jacobian_trans, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
     m_zeros_jntarry.resize(m_joint_num);
     m_trq_gravity.resize(m_joint_num);
@@ -51,6 +50,10 @@ DynamicSolver::DynamicSolver(const KDL::Chain& chain, const KDL::Vector& gravity
     m_tool_in_flan.Identity();
     temp.Identity();
     m_flan_wrench_out.Zero();
+
+    //svd分解
+    m_svd_ptr = new Eigen::JacobiSVD<Eigen::MatrixXd>(m_jacobian_trans, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
 }
 
 DynamicSolver::~DynamicSolver() {

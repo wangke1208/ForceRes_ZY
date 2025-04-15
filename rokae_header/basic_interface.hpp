@@ -18,7 +18,6 @@
 
 #include "rokae_header/data_structure_convert.hpp"
 #include "rokae_header/force_control.hpp"
-#include "rokae_header/log_util.hpp"
 #include "rokae_header/robot_config.hpp"
 #include "rokae_header/version.hpp"
 namespace RokaeApi {

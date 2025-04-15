@@ -12,7 +12,8 @@
 
 #define LOG_VECTOR_INFO(vec) RokaeApi::LogUtil::logVector(#vec, vec)
 #define LOG_VECTOR_ERROR(vec) RokaeApi::LogUtil::logVectorError(#vec, vec)
-
+#define LOG_ERROR(msg) RokaeApi::LogUtil::logError(msg)
+#define LOG_INFO(msg) RokaeApi::LogUtil::logInfo(msg)
 namespace RokaeApi {
 
 class LogUtil {

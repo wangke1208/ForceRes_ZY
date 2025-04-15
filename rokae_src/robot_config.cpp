@@ -113,8 +113,8 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         model_config_params.MAX_LOAD_TCP_LENGTH = 0.3;
 
         model_config_params.JOINT_TYPE = {8, 3, 2, 3, 2, 3, 2, 3};
-        model_config_params.ROT_AXIS = {0, 0, 0, 0, 0, 0, 0};
-        model_config_params.ROT_ANGLE = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+        model_config_params.ROT_AXIS = {0, 0, 0, 0, 0, 0, 0, 0};
+        model_config_params.ROT_ANGLE = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
         model_config_params.LINK_MASS = {5.179, 4.566, 3.163, 2.990, 2.501, 2.192, 0.961};
 
@@ -154,10 +154,10 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
 
         // mechanical_config_params
-        mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0};
+        mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0, 0};
         mechanical_config_params.ENCODER_RESOLUTION = {262144, 262144, 262144, 262144, 262144, 262144, 262144};
         mechanical_config_params.REDUCTION_RATIO_NUMERATOR = {160, 160, 100, 100, 100, 100, 100};
-        mechanical_config_params.REDUCTION_RATIO_DENOMINATOR = {1, 1, 1, 1, 1, 1};
+        mechanical_config_params.REDUCTION_RATIO_DENOMINATOR = {1, 1, 1, 1, 1, 1, 1};
         mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH = {210, 210, 110, 110, 60, 60, 60};
         mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_LOW = {2.25, 2.25, 2.25, 2.25, 2.25, 2.25, 2.25};
         mechanical_config_params.SENSOR_BIAS = {2000, 2000, 2000, 2000, 2000, 2000, 2000};

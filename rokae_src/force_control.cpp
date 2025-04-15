@@ -278,7 +278,7 @@ int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const
     }
     // 数据有效性检查
     for (unsigned int i = 0; i < m_jnt_num; ++i) {
-        if (joint_range_min[i] < 0 || joint_range_max[i] > 0 ||
+        if (joint_range_min[i] > 0 || joint_range_max[i] < 0 || joint_range_max[i] <= joint_range_min[i] ||
             joint_range_min[i] < m_init_robot_ptr->GetModelParams().joint_range_min_new[i] ||
             joint_range_max[i] > m_init_robot_ptr->GetModelParams().joint_range_max_new[i]) {
             return ERROR_SOFT_LIMIT_PARAMS;

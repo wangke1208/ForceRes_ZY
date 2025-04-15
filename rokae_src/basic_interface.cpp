@@ -48,8 +48,8 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     if (is_initialized) return ERROR_ALREADY_INIT;
 
     // 0.初始化日志模块
-    //string log_path = "log";
-    //LogUtil::initLogger(log_path);
+    std::string log_path = "log";
+    LogUtil::initLogger(log_path);
     // 1.初始化参数模块
     try {
         initrobot_ptr = std::make_shared<InitRobot>(robot_type);
