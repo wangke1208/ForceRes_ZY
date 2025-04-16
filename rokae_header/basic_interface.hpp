@@ -292,14 +292,14 @@ int GetTcpJacobian(const RokaeLoad& load, const std::vector<double>& jnt_pos, Ei
 //*******************************获取实时内部状态*********************************/
 /**
  * @brief 获取当前关节位置
- * @param[out] jnt_pos_rad 用于存储当前关节位置的向量，单位为弧度
+ * @param[out] jnt_pos_rad 用于存储当前关节位置的向量，单位为角度
  * @return 错误码，参考 SolverRes 枚举
  */
 int GetAxisPosCurrent(std::vector<double>& jnt_pos_rad);
 
 /**
  * @brief 获取当前关节速度
- * @param[out] jnt_vel_rad 用于存储当前关节速度的向量，单位为弧度/秒
+ * @param[out] jnt_vel_rad 用于存储当前关节速度的向量，单位为角度/秒
  * @return 错误码，参考 SolverRes 枚举
  */
 int GetAxisVelCurrent(std::vector<double>& jnt_vel_rad);

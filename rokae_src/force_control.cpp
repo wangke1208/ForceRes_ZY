@@ -55,6 +55,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
 }
 
 ForceControl::~ForceControl() {
+    delete m_fc_params_inner_ptr;
     delete m_force_protect_ptr;
     delete m_dynamicsolver_ptr;
     delete m_fkpos_ptr;

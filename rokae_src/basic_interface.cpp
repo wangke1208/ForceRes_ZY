@@ -146,7 +146,7 @@ int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置线性度
@@ -159,7 +159,7 @@ int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<doubl
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置传感器零点
@@ -177,7 +177,7 @@ int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<in
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置编码器零点
@@ -196,7 +196,7 @@ int SetSoftLimit(const std::vector<int8_t>& servo_mode, const std::vector<double
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置软限位
@@ -209,7 +209,7 @@ int SetMaxTrqErrorThreshold(const std::vector<int8_t>& servo_mode, const std::ve
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置最大扭矩误差阈值
@@ -222,7 +222,7 @@ int SetLoadLimit(const std::vector<int8_t>& servo_mode, const double& max_load_m
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置负载限制
@@ -235,7 +235,7 @@ int SetFcLoad(const std::vector<int8_t>& servo_mode, const RokaeLoad& load) {
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置力控负载
@@ -248,7 +248,7 @@ int SetKpGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& 
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置kp滑条系数
@@ -261,7 +261,7 @@ int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //设置摩擦滑条系数
@@ -269,7 +269,7 @@ int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>
 }
 
 int SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {
-    if (!ArrayToKdlFrame(base_poseture, frame_base_in_world)) {
+    if (ArrayToKdlFrame(base_poseture, frame_base_in_world) != SOLVE_NOERROR) {
         return ERROR_EULER_PARAMS;
     }
     //根据基坐标系方向确定重力矢量方向
@@ -292,7 +292,7 @@ int CalibrateTrqSensor(const std::vector<int8_t>& servo_mode, const std::vector<
         return ERROR_SERVO_MODE;
     }
     //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() != true) {
+    if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
     //进行校准
@@ -426,8 +426,13 @@ int GetAxisPosCurrent(std::vector<double>& jnt_pos_rad) {
     if (jnt_pos_rad.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
     }
-    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.data.cbegin(),
-              forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.data.cend(), jnt_pos_rad.begin());
+
+    std::copy_n(forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.data.data(),
+                forcecontrol_ptr->GetFcStatusCopy().jnt_pos_measure.rows(), jnt_pos_rad.begin());
+
+    //弧度转角度
+    std::transform(jnt_pos_rad.begin(), jnt_pos_rad.end(), jnt_pos_rad.begin(), [](double rad) { return rad * RAD_TO_DEG; });
+
     return SOLVE_NOERROR;
 }
 
@@ -435,8 +440,12 @@ int GetAxisVelCurrent(std::vector<double>& jnt_vel_rad) {
     if (jnt_vel_rad.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
     }
-    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.data.cbegin(),
-              forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.data.cend(), jnt_vel_rad.begin());
+
+    std::copy_n(forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.data.data(),
+                forcecontrol_ptr->GetFcStatusCopy().jnt_vel_measure.rows(), jnt_vel_rad.begin());
+    //弧度转角度
+    std::transform(jnt_vel_rad.begin(), jnt_vel_rad.end(), jnt_vel_rad.begin(), [](double rad) { return rad * RAD_TO_DEG; });
+
     return SOLVE_NOERROR;
 }
 
@@ -444,8 +453,9 @@ int GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback) {
     if (jnt_trq_feedback.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
     }
-    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.data.cbegin(),
-              forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.data.cend(), jnt_trq_feedback.begin());
+
+    std::copy_n(forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.data.data(),
+                forcecontrol_ptr->GetFcStatusCopy().jnt_trq_sensor_measure.rows(), jnt_trq_feedback.begin());
     return SOLVE_NOERROR;
 }
 
@@ -458,8 +468,7 @@ int GetTcpWrenchCurrent(std::array<double, 6>& ext_force) {
 }
 
 int GetTcpPosCurrent(std::array<double, 6>& tcp_pos) {
-    std::copy(forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.p.data,
-              forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.p.data + 3, tcp_pos.begin());
+    std::copy_n(forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.p.data, 3, tcp_pos.begin());
     forcecontrol_ptr->GetFcStatusCopy().cart_pos_measure_tcp_in_base.M.GetRPY(tcp_pos[3], tcp_pos[4], tcp_pos[5]);
     //弧度转角度
     for (unsigned int i = 0; i < 3; i++) {
@@ -473,10 +482,10 @@ int GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double
         trq_coriolis.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
     }
-    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.data.cbegin(),
-              forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.data.cend(), trq_gravity.begin());
-    std::copy(forcecontrol_ptr->GetFcStatusCopy().jnt_corlios_trq_measure.data.cbegin(),
-              forcecontrol_ptr->GetFcStatusCopy().jnt_corlios_trq_measure.data.cend(), trq_coriolis.begin());
+    std::copy_n(forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.data.data(),
+                forcecontrol_ptr->GetFcStatusCopy().jnt_gravity_trq_measure.rows(), trq_gravity.begin());
+    std::copy_n(forcecontrol_ptr->GetFcStatusCopy().jnt_corlios_trq_measure.data.data(),
+                forcecontrol_ptr->GetFcStatusCopy().jnt_corlios_trq_measure.rows(), trq_coriolis.begin());
     mass_matrix = forcecontrol_ptr->GetFcStatusCopy().jnt_inertia_matrix_measure.data;
     return SOLVE_NOERROR;
 }

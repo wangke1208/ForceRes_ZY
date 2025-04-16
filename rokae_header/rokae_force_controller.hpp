@@ -283,14 +283,14 @@ int RokaeForce_GetTcpJacobian(const External_RokaeLoad& load, const std::vector<
 
 /**
  * @brief 获取当前关节位置
- * @param[out] jnt_pos_rad 用于存储当前关节位置的向量，单位为弧度
+ * @param[out] jnt_pos_rad 用于存储当前关节位置的向量，单位为角度
  * @return 错误码
  */
 int RokaeForce_GetAxisPosCurrent(std::vector<double>& jnt_pos_rad);
 
 /**
  * @brief 获取当前关节速度
- * @param[out] jnt_vel_rad 用于存储当前关节速度的向量，单位为弧度/秒
+ * @param[out] jnt_vel_rad 用于存储当前关节速度的向量，单位为角度/秒
  * @return 错误码
  */
 int RokaeForce_GetAxisVelCurrent(std::vector<double>& jnt_vel_rad);

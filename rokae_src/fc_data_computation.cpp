@@ -49,7 +49,7 @@ int FcStatusTracker::FcStatusUpdata() {
     FcStatusUpdataCommon();
     switch (FC->drag_type) {
     case Control::DragType::DRAG_JOINT:
-        FcStatusUpdataJoint();
+        return FcStatusUpdataJoint();
     case Control::DragType::DRAG_CART_TRANS:
     case Control::DragType::DRAG_CART_ROT:
     case Control::DragType::DRAG_CART_FREE:

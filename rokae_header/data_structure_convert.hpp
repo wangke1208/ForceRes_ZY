@@ -41,7 +41,7 @@ inline int VectorToJntArray(const std::vector<double>& in, KDL::JntArray& out) {
     return 0;
 }
 
-inline KDL::JntArray& VectorToJntArray(const std::vector<double>& in) {
+inline KDL::JntArray VectorToJntArray(const std::vector<double>& in) {
     KDL::JntArray out(in.size());
     for (unsigned int i = 0; i < in.size(); i++) {
         out(i) = in[i];
@@ -57,7 +57,7 @@ inline int JntArrayToVector(const KDL::JntArray& in, std::vector<double>& out) {
     return 0;
 }
 
-inline std::vector<double>& JntArrayToVector(const KDL::JntArray& in) {
+inline std::vector<double> JntArrayToVector(const KDL::JntArray& in) {
     std::vector<double> out(in.rows());
     for (unsigned int i = 0; i < in.rows(); i++) {
         out[i] = in(i);
@@ -122,11 +122,11 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
         unsigned int t = i - 1;
         model_out.link_inertia[i].mass = in.model_config_params.LINK_MASS[t];
         for (unsigned int j = 0; j < 3; j++) {
-            model_out.link_inertia[i].centroid[j] = in.model_config_params.LINK_CENTROID[3 * t + j];
+            model_out.link_inertia[i].centroid[j] = in.model_config_params.LINK_CENTROID[3 * t + j] / 1000.0;
         }
         for (unsigned int k = 0; k < 6; k++) {
-            model_out.link_inertia[i].moment[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA[3 * i + k];
-            model_out.link_inertia[i].moment_link[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA_LOW[3 * i + k];
+            model_out.link_inertia[i].moment[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA[3 * i + k] / 1000000.0;
+            model_out.link_inertia[i].moment_link[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA_LOW[3 * i + k] / 1000000.0;
         }
     }
     // 1.2 RD参数
