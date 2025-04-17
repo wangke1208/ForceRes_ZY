@@ -28,11 +28,21 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
     m_jnt_damp.resize(m_jnt_num, 0.0);
     m_cart_stiff.resize(6, 100.0);
     m_cart_damp.resize(6, 10.0);
+    m_null_stiff.resize(1, 100.0);
 
     // 笛卡尔阻抗力
-    m_function_cart_imp_trq.resize(6);
+    m_function_cart_imp_trq.Zero();
     m_function_cart_imp_stiff_trq.resize(6);
     m_function_cart_imp_damp_trq.resize(6);
+    m_function_cart_imp_joint_trq.resize(m_jnt_num);
+    m_function_cart_imp_trq_in_base = Eigen::Matrix<double, 6, 1>::Zero();
+    m_function_cart_imp_trq_in_base_wrench.Zero();
+    m_function_null_space_trq.resize(m_jnt_num);
+    m_function_null_space_trq_final.resize(m_jnt_num);
+    m_matrix_temp = Eigen::MatrixXd::Identity(7, 7);
+    //关节阻抗力
+    m_function_jnt_imp_damp_trq.resize(m_jnt_num);
+    m_function_jnt_imp_stiff_trq.resize(m_jnt_num);
 
     // 其他
     m_function_imp_trq.resize(m_jnt_num);      // 最终输出的阻抗力
@@ -86,18 +96,44 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
  
  // --------------------- 阻抗力更新 ---------------------
  void ForcePlanner::JointImpedanceUpdate(KDL::JntArray& function_imp_trq) {
-     // 纯轴空间拖动，刚度和阻尼都是0，阻抗力直接为0即可
-     function_imp_trq.data.setZero();
- }
- 
- void ForcePlanner::CartImpedanceUpdate(KDL::JntArray& function_imp_trq) {
-     m_fc_params_inner_ptr->m_function_params.GetParams("cart_stiff", m_cart_stiff);
-     m_fc_params_inner_ptr->m_function_params.GetParams("cart_damp", m_cart_damp);
-     for (unsigned int i = 0; i < 6; i++) {
-         m_function_cart_imp_stiff_trq(i) = m_jnt_stiff[i] * FC->cart_pos_following_error_tcp_in_fcframe[i];
-         m_function_cart_imp_damp_trq(i) = m_jnt_damp[i] * FC->cart_vel_following_error_tcp_in_fcframe[i];
-         function_imp_trq(i) = m_function_cart_imp_stiff_trq(i) + m_function_cart_imp_damp_trq(i);
+     if (FC->drag_type == Control::DragType::IMPEDANCE_JOINT) {
+         for (unsigned int i = 0; i < m_jnt_num; i++) {
+             m_function_jnt_imp_stiff_trq(i) = m_jnt_stiff[i] * FC->jnt_pos_following_error(i);
+             m_function_jnt_imp_damp_trq(i) = m_jnt_damp[i] * (FC->jnt_vel_command(i) - FC->jnt_vel_measure(i));
+             function_imp_trq.data(i) = m_function_jnt_imp_stiff_trq(i) + m_function_jnt_imp_damp_trq(i);
+         }
+     } else {
+         // 纯轴空间拖动，刚度和阻尼都是0，阻抗力直接为0即可
+         function_imp_trq.data.setZero();
      }
+ }
+
+ void ForcePlanner::CartImpedanceUpdate(KDL::JntArray& function_imp_trq) {
+     for (unsigned int i = 0; i < 6; i++) {
+         //都是相对于力控坐标系
+         m_function_cart_imp_stiff_trq(i) = m_cart_stiff[i] * FC->cart_pos_following_error_tcp_in_fcframe[i];
+         m_function_cart_imp_damp_trq(i) = m_cart_damp[i] * FC->cart_vel_following_error_tcp_in_fcframe[i];
+         m_function_cart_imp_trq(i) = m_function_cart_imp_stiff_trq(i) + m_function_cart_imp_damp_trq(i);
+     }
+
+     //转换到基坐标系下
+     m_function_cart_imp_trq_in_base_wrench = FC->fc_frame.M.Inverse() * m_function_cart_imp_trq;
+     for (unsigned int i = 0; i < 6; i++) {
+         m_function_cart_imp_trq_in_base(i) = m_function_cart_imp_trq_in_base_wrench(i);
+     }
+     function_imp_trq.data = FC->jac_trans_measure_tcp_in_base * m_function_cart_imp_trq_in_base;
+
+     //零空间阻抗(TODO)
+     m_function_null_space_trq.data = m_null_stiff[0] * (FC->cart_pos_jnt_command.data - FC->jnt_pos_measure.data) -
+                                      (1.4 * std::sqrt(m_null_stiff[0])) * FC->jnt_vel_measure.data;
+     //求伪逆
+     J_pinv =
+         FC->jac_trans_measure_flan_in_base * (FC->jac_measure_flan_in_base.data * FC->jac_trans_measure_flan_in_base).inverse();
+
+     m_function_null_space_trq_final.data =
+         (m_matrix_temp - J_pinv * FC->jac_measure_flan_in_base.data) * m_function_null_space_trq.data;
+     //总阻抗力矩
+     function_imp_trq.data += m_function_null_space_trq_final.data;
  }
  
  // --------------------- 关节保护力更新 ---------------------
@@ -139,7 +175,14 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
      }
      return;
  }
- 
+
+ void ForcePlanner::UpdateParams() {
+     m_fc_params_inner_ptr->m_function_params.GetParams("cart_stiff", m_cart_stiff);
+     m_fc_params_inner_ptr->m_function_params.GetParams("cart_damp", m_cart_damp);
+     m_fc_params_inner_ptr->m_function_params.GetParams("null_stiff", m_null_stiff);
+     m_fc_params_inner_ptr->m_function_params.GetParams("joint_stiff", m_jnt_stiff);
+     m_fc_params_inner_ptr->m_function_params.GetParams("joint_damp", m_jnt_damp);
+ }
  }  // namespace Control
  }  // namespace RokaeApi
  

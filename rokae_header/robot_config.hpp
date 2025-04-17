@@ -38,6 +38,8 @@ struct ControlConfigParams {
     std::vector<double> ROTATION_DAMPING_OF_TRANSLATION_DRAGGING;
     std::vector<double> TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING;
     std::vector<double> TRANSLATION_DAMPING_OF_ROTATION_DRAGGING;
+    std::vector<double> JOINT_IMPEDANCE_CTRL_DAMP_ZETA;
+    std::vector<double> CART_IMPEDANCE_CTRL_DAMP_ZETA;
     ControlConfigParams(unsigned int jnt_num = DEFAULT_AXIS);
     void Resize(unsigned int jnt_num);
 };

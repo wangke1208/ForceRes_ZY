@@ -157,12 +157,31 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
     }
 
     // 3.控制参数&保护参数
-    for (unsigned int i = 0; i < control_out.m_gain_params.joint_gain_kp.size(); i++) {
-        control_out.m_gain_params.joint_gain_kp[i] = in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC[i];
-        control_out.m_gain_params.joint_damp_zeta[i] = in.control_config_params.CTRL_ZETA_SERVO_EXEC[i];
-        control_out.m_gain_params.friction_cof_servo[i] = in.control_config_params.FRICTION_COF_DRAG[i];
-        control_out.m_protect_params.max_mode_switch_trq[i] = in.protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL[i];
-    }
+    std::copy(in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC.begin(),
+              in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC.end(), control_out.m_gain_params.joint_gain_kp.begin());
+    std::copy(in.control_config_params.CTRL_ZETA_SERVO_EXEC.begin(), in.control_config_params.CTRL_ZETA_SERVO_EXEC.end(),
+              control_out.m_gain_params.joint_damp_zeta.begin());
+    std::copy(in.control_config_params.FRICTION_COF_DRAG.begin(), in.control_config_params.FRICTION_COF_DRAG.end(),
+              control_out.m_gain_params.friction_cof_servo.begin());
+    std::copy(in.control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING.begin(),
+              in.control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING.end(),
+              control_out.m_gain_params.rot_drag_trans_stiff.begin());
+    std::copy(in.control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.begin(),
+              in.control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.end(),
+              control_out.m_gain_params.rot_drag_trans_damp.begin());
+    std::copy(in.control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING.begin(),
+              in.control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING.end(),
+              control_out.m_gain_params.trans_drag_rot_stiff.begin());
+    std::copy(in.control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.begin(),
+              in.control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.end(),
+              control_out.m_gain_params.trans_drag_rot_damp.begin());
+    std::copy(in.control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA.begin(),
+              in.control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA.end(), control_out.m_gain_params.jnt_imp_damp_zeta.begin());
+    std::copy(in.control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA.begin(),
+              in.control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA.end(), control_out.m_gain_params.cart_imp_damp_zeta.begin());
+    std::copy(in.protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL.begin(),
+              in.protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL.end(),
+              control_out.m_protect_params.max_mode_switch_trq.begin());
     return SOLVE_NOERROR;
 }
 

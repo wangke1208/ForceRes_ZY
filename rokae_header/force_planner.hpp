@@ -93,6 +93,12 @@ class ForcePlanner {
      */
     void SetSoftLimit(const std::vector<double>& joint_range_min_input, const std::vector<double>& joint_range_max_input);
 
+    /**
+     * @brief 更新内部参数
+     *
+     */
+    void UpdateParams();
+
    private:
     unsigned int m_jnt_num;  ///< 机器人关节数量
 
@@ -105,6 +111,7 @@ class ForcePlanner {
     std::vector<double> m_jnt_damp;    ///< 关节阻尼参数
     std::vector<double> m_cart_stiff;  ///< 笛卡尔刚度参数
     std::vector<double> m_cart_damp;   ///< 笛卡尔阻尼参数
+    std::vector<double> m_null_stiff;  //零空间刚度
 
     // 关节限位
     std::vector<double> m_lower_bound;          ///< 软限位下限
@@ -120,11 +127,22 @@ class ForcePlanner {
     KDL::JntArray m_function_trq_ref;             ///< 参考合力
     KDL::JntArray m_function_jnt_gravity;         ///< 重力补偿
     KDL::JntArray m_function_imp_trq;             ///< 关节阻抗力
-    KDL::JntArray m_function_cart_imp_trq;        ///< 笛卡尔阻抗力
+    KDL::JntArray m_function_jnt_imp_damp_trq;    ///< 关节空间阻尼阻抗力
+    KDL::JntArray m_function_jnt_imp_stiff_trq;   ///< 关节空间刚度阻抗力
+
+    KDL::Wrench m_function_cart_imp_trq;          ///< 笛卡尔阻抗力
+    KDL::JntArray m_function_cart_imp_joint_trq;  ///< 笛卡尔阻抗力折算到末端
     KDL::JntArray m_function_cart_imp_stiff_trq;  ///< 笛卡尔刚度阻抗力
     KDL::JntArray m_function_cart_imp_damp_trq;   ///< 笛卡尔阻尼阻抗力
     KDL::JntArray m_function_jnt_limit_trq;       ///< 关节限位保护力
     KDL::JntArray m_function_jnt_zero_trq;        ///< 空数据（零力数据）
+    KDL::JntArray m_function_null_space_trq;      //零空间虚拟阻抗力矩
+    KDL::JntArray m_function_null_space_trq_final;  //投影后的零空间阻抗力矩
+
+    Eigen::MatrixXd J_pinv;
+    Eigen::Matrix<double, 6, 1> m_function_cart_imp_trq_in_base;
+    Eigen::MatrixXd m_matrix_temp;
+    KDL::Wrench m_function_cart_imp_trq_in_base_wrench;
 };
 
 }  // namespace Control

@@ -67,7 +67,10 @@ int FcStatusTracker::FcStatusUpdataJoint() {
 }
 int FcStatusTracker::FcStatusUpdataCart() {
     // 1.笛卡尔指令(tcp_in_base)
-    FC->cart_pos_command_tcp_in_base = FC->cart_pos_command_flan_in_base * m_tool_in_flan;
+    if (FC->drag_type == Control::DragType::IMPEDANCE_CART) {
+        //非笛卡尔阻抗，需要更新cart_pos_following_error_tcp_in_base_pos
+        FC->cart_pos_command_tcp_in_base = FC->cart_pos_command_flan_in_base * m_tool_in_flan;
+    }
 
     // 2.笛卡尔位置偏差(指令相对于测量的偏移)
     FC->cart_pos_following_error_flan_in_base_pos = FC->cart_pos_command_flan_in_base.p - FC->cart_pos_measure_flan_in_base.p;
@@ -87,7 +90,6 @@ int FcStatusTracker::FcStatusUpdataCart() {
     UnwarpRPY(m_orient_delta_d_last, m_orient_delta_d);
     m_orient_delta_d_last = m_orient_delta_d;
     //旋转分量范围检查，如果任意一个分量接近 ±π，则认为旋转角度超出范围
-    m_fc_params_inner_ptr->m_function_params.GetParams("cart_stiff", m_cart_stiffness);
     while (m_cart_stiffness[3] > EPSILON4 or m_cart_stiffness[4] > EPSILON4 or m_cart_stiffness[5] > EPSILON4) {
         if (fabs(m_orient_delta_d[0]) >= (PI - EPSILON1) || fabs(m_orient_delta_d[1]) >= (PI - EPSILON1) ||
             fabs(m_orient_delta_d[2]) >= (PI - EPSILON1)) {
@@ -115,23 +117,22 @@ int FcStatusTracker::FcStatusUpdataCart() {
                         FC->jac_measure_tcp_in_base);
     KDL::MultiplyJacobian(FC->jac_measure_tcp_in_base, FC->jnt_vel_measure, FC->cart_vel_measure_tcp_in_base);
     KDL::MultiplyJacobian(FC->jac_command_tcp_in_base, FC->jnt_vel_command, FC->cart_vel_command_tcp_in_base);
-    FC->cart_vel_command_tcp_in_fcframe = m_fc_frame.M * FC->cart_vel_command_tcp_in_base;
-    FC->cart_vel_measure_tcp_in_fcframe = m_fc_frame.M * FC->cart_vel_measure_tcp_in_base;
 
-    // 6.计算力控坐标系
+    // 6.计算力控坐标系(base_in_fcframe)
     switch (m_fc_frame_type) {
     case FcFrameType::FCFRAME_TOOL:
-        m_fc_frame =
-            m_tool_in_flan.Inverse() * FC->cart_pos_measure_flan_in_base.Inverse() * FC->cart_pos_command_flan_in_base.Inverse();
+        m_fc_frame = m_tool_in_flan.Inverse() * FC->cart_pos_measure_flan_in_base.Inverse();
         break;
     //其他暂时不考虑，先均给到TCP
     default:
-        m_fc_frame =
-            m_tool_in_flan.Inverse() * FC->cart_pos_measure_flan_in_base.Inverse() * FC->cart_pos_command_flan_in_base.Inverse();
+        m_fc_frame = m_tool_in_flan.Inverse() * FC->cart_pos_measure_flan_in_base.Inverse();
         break;
     }
+    FC->fc_frame = m_fc_frame;
 
     // 9.将总偏差转到力控坐标系下
+    FC->cart_vel_command_tcp_in_fcframe = m_fc_frame.M * FC->cart_vel_command_tcp_in_base;
+    FC->cart_vel_measure_tcp_in_fcframe = m_fc_frame.M * FC->cart_vel_measure_tcp_in_base;
 
     FC->cart_pos_following_error_tcp_in_fcframe = m_fc_frame.M * FC->cart_pos_following_error_tcp_in_base;
     FC->cart_vel_following_error_tcp_in_fcframe = FC->cart_vel_command_tcp_in_fcframe - FC->cart_vel_measure_tcp_in_fcframe;
@@ -207,6 +208,8 @@ void FcStatusTracker::UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data)
 }
 
 void FcStatusTracker::ResetCalStatus() { m_is_rot_angle_outof_range = false; }
+
+void FcStatusTracker::UpdateParams() { m_fc_params_inner_ptr->m_function_params.GetParams("cart_stiff", m_cart_stiffness); }
 
 }  // namespace Control
 }  // namespace RokaeApi

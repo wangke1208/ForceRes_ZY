@@ -75,11 +75,13 @@ int RokaeForce_DragConfig(const std::vector<int32_t>& PDO_0x6064, const std::vec
 int RokaeForce_FcUpdate(const std::vector<int8_t>& PDO_0x6061, const std::vector<int16_t>& PDO_0x2401,
                         const std::vector<int16_t>& PDO_0x2402, const std::vector<int16_t>& PDO_0x2406,
                         const std::vector<int32_t>& PDO_0x6064, const std::vector<int32_t>& PDO_0x606C,
+                        const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
                         std::vector<int16_t>& PDO_0x6071, std::vector<int16_t>& PDO_0x60B2, std::vector<int16_t>& PDO_0x2201,
                         std::vector<int16_t>& PDO_0x2202, std::vector<int16_t>& PDO_0x2203, std::vector<int16_t>& PDO_0x2204,
                         std::vector<int16_t>& PDO_0x2205, std::vector<int16_t>& PDO_0x2206) {
-    return BasicInterface::FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, PDO_0x6071,
-                                    PDO_0x60B2, PDO_0x2201, PDO_0x2202, PDO_0x2203, PDO_0x2204, PDO_0x2205, PDO_0x2206);
+    return BasicInterface::FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd_from_user,
+                                    PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202, PDO_0x2203, PDO_0x2204, PDO_0x2205,
+                                    PDO_0x2206);
 }
 
 int RokaeForce_FcStop(const std::vector<int8_t>& PDO_0x6061) { return BasicInterface::FcStop(PDO_0x6061); }
@@ -114,6 +116,13 @@ int RokaeForce_SetKpGain(const std::vector<int8_t>& PDO_0x6061, const std::vecto
 int RokaeForce_SetFricGain(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& fric_gain_set) {
     return BasicInterface::SetFricGain(PDO_0x6061, fric_gain_set);
 }
+int RokaeForce_SetJointImpedance(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& joint_impedance) {
+    return BasicInterface::SetJointImpedance(PDO_0x6061, joint_impedance);
+};
+int RokaeForce_SetCartesianImpedance(const std::vector<int8_t>& PDO_0x6061, const std::array<double, 6>& cartesian_impedance) {
+    return BasicInterface::SetCartImpedance(PDO_0x6061, cartesian_impedance);
+};
+
 // ================== 参数设置接口(允许实时设置) ==================
 
 int RokaeForce_SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {

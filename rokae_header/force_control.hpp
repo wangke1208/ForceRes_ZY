@@ -112,6 +112,7 @@ class ForceControl {
     int FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
                  const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
                  const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
+                 const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
                  std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
                  std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
                  std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
@@ -231,6 +232,26 @@ class ForceControl {
     int SetFricGain(const std::vector<double>& fric_gain_set);
 
     /**
+     * @brief 设置关节阻抗刚度
+     *
+     * 此函数用于设置关节阻抗刚度
+     *
+     * @param[in] joint_stiffness 输入：关节阻抗刚度
+     * @return 输出：成功返回 SOLVE_NOERROR，失败返回相应的错误码
+     */
+    int SetJointImpedance(const std::vector<double>& joint_stiffness);
+
+    /**
+     * @brief 设置笛卡尔阻抗刚度
+     *
+     * 此函数用于设置笛卡尔阻抗刚度
+     *
+     * @param[in] cart_stiffness 输入：笛卡尔阻抗刚度
+     * @return 输出：成功返回 SOLVE_NOERROR，失败返回相应的错误码
+     */
+    int SetCartImpedance(const std::array<double, 6>& cart_stiffness);
+
+    /**
      * @brief 根据负载重置发给伺服的带宽
      *
      * 此函数用于根据负载信息重置比例增益。
@@ -340,6 +361,11 @@ class ForceControl {
     std::vector<double> m_load_mass_limit;        // 最大质量限制
     std::vector<double> m_load_tcp_length_limit;  // 最大TCP长度限制
 
+    //一些临时变量
+    std::vector<double> m_jnt_imp_damp_zeta_temp;
+    std::vector<double> m_cart_imp_damp_zeta_temp;
+    std::vector<double> m_jnt_imp_damp_temp;
+    std::vector<double> m_cart_imp_damp_temp;
     // 内部状态标志位
     bool m_enable_drag;
     bool m_is_first_drag;
@@ -351,6 +377,10 @@ class ForceControl {
     FcParamsInner* m_fc_params_inner_ptr;
     KDL::Frame m_base_in_world;
     KDL::Vector m_gravity_vector;
+
+    //用户设置的指令
+    std::vector<double> m_joint_pos_command_from_user;
+    std::array<double, 6> m_cart_pos_command_from_user;
 
     // 求解器
     InitRobot* m_init_robot_ptr;

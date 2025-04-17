@@ -28,6 +28,8 @@ void ControlConfigParams::Resize(unsigned int jnt_num) {
     ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
     TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
     TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
+    JOINT_IMPEDANCE_CTRL_DAMP_ZETA.resize(jnt_num, 0.0);
+    CART_IMPEDANCE_CTRL_DAMP_ZETA.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
 }
 
 MechanicalConfigParams::MechanicalConfigParams(unsigned int jnt_num)
@@ -152,6 +154,8 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
         control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
         control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
+        control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {0.8, 0.8, 0.7, 0.5, 0.3, 0.3, 0.3};
+        control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.5, 0.5, 0.5, 0.3, 0.3, 0.3};
 
         // mechanical_config_params
         mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0, 0};

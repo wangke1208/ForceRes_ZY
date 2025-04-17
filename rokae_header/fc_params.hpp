@@ -56,6 +56,21 @@ struct FcParamsInnerBase {
         return true;
     }
 
+    template <std::size_t N>
+    inline bool SetParam(const std::string& name, const std::array<double, N>& param) {
+        auto it = m_params.find(name);
+        if (it == m_params.end()) {
+            // 参数不存在
+            return false;
+        }
+        if (param.size() != it->second.size()) {
+            // 参数长度不一致
+            return false;
+        }
+        it->second = param;
+        return true;
+    }
+
     inline bool SetParam(const std::string& name, const double& param, unsigned int index) {
         auto it = m_params.find(name);
         if (it == m_params.end()) {

@@ -26,7 +26,9 @@ enum External_DragType {
     DRAG_JOINT,       //轴空间拖动（目前只支持这一种）
     DRAG_CART_TRANS,  //笛卡尔空间仅平移
     DRAG_CART_ROT,    //笛卡尔空间仅旋转
-    DRAG_CART_FREE    //笛卡尔自由
+    DRAG_CART_FREE,   //笛卡尔自由
+    IMPEDANCE_JOINT,  //关节阻抗
+    IMPEDANCE_CART    //笛卡尔阻抗
 };
 struct External_RokaeLoad {
     //坐标系参数
@@ -77,6 +79,8 @@ int RokaeForce_DragConfig(const std::vector<int32_t>& PDO_0x6064, const std::vec
  * @param [in] PDO_0x2406 相关的PDO_0x2406数据向量
  * @param [in] PDO_0x6064 相关的PDO_0x6064数据向量
  * @param [in] PDO_0x606C 相关的PDO_0x606C数据向量
+ * @param [in] jnt_pos_cmd_from_user  用户输入的关节阻抗位置指令(仅关节阻抗生效)
+ * @param [in] cart_pos_cmd_from_user 用户输入的笛卡尔阻抗位置指令(仅笛卡尔阻抗生效)
  * @param [out] PDO_0x6071 输出的PDO_0x6071数据向量
  * @param [out] PDO_0x60B2 输出的PDO_0x60B2数据向量
  * @param [out] PDO_0x2201 输出的PDO_0x2201数据向量
@@ -90,6 +94,7 @@ int RokaeForce_DragConfig(const std::vector<int32_t>& PDO_0x6064, const std::vec
 int RokaeForce_FcUpdate(const std::vector<int8_t>& PDO_0x6061, const std::vector<int16_t>& PDO_0x2401,
                         const std::vector<int16_t>& PDO_0x2402, const std::vector<int16_t>& PDO_0x2406,
                         const std::vector<int32_t>& PDO_0x6064, const std::vector<int32_t>& PDO_0x606C,
+                        const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
                         std::vector<int16_t>& PDO_0x6071, std::vector<int16_t>& PDO_0x60B2, std::vector<int16_t>& PDO_0x2201,
                         std::vector<int16_t>& PDO_0x2202, std::vector<int16_t>& PDO_0x2203, std::vector<int16_t>& PDO_0x2204,
                         std::vector<int16_t>& PDO_0x2205, std::vector<int16_t>& PDO_0x2206);
@@ -159,6 +164,23 @@ int RokaeForce_SetKpGain(const std::vector<int8_t>& PDO_0x6061, const std::vecto
  * @return
  */
 int RokaeForce_SetFricGain(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& fric_gain_set);
+
+/**
+ * @brief 设置关节阻抗刚度
+ * @param[in] PDO_0x6061
+ * @param[in] cartesian_impedance 关节阻抗刚度
+ * @return
+ */
+int RokaeForce_SetJointImpedance(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& joint_impedance_stiffness);
+
+/**
+ * @brief 设置笛卡尔阻抗刚度
+ * @param[in] PDO_0x6061
+ * @param[in] cartesian_impedance_stiffness 笛卡尔阻抗刚度
+ * @return
+ */
+int RokaeForce_SetCartesianImpedance(const std::vector<int8_t>& PDO_0x6061,
+                                     const std::array<double, 6>& cartesian_impedance_stiffness);
 // ================== 参数设置接口(允许实时设置) ==================
 
 /**
@@ -283,17 +305,17 @@ int RokaeForce_GetTcpJacobian(const External_RokaeLoad& load, const std::vector<
 
 /**
  * @brief 获取当前关节位置
- * @param[out] jnt_pos_rad 用于存储当前关节位置的向量，单位为角度
+ * @param[out] jnt_pos 用于存储当前关节位置的向量，单位为角度
  * @return 错误码
  */
-int RokaeForce_GetAxisPosCurrent(std::vector<double>& jnt_pos_rad);
+int RokaeForce_GetAxisPosCurrent(std::vector<double>& jnt_pos);
 
 /**
  * @brief 获取当前关节速度
- * @param[out] jnt_vel_rad 用于存储当前关节速度的向量，单位为角度/秒
+ * @param[out] jnt_vel 用于存储当前关节速度的向量，单位为角度/秒
  * @return 错误码
  */
-int RokaeForce_GetAxisVelCurrent(std::vector<double>& jnt_vel_rad);
+int RokaeForce_GetAxisVelCurrent(std::vector<double>& jnt_vel);
 
 /**
  * @brief 获取当前协作机器人关节扭矩反馈

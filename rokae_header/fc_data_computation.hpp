@@ -124,6 +124,12 @@ class FcStatusTracker {
      */
     void UnwarpRPY(const KDL::Vector& data_last, KDL::Vector& data);
 
+    /**
+     * @brief 更新内部参数
+     *
+     */    
+    void UpdateParams();
+
    private:
     DynamicSolver* m_dynamic_solver;
     KDL::ChainFkSolverPos_recursive* m_fkpos_ptr;

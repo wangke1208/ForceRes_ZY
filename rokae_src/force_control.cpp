@@ -52,6 +52,12 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_fri_set_by_load.resize(m_jnt_num);
     m_load_mass_limit.resize(1);
     m_load_tcp_length_limit.resize(1);
+    m_joint_pos_command_from_user.resize(m_jnt_num);
+    m_cart_pos_command_from_user = std::array<double, 6>();
+    m_jnt_imp_damp_zeta_temp.resize(m_jnt_num);
+    m_cart_imp_damp_zeta_temp.resize(6);
+    m_cart_imp_damp_temp.resize(6);
+    m_jnt_imp_damp_temp.resize(m_jnt_num);
 }
 
 ForceControl::~ForceControl() {
@@ -138,6 +144,10 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     m_drag_type = drag_type;
     SetImpedenceGain(m_drag_type);  // 内部参数固定配置
 
+    // 6.更新内部参数
+    m_force_planner_ptr->UpdateParams();
+    m_fc_status_tracker_ptr->UpdateParams();
+
     // 6. 更新拖动使能标志
     m_enable_drag = true;
     return SOLVE_NOERROR;
@@ -177,12 +187,41 @@ void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
         }
         m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
         break;
+    case DragType::IMPEDANCE_JOINT:
+        if (m_is_first_drag) {
+            m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
+            m_fc_status_inner.jnt_vel_command.data.setZero();  // TODO:目前的速度指令都没有，后续需要用户传入速度指令
+            m_is_first_drag = false;
+        } else {
+            VectorToJntArray(m_joint_pos_command_from_user, m_fc_status_inner.jnt_pos_command);
+        }
+        break;
+
+    case DragType::IMPEDANCE_CART:
+        if (m_is_first_drag) {
+            m_fc_status_inner.jnt_pos_command = m_fc_status_inner.jnt_pos_measure;
+            m_fc_status_inner.jnt_vel_command.data.setZero();  // TODO:目前的速度指令都没有，后续需要用户传入速度指令
+            m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
+            m_is_first_drag = false;
+        } else {
+            //更新cart_pos_command_tcp_in_base
+            m_fc_status_inner.cart_pos_command_tcp_in_base.p =
+                KDL::Vector(m_cart_pos_command_from_user[0], m_cart_pos_command_from_user[1], m_cart_pos_command_from_user[2]);
+            m_fc_status_inner.cart_pos_command_tcp_in_base.M = KDL::Rotation::RPY(
+                m_cart_pos_command_from_user[3], m_cart_pos_command_from_user[4], m_cart_pos_command_from_user[5]);
+        }
+        // TODO:这里应该需要用户传入笛卡尔指令对应的关节指令，用来计算雅可比。
+        // TODO:cart_pos_command_flan_in_base在笛卡尔阻抗不更新，后续需要优化
+        m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_command;
+
+        break;
     }
 }
 
 int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
                            const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
                            const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
+                           const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
                            std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
                            std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
                            std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
@@ -207,6 +246,11 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     }
 
     // 3. 更新指令和反馈数据
+    m_joint_pos_command_from_user = jnt_pos_cmd_from_user;  //更新用户指令
+    for (unsigned int i = 0; i < 3; i++) {
+        m_cart_pos_command_from_user[i] = cart_pos_cmd_from_user[i];  //更新用户指令
+        m_cart_pos_command_from_user[i + 3] = cart_pos_cmd_from_user[i + 3] * KDL::deg2rad;
+    }
     SetFcCommand(m_servo_data_fc_inner);
 
     // 4. 执行力控数据流计算
@@ -399,6 +443,52 @@ int ForceControl::SetFricGain(const std::vector<double>& fric_gain_set) {
     }
     m_fc_params_inner_ptr->m_function_params.SetParam("fri_gain_set", fric_gain_set);
     std::copy(fric_gain_set.cbegin(), fric_gain_set.cend(), m_fri_gain_set.begin());
+    return SOLVE_NOERROR;
+}
+
+int ForceControl::SetJointImpedance(const std::vector<double>& joint_stiffness) {
+    if (m_jnt_num != joint_stiffness.size()) {
+        return ERROR_SIZE_WRONG;
+    }
+
+    // TODO:增加最大刚度设置限制
+    for (const auto& js : joint_stiffness) {
+        if (js < 0 || js > 8000) {
+            return ERROR_GAIN_VALUE_SET;
+        }
+    }
+    //设置刚度
+    m_fc_params_inner_ptr->m_function_params.SetParam("joint_stiff", joint_stiffness);
+
+    m_jnt_imp_damp_zeta_temp = m_init_robot_ptr->GetControlParams().m_gain_params.jnt_imp_damp_zeta;
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        m_jnt_imp_damp_temp[i] = std::sqrt(joint_stiffness[i]) * 2 * m_jnt_imp_damp_zeta_temp[i];
+    }
+    //设置阻尼
+    m_fc_params_inner_ptr->m_function_params.SetParam("joint_damp", m_jnt_imp_damp_temp);
+    return SOLVE_NOERROR;
+}
+
+int ForceControl::SetCartImpedance(const std::array<double, 6>& cart_stiffness) {
+    if (cart_stiffness.size() != 6) {
+        return ERROR_SIZE_WRONG;
+    }
+
+    // TODO:增加最大刚度设置限制
+    for (const auto& cs : cart_stiffness) {
+        if (cs < 0 || cs > 5000) {
+            return ERROR_GAIN_VALUE_SET;
+        }
+    }
+    //设置刚度
+    m_fc_params_inner_ptr->m_function_params.SetParam("cart_stiff", cart_stiffness);
+
+    m_cart_imp_damp_zeta_temp = m_init_robot_ptr->GetControlParams().m_gain_params.cart_imp_damp_zeta;
+    for (unsigned int i = 0; i < 6; i++) {
+        m_cart_imp_damp_temp[i] = std::sqrt(cart_stiffness[i]) * 2 * m_cart_imp_damp_zeta_temp[i];
+    }
+    //设置阻尼
+    m_fc_params_inner_ptr->m_function_params.SetParam("cart_damp", m_cart_imp_damp_temp);
     return SOLVE_NOERROR;
 }
 

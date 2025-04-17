@@ -71,10 +71,11 @@ int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::ve
 int FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
              const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
              const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
-             std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
-             std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
-             std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
-             std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo);
+             const std::vector<double> jnt_pos_cmd_from_user, std::vector<int16_t>& fc_trq_cmd_to_servo,
+             std::vector<int16_t>& fc_trq_feedforward_to_servo, std::vector<int16_t>& fc_kp_to_servo,
+             std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
+             std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo,
+             std::vector<int16_t>& fc_jnt_inertia_to_servo);
 
 /**
  * @brief 停止力控功能
@@ -157,6 +158,22 @@ int SetKpGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& 
  * @return
  */
 int SetFricGain(const std::vector<int8_t>& servo_mode, const std::vector<double>& fric_gain_set);
+
+/**
+ * @brief 设置关节阻抗刚度
+ * @param[in] servo_mode 伺服模式数据
+ * @param[in] joint_stiffness 关节阻抗刚度
+ * @return
+ */
+int SetJointImpedance(const std::vector<int8_t>& servo_mode, const std::vector<double>& joint_stiffness);
+
+/**
+ * @brief 设置笛卡尔阻抗刚度
+ * @param[in] servo_mode 伺服模式数据
+ * @param[in] cart_stiffness 笛卡尔阻抗刚度
+ * @return
+ */
+int SetCartImpedance(const std::vector<int8_t>& servo_mode, const std::array<double, 6>& cart_stiffness);
 
 /**
  * @brief 设置基坐标系和重力矢量

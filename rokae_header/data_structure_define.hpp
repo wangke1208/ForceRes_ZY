@@ -355,7 +355,9 @@ enum DragType {
     DRAG_JOINT,       //轴空间拖动（目前只支持这一种）
     DRAG_CART_TRANS,  //笛卡尔空间仅平移
     DRAG_CART_ROT,    //笛卡尔空间仅旋转
-    DRAG_CART_FREE    //笛卡尔自由
+    DRAG_CART_FREE,   //笛卡尔自由
+    IMPEDANCE_JOINT,  //关节阻抗
+    IMPEDANCE_CART    //笛卡尔阻抗
 };
 
 enum FcFrameType {
@@ -399,6 +401,8 @@ struct GainParams {
     std::vector<double> trans_drag_rot_damp;
     std::vector<double> rot_drag_trans_stiff;
     std::vector<double> rot_drag_trans_damp;
+    std::vector<double> jnt_imp_damp_zeta;
+    std::vector<double> cart_imp_damp_zeta;
 
     GainParams(unsigned int jnt_num = 6)
         : m_jnt_num(jnt_num),
@@ -408,7 +412,9 @@ struct GainParams {
           trans_drag_rot_stiff(6, 300.0),
           trans_drag_rot_damp(6, 5.0),
           rot_drag_trans_stiff(6, 2000),
-          rot_drag_trans_damp(6, 10.0) {}
+          rot_drag_trans_damp(6, 10.0),
+          jnt_imp_damp_zeta(jnt_num, 0.5),
+          cart_imp_damp_zeta(6, 0.5) {}
 };
 
 struct ControlParams {
@@ -502,6 +508,7 @@ struct FcStatusInner {
     KDL::Frame cart_pos_command_flan_in_base;  //旋转指令flan_in_base
     KDL::Frame cart_pos_command_tcp_in_base;   //旋转指令tcp_in_base
     KDL::Frame base_in_flan;
+    KDL::Frame fc_frame;
     KDL::JntArray cart_pos_jnt_command;
     KDL::Twist cart_pos_following_error_tcp_in_base;     //位置+旋转误差 tcp_in_base
     KDL::Twist cart_pos_following_error_tcp_in_fcframe;  //位置+旋转误差 tcp_in_frame
@@ -566,6 +573,7 @@ struct FcStatusInner {
           cart_pos_command_flan_in_base(KDL::Frame::Identity()),
           cart_pos_command_tcp_in_base(KDL::Frame::Identity()),
           base_in_flan(KDL::Frame::Identity()),
+          fc_frame(KDL::Frame::Identity()),
           cart_pos_jnt_command(jnt_num),
           cart_pos_following_error_tcp_in_base(KDL::Twist::Zero()),
           cart_pos_following_error_tcp_in_fcframe(KDL::Twist::Zero()),
@@ -614,6 +622,7 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(cart_pos_command_flan_in_base);
         SET_FC_STATUS_INFO(cart_pos_command_tcp_in_base);
         SET_FC_STATUS_INFO(base_in_flan);
+        SET_FC_STATUS_INFO(fc_frame);
         SET_FC_STATUS_INFO(cart_pos_jnt_command);
         SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_base);
         SET_FC_STATUS_INFO(cart_pos_following_error_tcp_in_fcframe);
