@@ -52,10 +52,10 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
     m_function_jnt_zero_trq.data.setZero();
 
     // 初始化关节软限位边界相关向量
-    m_lower_bound.resize(m_jnt_num, -180);
-    m_upper_bound.resize(m_jnt_num, 180);
-    m_lower_monitor_bound.resize(m_jnt_num, -180);
-    m_upper_monitor_bound.resize(m_jnt_num, 180);
+    m_lower_bound.resize(m_jnt_num, -180 * KDL::deg2rad);
+    m_upper_bound.resize(m_jnt_num, 180 * KDL::deg2rad);
+    m_lower_monitor_bound.resize(m_jnt_num, -180 * KDL::deg2rad);
+    m_upper_monitor_bound.resize(m_jnt_num, 180 * KDL::deg2rad);
 
     // 初始化软限位保护力相关向量
     m_protect_force_damp.resize(m_jnt_num);
@@ -115,17 +115,22 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
          m_function_cart_imp_damp_trq(i) = m_cart_damp[i] * FC->cart_vel_following_error_tcp_in_fcframe[i];
          m_function_cart_imp_trq(i) = m_function_cart_imp_stiff_trq(i) + m_function_cart_imp_damp_trq(i);
      }
-
      //转换到基坐标系下
      m_function_cart_imp_trq_in_base_wrench = FC->fc_frame.M.Inverse() * m_function_cart_imp_trq;
      for (unsigned int i = 0; i < 6; i++) {
          m_function_cart_imp_trq_in_base(i) = m_function_cart_imp_trq_in_base_wrench(i);
-     }
-     function_imp_trq.data = FC->jac_trans_measure_tcp_in_base * m_function_cart_imp_trq_in_base;
+         LOG_INFO("m_function_cart_imp_trq_in_base = {}", m_function_cart_imp_trq_in_base(i));
 
+     }
+     SPD_EIGEN_MATRIX(FC->jac_trans_measure_tcp_in_base);
+
+     function_imp_trq.data = FC->jac_trans_measure_tcp_in_base * m_function_cart_imp_trq_in_base;
+	      LOG_INFO("function_imp_trq = {},{},{},{},{},{},{}", function_imp_trq(0), function_imp_trq(1), function_imp_trq(2),
+              function_imp_trq(3), function_imp_trq(4), function_imp_trq(5), function_imp_trq(6));
      //零空间阻抗(TODO)
      m_function_null_space_trq.data = m_null_stiff[0] * (FC->cart_pos_jnt_command.data - FC->jnt_pos_measure.data) -
                                       (1.4 * std::sqrt(m_null_stiff[0])) * FC->jnt_vel_measure.data;
+
      //求伪逆
      J_pinv =
          FC->jac_trans_measure_flan_in_base * (FC->jac_measure_flan_in_base.data * FC->jac_trans_measure_flan_in_base).inverse();
@@ -133,7 +138,10 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
      m_function_null_space_trq_final.data =
          (m_matrix_temp - J_pinv * FC->jac_measure_flan_in_base.data) * m_function_null_space_trq.data;
      //总阻抗力矩
-     function_imp_trq.data += m_function_null_space_trq_final.data;
+     function_imp_trq.data = function_imp_trq.data + m_function_null_space_trq_final.data;
+     LOG_INFO("function_imp_trq = {},{},{},{},{},{},{}", function_imp_trq(0), function_imp_trq(1), function_imp_trq(2),
+              function_imp_trq(3), function_imp_trq(4), function_imp_trq(5), function_imp_trq(6));
+
  }
  
  // --------------------- 关节保护力更新 ---------------------
@@ -168,6 +176,7 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
          return;
      }
      for (unsigned int i = 0; i < m_jnt_num; i++) {
+         //弧度
          m_lower_bound[i] = joint_range_min_input[i];
          m_upper_bound[i] = joint_range_max_input[i];
          m_lower_monitor_bound[i] = m_lower_bound[i] + m_jnt_pos_safety_threshold;

@@ -24,6 +24,7 @@ namespace Control {
 
 class ForcePlanner {
    public:
+   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     /**
      * @brief 默认构造函数
      *

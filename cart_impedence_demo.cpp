@@ -3,6 +3,7 @@
 using namespace RokaeApi;
 using namespace RokaeApi::External;
 int main() {
+    SetConsoleOutputCP(CP_UTF8);
     // ---------------------------模型初始化部分-----------------------
     int res = 0;
 
@@ -116,7 +117,7 @@ int main() {
 
     // 7.设置力控增益接口(可选)
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<double> kp_gain_set = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+    std::vector<double> kp_gain_set = {1.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0};
     res = RokaeForce_SetKpGain(PDO_0x6061, kp_gain_set);
     if (res != 0) {
         LOG_ERROR("力控增益设置失败,错误码为 {}", res);
@@ -183,7 +184,7 @@ int main() {
 
     bool init = true;
     double continue_time = 5;
-    double step_time = 0.001;
+    double step_time = 0.5;
     double time = 0;
     double kRadius = 0.2;
     double angle = 0.0;
@@ -211,6 +212,24 @@ int main() {
         if (res != 0) {
             LOG_ERROR("力控指令更新出错,不允许下发给伺服，错误码为 {}", res);
             return -1;
+        } else {
+            LOG_INFO("力控指令更新成功");
+            LOG_INFO("PDO_0x6071 = {},{},{},{},{},{},{}", PDO_0x6071[0], PDO_0x6071[1], PDO_0x6071[2], PDO_0x6071[3],
+                     PDO_0x6071[4], PDO_0x6071[5], PDO_0x6071[6]);
+            LOG_INFO("PDO_0x60B2 = {},{},{},{},{},{},{}", PDO_0x60B2[0], PDO_0x60B2[1], PDO_0x60B2[2], PDO_0x60B2[3],
+                     PDO_0x60B2[4], PDO_0x60B2[5], PDO_0x60B2[6]);
+            LOG_INFO("PDO_0x2201 = {},{},{},{},{},{},{}", PDO_0x2201[0], PDO_0x2201[1], PDO_0x2201[2], PDO_0x2201[3],
+                     PDO_0x2201[4], PDO_0x2201[5], PDO_0x2201[6]);
+            LOG_INFO("PDO_0x2202 = {},{},{},{},{},{},{}", PDO_0x2202[0], PDO_0x2202[1], PDO_0x2202[2], PDO_0x2202[3],
+                     PDO_0x2202[4], PDO_0x2202[5], PDO_0x2202[6]);
+            LOG_INFO("PDO_0x2203 = {},{},{},{},{},{},{}", PDO_0x2203[0], PDO_0x2203[1], PDO_0x2203[2], PDO_0x2203[3],
+                     PDO_0x2203[4], PDO_0x2203[5], PDO_0x2203[6]);
+            LOG_INFO("PDO_0x2204 = {},{},{},{},{},{},{}", PDO_0x2204[0], PDO_0x2204[1], PDO_0x2204[2], PDO_0x2204[3],
+                     PDO_0x2204[4], PDO_0x2204[5], PDO_0x2204[6]);
+            LOG_INFO("PDO_0x2205 = {},{},{},{},{},{},{}", PDO_0x2205[0], PDO_0x2205[1], PDO_0x2205[2], PDO_0x2205[3],
+                     PDO_0x2205[4], PDO_0x2205[5], PDO_0x2205[6]);
+            LOG_INFO("PDO_0x2206 = {},{},{},{},{},{},{}", PDO_0x2206[0], PDO_0x2206[1], PDO_0x2206[2], PDO_0x2206[3],
+                     PDO_0x2206[4], PDO_0x2206[5], PDO_0x2206[6]);
         }
     }
 

@@ -49,10 +49,12 @@ int FcStatusTracker::FcStatusUpdata() {
     FcStatusUpdataCommon();
     switch (FC->drag_type) {
     case Control::DragType::DRAG_JOINT:
+    case Control::DragType::IMPEDANCE_JOINT:
         return FcStatusUpdataJoint();
     case Control::DragType::DRAG_CART_TRANS:
     case Control::DragType::DRAG_CART_ROT:
     case Control::DragType::DRAG_CART_FREE:
+    case Control::DragType::IMPEDANCE_CART:
         return FcStatusUpdataCart();
 
     default:
@@ -67,11 +69,10 @@ int FcStatusTracker::FcStatusUpdataJoint() {
 }
 int FcStatusTracker::FcStatusUpdataCart() {
     // 1.笛卡尔指令(tcp_in_base)
-    if (FC->drag_type == Control::DragType::IMPEDANCE_CART) {
+    if (FC->drag_type != Control::DragType::IMPEDANCE_CART) {
         //非笛卡尔阻抗，需要更新cart_pos_following_error_tcp_in_base_pos
         FC->cart_pos_command_tcp_in_base = FC->cart_pos_command_flan_in_base * m_tool_in_flan;
     }
-
     // 2.笛卡尔位置偏差(指令相对于测量的偏移)
     FC->cart_pos_following_error_flan_in_base_pos = FC->cart_pos_command_flan_in_base.p - FC->cart_pos_measure_flan_in_base.p;
     FC->cart_pos_following_error_tcp_in_base_pos = FC->cart_pos_command_tcp_in_base.p - FC->cart_pos_measure_tcp_in_base.p;
@@ -117,6 +118,7 @@ int FcStatusTracker::FcStatusUpdataCart() {
                         FC->jac_measure_tcp_in_base);
     KDL::MultiplyJacobian(FC->jac_measure_tcp_in_base, FC->jnt_vel_measure, FC->cart_vel_measure_tcp_in_base);
     KDL::MultiplyJacobian(FC->jac_command_tcp_in_base, FC->jnt_vel_command, FC->cart_vel_command_tcp_in_base);
+    FC->jac_trans_measure_tcp_in_base = FC->jac_measure_tcp_in_base.data.transpose();
 
     // 6.计算力控坐标系(base_in_fcframe)
     switch (m_fc_frame_type) {
@@ -163,6 +165,8 @@ int FcStatusTracker::FcStatusUpdataCommon() {
 
     //雅可比计算部分
     m_dynamic_solver->GetFlanJacobian(FC->jnt_pos_measure, FC->jac_measure_flan_in_base);
+    FC->jac_trans_measure_flan_in_base = FC->jac_measure_flan_in_base.data.transpose();
+    SPD_EIGEN_MATRIX(FC->jac_measure_flan_in_base.data);
     m_dynamic_solver->GetJacobianTransInverse(FC->jac_measure_flan_in_base, FC->jac_trans_inv_measure_flan_in_base);
 
     //计算外力部分
@@ -178,6 +182,7 @@ void FcStatusTracker::SetLoad(const RokaeLoad& load) {
     m_load = load;
     //更新tool_in_flan坐标系
     m_tool_in_flan = load.m_rokae_load_pose.GetKDLFrame();
+    FC->tool_in_flan = m_tool_in_flan;
     return;
 }
 

@@ -57,7 +57,9 @@ int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::ve
  * @param[in] trq_encoder_from_servo 来自伺服的扭矩编码器数据(PDO_0x2406)
  * @param[in] pos_encoder_from_servo 来自伺服的位置编码器数据(PDO_0x6064)
  * @param[in] vel_encoder_from_servo 来自伺服的速度编码器数据(PDO_0x606C)
- *
+ * @param [in] jnt_pos_cmd_from_user  用户输入的关节阻抗位置指令(仅关节阻抗生效)
+ * @param [in] cart_pos_cmd_from_user 用户输入的笛卡尔阻抗位置指令(仅笛卡尔阻抗生效)
+ * 
  * @param[out] fc_trq_cmd_to_servo 伺服侧扭矩指令(PDO_0x6071)
  * @param[out] fc_trq_feedforward_to_servo 伺服侧力控扭矩前馈(PDO_0x60B2)
  * @param[out] fc_kp_to_servo 伺服侧关节力控环带宽(PDO_0x2201)
@@ -71,11 +73,12 @@ int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::ve
 int FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
              const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
              const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
-             const std::vector<double> jnt_pos_cmd_from_user, std::vector<int16_t>& fc_trq_cmd_to_servo,
-             std::vector<int16_t>& fc_trq_feedforward_to_servo, std::vector<int16_t>& fc_kp_to_servo,
-             std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
-             std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo,
-             std::vector<int16_t>& fc_jnt_inertia_to_servo);
+             const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
+
+             std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
+             std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
+             std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
+             std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo);
 
 /**
  * @brief 停止力控功能

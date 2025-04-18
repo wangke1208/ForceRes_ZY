@@ -114,15 +114,15 @@ int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::ve
 int FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector<int16_t>& pdo_analog_ch1,
              const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
              const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
-             const std::vector<double> jnt_pos_cmd_from_user, std::vector<int16_t>& fc_trq_cmd_to_servo,
-             std::vector<int16_t>& fc_trq_feedforward_to_servo, std::vector<int16_t>& fc_kp_to_servo,
-             std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
-             std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo,
-             std::vector<int16_t>& fc_jnt_inertia_to_servo) {
-    auto res = forcecontrol_ptr->FcUpdate(servo_mode_from_servo, pdo_analog_ch1, pdo_analog_ch2, trq_encoder_from_servo,
-                                          pos_encoder_from_servo, vel_encoder_from_servo, jnt_pos_cmd_from_user,
-                                          fc_trq_cmd_to_servo, fc_trq_feedforward_to_servo, fc_kp_to_servo, fc_kd_to_servo,
-                                          fc_edb_cof_to_servo, fc_edb_o_to_servo, fc_fric_cof_to_servo, fc_jnt_inertia_to_servo);
+             const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
+             std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
+             std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
+             std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
+             std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo) {
+    auto res = forcecontrol_ptr->FcUpdate(
+        servo_mode_from_servo, pdo_analog_ch1, pdo_analog_ch2, trq_encoder_from_servo, pos_encoder_from_servo,
+        vel_encoder_from_servo, jnt_pos_cmd_from_user, cart_pos_cmd_from_user, fc_trq_cmd_to_servo, fc_trq_feedforward_to_servo,
+        fc_kp_to_servo, fc_kd_to_servo, fc_edb_cof_to_servo, fc_edb_o_to_servo, fc_fric_cof_to_servo, fc_jnt_inertia_to_servo);
     if (res != SOLVE_NOERROR) {
         forcecontrol_ptr->FcStatusRefresh();
         return res;
@@ -291,7 +291,7 @@ int SetCartImpedance(const std::vector<int8_t>& servo_mode, const std::array<dou
     if (forcecontrol_ptr->GetDragStatus() == true) {
         return ERROR_DRAG_STATUS;
     }
-    //设置摩擦滑条系数
+    //设置笛卡尔刚度
     return forcecontrol_ptr->SetCartImpedance(cart_stiffness);
 }
 

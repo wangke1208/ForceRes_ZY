@@ -67,7 +67,7 @@ struct FcParamsInnerBase {
             // 参数长度不一致
             return false;
         }
-        it->second = param;
+        std::copy(param.begin(), param.end(), it->second.begin());
         return true;
     }
 

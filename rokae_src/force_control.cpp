@@ -138,7 +138,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     }
 
     // 5. 拖动类型判断及设置阻抗参数
-    if (drag_type < 0 || drag_type > 3) {
+    if (drag_type < 0 || drag_type > 5) {
         return ERROR_DRAGTYPE;
     }
     m_drag_type = drag_type;
@@ -203,12 +203,14 @@ void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
             m_fc_status_inner.jnt_vel_command.data.setZero();  // TODO:目前的速度指令都没有，后续需要用户传入速度指令
             m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);
             m_is_first_drag = false;
+            m_fc_status_inner.cart_pos_command_tcp_in_base =  m_fc_status_inner.cart_pos_command_flan_in_base * m_fc_status_inner.tool_in_flan;
         } else {
             //更新cart_pos_command_tcp_in_base
             m_fc_status_inner.cart_pos_command_tcp_in_base.p =
                 KDL::Vector(m_cart_pos_command_from_user[0], m_cart_pos_command_from_user[1], m_cart_pos_command_from_user[2]);
-            m_fc_status_inner.cart_pos_command_tcp_in_base.M = KDL::Rotation::RPY(
-                m_cart_pos_command_from_user[3], m_cart_pos_command_from_user[4], m_cart_pos_command_from_user[5]);
+            m_fc_status_inner.cart_pos_command_tcp_in_base.M =
+                KDL::Rotation::RPY(m_cart_pos_command_from_user[3], m_cart_pos_command_from_user[4],
+                                   m_cart_pos_command_from_user[5]);
         }
         // TODO:这里应该需要用户传入笛卡尔指令对应的关节指令，用来计算雅可比。
         // TODO:cart_pos_command_flan_in_base在笛卡尔阻抗不更新，后续需要优化
@@ -331,8 +333,8 @@ int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const
     }
     // 内部单位转换：角度到弧度
     for (unsigned int j = 0; j < m_jnt_num; j++) {
-        m_joint_range_min_inner[j] = joint_range_min[j] / 180 * PI;
-        m_joint_range_max_inner[j] = joint_range_max[j] / 180 * PI;
+        m_joint_range_min_inner[j] = joint_range_min[j] * KDL::deg2rad;
+        m_joint_range_max_inner[j] = joint_range_max[j] * KDL::deg2rad;
     }
     m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_min", m_joint_range_min_inner);
     m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_max", m_joint_range_max_inner);
@@ -368,7 +370,9 @@ int ForceControl::SetImpedenceGain(const DragType& drag_type) {
         return ERROR_DRAGTYPE;
     }
     // 1. 默认拖动参数
-    m_fc_params_inner_ptr->m_function_params.SetFreeDragParams();
+    if (m_drag_type != DragType::IMPEDANCE_CART && m_drag_type != DragType::IMPEDANCE_JOINT) {
+        m_fc_params_inner_ptr->m_function_params.SetFreeDragParams();
+    }
     // 2. 根据拖动类型设置参数（配置文件中预置）
     switch (drag_type) {
     case DragType::DRAG_CART_ROT:
@@ -406,12 +410,10 @@ int ForceControl::SetFcLoad(const RokaeLoad& load) {
         return ERROR_LOAD_PARAMS;
     }
 
-    KDL::Vector rpy_rad = load.m_rokae_load_pose.eulerangles / 180.0 * PI;
-
     // forcecontrol内部负载设置
     m_load.SetRokaeLoadInertia(load.m_rokae_load_inertia);
     m_load.m_rokae_load_pose.SetSpatiaPos(load.m_rokae_load_pose.spatiapos);
-    m_load.m_rokae_load_pose.SetRotAngle(rpy_rad);
+    m_load.m_rokae_load_pose.SetRotAngle(load.m_rokae_load_pose.eulerangles);
 
     // fc_status_tracker数据流计算参数设置
     m_fc_status_tracker_ptr->SetLoad(m_load);

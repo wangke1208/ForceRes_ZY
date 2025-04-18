@@ -58,4 +58,10 @@ void new_Logger::SetLogLevel(const std::string& log_level) {
     }
 }
 
+void new_Logger::LogEigenMatrix(const Eigen::Matrix<double,6,Eigen::Dynamic>& mat, const std::string& name) {
+    std::stringstream ss;
+    ss << mat;
+    spdlog::info("{} =\n{}", name, ss.str());
+}
+
 }  // namespace RokaeApi

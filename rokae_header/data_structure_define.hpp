@@ -523,6 +523,7 @@ struct FcStatusInner {
 
     //关节反馈
     KDL::JntArray jnt_pos_measure;
+    KDL::JntArray jnt_pos_measure_degree;
     KDL::JntArray jnt_vel_measure;
     KDL::JntArray jnt_acc_measure;
     KDL::JntArray jnt_trq_sensor_measure;  //根据传感器双通道计算的传感器反馈
@@ -565,6 +566,8 @@ struct FcStatusInner {
     //力矩指令
     KDL::JntArray jnt_trq_final_cmd;
 
+    //工具坐标系
+    KDL::Frame tool_in_flan;
     FcStatusInner(unsigned int jnt_num)
         : drag_type(DRAG_JOINT),
           jnt_pos_command(jnt_num),
@@ -583,6 +586,7 @@ struct FcStatusInner {
           cart_vel_command_tcp_in_fcframe(KDL::Twist::Zero()),
           jnt_trq_gra_command(jnt_num),
           jnt_pos_measure(jnt_num),
+          jnt_pos_measure_degree(jnt_num),
           jnt_vel_measure(jnt_num),
           jnt_acc_measure(jnt_num),
           jnt_trq_sensor_measure(jnt_num),
@@ -611,7 +615,8 @@ struct FcStatusInner {
           jac_command_flan_in_base(jnt_num),
           jac_command_tcp_in_base(jnt_num),
           mani_measure(0.0),
-          jnt_trq_final_cmd(jnt_num) {}
+          jnt_trq_final_cmd(jnt_num),
+          tool_in_flan(KDL::Frame::Identity()) {}
 
 #define SET_FC_STATUS_INFO(name) this->name = fc_status_inner.name
     FcStatusInner& operator=(const FcStatusInner fc_status_inner) {
@@ -632,6 +637,7 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(cart_vel_command_tcp_in_fcframe);
         SET_FC_STATUS_INFO(jnt_trq_gra_command);
         SET_FC_STATUS_INFO(jnt_pos_measure);
+        SET_FC_STATUS_INFO(jnt_pos_measure_degree);
         SET_FC_STATUS_INFO(jnt_vel_measure);
         SET_FC_STATUS_INFO(jnt_acc_measure);
         SET_FC_STATUS_INFO(jnt_trq_sensor_measure);
@@ -661,6 +667,7 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(jac_command_tcp_in_base),
         SET_FC_STATUS_INFO(mani_measure);
         SET_FC_STATUS_INFO(jnt_trq_final_cmd);
+        SET_FC_STATUS_INFO(tool_in_flan);
         return *this;
     }
 };

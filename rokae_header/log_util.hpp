@@ -6,9 +6,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <Eigen/Dense>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
+
 
 #ifdef _WIN32
 #include <direct.h>
@@ -77,6 +80,7 @@ class new_Logger {
     std::string GetLogLevel();
 
     void SetLogLevel(const std::string& level);
+    void LogEigenMatrix(const Eigen::Matrix<double, 6, Eigen::Dynamic>& mat, const std::string& name);
 
    private:
     new_Logger() = default;
@@ -94,5 +98,10 @@ class new_Logger {
 #define LOG_WARN(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::warn, __VA_ARGS__)
 #define LOG_ERROR(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::err, __VA_ARGS__)
 #define LOG_CRITICAL(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::critical, __VA_ARGS__)
-
+#define SPD_EIGEN_MATRIX(MAT)                     \
+    do {                                          \
+        std::stringstream ss;                     \
+        ss << MAT;                                \
+        spdlog::info("{} =\n{}", #MAT, ss.str()); \
+    } while (0)
 }  // namespace RokaeApi

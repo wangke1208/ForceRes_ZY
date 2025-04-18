@@ -23,7 +23,7 @@ inline Model::MechUnitType MechUnitTypeConvert(const External_MechUnitType& exte
 }
 
 inline Control::DragType DragTypeConvert(const External_DragType& external_type) {
-    if (external_type < 0 || external_type > 3) {
+    if (external_type < 0 || external_type > 5) {
         throw std::invalid_argument("Invalid drag type: value out of expected range [0, 3].");
     }
     return static_cast<Control::DragType>(external_type);
@@ -80,8 +80,8 @@ int RokaeForce_FcUpdate(const std::vector<int8_t>& PDO_0x6061, const std::vector
                         std::vector<int16_t>& PDO_0x2202, std::vector<int16_t>& PDO_0x2203, std::vector<int16_t>& PDO_0x2204,
                         std::vector<int16_t>& PDO_0x2205, std::vector<int16_t>& PDO_0x2206) {
     return BasicInterface::FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd_from_user,
-                                    PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202, PDO_0x2203, PDO_0x2204, PDO_0x2205,
-                                    PDO_0x2206);
+                                    cart_pos_cmd_from_user, PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202, PDO_0x2203,
+                                    PDO_0x2204, PDO_0x2205, PDO_0x2206);
 }
 
 int RokaeForce_FcStop(const std::vector<int8_t>& PDO_0x6061) { return BasicInterface::FcStop(PDO_0x6061); }
