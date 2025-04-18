@@ -54,7 +54,6 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     conf_log.size = 10 * 1024 * 1024;  // 10MB
     conf_log.count = 10;               // 最多保留100个文件
     INITLOG(conf_log);
-    LOG_INFO("********************************** INITLOG");
     // 1.初始化参数模块
     try {
         initrobot_ptr = std::make_shared<InitRobot>(robot_type);

@@ -1,8 +1,8 @@
 #pragma once
-#include <3rd/spdlog/async.h>
-#include <3rd/spdlog/sinks/rotating_file_sink.h>
-#include <3rd/spdlog/sinks/stdout_color_sinks.h>
-#include <3rd/spdlog/spdlog.h>
+#include <spdlog/async.h>
+#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -11,7 +11,6 @@
 #include <memory>
 #include <sstream>
 #include <string>
-
 
 #ifdef _WIN32
 #include <direct.h>

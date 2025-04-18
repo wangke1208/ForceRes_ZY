@@ -13,8 +13,10 @@
 
 #ifndef ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_HPP_
 #define ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_HPP_
-#include "rokae_header/basic_interface.hpp"
-#include "rokae_header/data_structure_define.hpp"
+
+#include <Eigen/Core>
+#include <array>
+#include <vector>
 
 namespace RokaeApi {
 namespace External {

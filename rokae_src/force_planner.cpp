@@ -77,7 +77,7 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
  // --------------------- 力控更新 ---------------------
  void ForcePlanner::ForcePlannerUpdata() {
      // 1.阻抗力
-     if (FC->drag_type == Control::DragType::DRAG_JOINT) {
+     if (FC->drag_type == Control::DragType::DRAG_JOINT || FC->drag_type == Control::DragType::IMPEDANCE_JOINT) {
          JointImpedanceUpdate(m_function_imp_trq);
      } else {
          CartImpedanceUpdate(m_function_imp_trq);
@@ -119,14 +119,11 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
      m_function_cart_imp_trq_in_base_wrench = FC->fc_frame.M.Inverse() * m_function_cart_imp_trq;
      for (unsigned int i = 0; i < 6; i++) {
          m_function_cart_imp_trq_in_base(i) = m_function_cart_imp_trq_in_base_wrench(i);
-         LOG_INFO("m_function_cart_imp_trq_in_base = {}", m_function_cart_imp_trq_in_base(i));
 
      }
      SPD_EIGEN_MATRIX(FC->jac_trans_measure_tcp_in_base);
 
      function_imp_trq.data = FC->jac_trans_measure_tcp_in_base * m_function_cart_imp_trq_in_base;
-	      LOG_INFO("function_imp_trq = {},{},{},{},{},{},{}", function_imp_trq(0), function_imp_trq(1), function_imp_trq(2),
-              function_imp_trq(3), function_imp_trq(4), function_imp_trq(5), function_imp_trq(6));
      //零空间阻抗(TODO)
      m_function_null_space_trq.data = m_null_stiff[0] * (FC->cart_pos_jnt_command.data - FC->jnt_pos_measure.data) -
                                       (1.4 * std::sqrt(m_null_stiff[0])) * FC->jnt_vel_measure.data;
@@ -139,8 +136,6 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
          (m_matrix_temp - J_pinv * FC->jac_measure_flan_in_base.data) * m_function_null_space_trq.data;
      //总阻抗力矩
      function_imp_trq.data = function_imp_trq.data + m_function_null_space_trq_final.data;
-     LOG_INFO("function_imp_trq = {},{},{},{},{},{},{}", function_imp_trq(0), function_imp_trq(1), function_imp_trq(2),
-              function_imp_trq(3), function_imp_trq(4), function_imp_trq(5), function_imp_trq(6));
 
  }
  
