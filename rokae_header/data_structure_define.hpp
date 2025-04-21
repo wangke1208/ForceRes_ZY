@@ -84,8 +84,8 @@ enum SolverRes {
 
 namespace Model {
 enum MechUnitType {
-    UNKNOWN,
-    DEFALUT_SENVEN_AXIS,  // XMS3-R580-W4G3B1C
+    DEFALUT_SIX_AXIS,
+    DEFALUT_SENVEN_AXIS
 };
 
 struct ModelParams {

@@ -171,6 +171,68 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         // protect_config_params
         protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL = {25.0, 25.0, 20.0, 25.0, 15.0, 15.0, 10.0};
         break;
+    case MechUnitType::DEFALUT_SIX_AXIS:
+        this->Resize(SEVEN_AXIS_ROBOT);
+        // ModelConfigParams
+        model_config_params.ROBOT_NAME = "XMC7-R850-W7G3B1C";
+        model_config_params.AXIS_NUM = 6;
+        model_config_params.MAX_LOAD = 6;
+        model_config_params.MAX_LOAD_TCP_LENGTH = 0.3;
+
+        model_config_params.JOINT_TYPE = {8, 3, 2, 2, 3, 2, 3};
+        model_config_params.ROT_AXIS = {0, 0, 3, 0, 0, 0, 3};
+        model_config_params.ROT_ANGLE = {0.0, 0.0, PI, 0.0, 0.0, 0.0, PI};
+
+        model_config_params.LINK_MASS = {5.489, 7.281, 2.872, 2.823, 2.34, 1.142};
+
+        model_config_params.LINK_CENTROID = {-0.006, 35.426, 173.361, -0.006, 155.018, 199.572, -0.012, -44.249, 48.945,
+                                             0.024,  18.331, -86.517, -0.043, -31.099, 14.133,  0.001,  -0.201,  -49.302};
+
+        model_config_params.LINK_MOMENT_OF_INERTIA = {
+            49303.867, 37221.789, 4358386.66, -10.899,   5.122,      13262.003, 342183.385, 4667499.02, 25164.737,
+            -2.429,    -59.164,   7466.562,   20899.594, 1102806.17, 12136.455, -1.925,     0.242,      6293.742,
+            31668.234, 30304.755, 574049.264, -0.223,    -0.437,     4367.878,  9533.629,   574175.545, 6920.849,
+            -2.821,    8.24,      997.174,    2177.431,  2188.3,     569611.22, -0.178,     -0.155,     -5.703};
+
+        model_config_params.LINK_MOMENT_OF_INERTIA_LOW = {
+            49303.867, 37221.789, 28236.662, -10.899,   5.122,     13262.003, 342183.385, 337349.017, 25164.737,
+            -2.429,    -59.16,    7466.562,  20899.594, 13076.166, 12136.455, -1.925,     0.242,      6293.742,
+            31668.234, 30304.755, 5689.264,  -0.223,    -0.437,    4367.878,  9533.629,   5815.545,   6920.849,
+            -2.821,    8.24,      997.174,   2177.431,  2188.3,    1251.22,   -0.178,     -0.155,     -5.703};
+
+        model_config_params.ROBOT_DIMENSIONS = {0.0,   0.0, 0.0,   0.0, 0.0, 241.5, 0.0,   0.0, 490.0, 0.0, 0.0,
+                                                360.0, 0.0, 150.0, 0.0, 0.0, 0.0,   127.0, 0.0, 0.0,   0.0};
+
+        model_config_params.JOINT_RANGE_MIN_CUSTOMIZE = {-360, -360, -360, -360, -360, -360};
+        model_config_params.JOINT_RANGE_MAX_CUSTOMIZE = {360, 360, 360, 360, 360, 360};
+        model_config_params.JOINT_RANGE_MIN_NEW = {-360, -360, -360, -360, -360, -360};
+        model_config_params.JOINT_RANGE_MAX_NEW = {360, 360, 360, 360, 360, 360};
+
+        // control_config_params
+        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {25.0, 25.0, 25.0, 20.0, 20.0, 30.0};
+        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
+        control_config_params.FRICTION_COF_DRAG = {0.9, 0.9, 0.9, 0.8, 0.8, 0.8};
+        control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
+        control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
+        control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
+        control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
+        control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {1.0, 0.7, 0.5, 0.5, 0.5, 0.3};
+        control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {1.1, 1.1, 1.1, 0.4, 0.4, 0.4};
+
+        // mechanical_config_params
+        mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0};
+        mechanical_config_params.ENCODER_RESOLUTION = {262144, 262144, 262144, 262144, 262144, 262144, 262144};
+        mechanical_config_params.REDUCTION_RATIO_NUMERATOR = {100, 100, 100, 100, 100, 100};
+        mechanical_config_params.REDUCTION_RATIO_DENOMINATOR = {1, 1, 1, 1, 1, 1};
+        mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH = {210, 210, 110, 60, 60, 60};
+        mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_LOW = {2.25, 2.25, 2.25, 2.25, 2.25, 2.25};
+        mechanical_config_params.SENSOR_BIAS = {2500, 2500, 2500, 2500, 2500, 2500};
+        mechanical_config_params.SENSOR_AMPLIFY = {1, 1, 1, 1, 1, 1};
+        mechanical_config_params.RATED_TORQUE = {1.8, 1.8, 0.63, 0.55, 0.55, 0.55};
+
+        // protect_config_params
+        protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL = {25.0, 25.0, 15.0, 10.0, 10.0, 10.0};
+        break;
     default:
     // 其他未定义机型，直接报错
         throw std::invalid_argument("Unsupported robot type provided to RobotConfiguration constructor.");
