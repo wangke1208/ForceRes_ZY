@@ -109,12 +109,13 @@ class new_Logger {
 #define SPD_CONTAINER(TAG, CONTAINER)                                                                  \
     do {                                                                                               \
         std::ostringstream oss;                                                                        \
-        auto it = (CONTAINER).begin();                                                                 \
-        if (it != (CONTAINER).end()) {                                                                 \
+        auto it = std::begin(CONTAINER);                                                               \
+        auto end = std::end(CONTAINER);                                                                \
+        if (it != end) {                                                                               \
             oss << *it;                                                                                \
             ++it;                                                                                      \
         }                                                                                              \
-        for (; it != (CONTAINER).end(); ++it) {                                                        \
+        for (; it != end; ++it) {                                                                      \
             oss << ", " << *it;                                                                        \
         }                                                                                              \
         BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::info, "{} {}", TAG, oss.str()); \

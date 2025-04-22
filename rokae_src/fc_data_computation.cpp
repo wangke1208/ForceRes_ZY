@@ -173,7 +173,6 @@ int FcStatusTracker::FcStatusUpdataCommon() {
     FCVectorXdToWrench(FC->jac_trans_inv_measure_flan_in_base * FC->jnt_trq_sensor_measure.data, FC->flan_wrench);
     //转换到TCP末端的Wrench
     FC->tcp_wrench = FC->flan_wrench.RefPoint(m_tool_in_flan.p);
-
     return SOLVE_NOERROR;
 }
 

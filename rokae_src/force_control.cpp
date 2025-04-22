@@ -144,11 +144,21 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     m_drag_type = drag_type;
     SetImpedenceGain(m_drag_type);  // 内部参数固定配置
 
-    // 6.更新内部参数
+    // 6.根据负载信息调节增益
+    res = ResetKpByLoad(m_load);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
+    res = ResetFricByLoad(m_load);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
+
+    // 7.更新内部参数
     m_force_planner_ptr->UpdateParams();
     m_fc_status_tracker_ptr->UpdateParams();
 
-    // 6. 更新拖动使能标志
+    // 8. 更新拖动使能标志
     m_enable_drag = true;
     return SOLVE_NOERROR;
 }
@@ -161,7 +171,6 @@ void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
     m_servo_fc_convert_ptr->GetAxisVel(servo_data_fc_inner.vel_feedback, m_fc_status_inner.jnt_vel_measure);
     m_servo_fc_convert_ptr->GetCobotTrq(servo_data_fc_inner.analog_ch1, servo_data_fc_inner.analog_ch2,
                                         m_fc_status_inner.jnt_trq_sensor_measure);
-
     // 设置拖动类型
     m_fc_status_inner.drag_type = m_drag_type;
 
@@ -264,13 +273,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     // 5. 内部功能力计算
     m_force_planner_ptr->ForcePlannerUpdata();
 
-    // 6. 根据负载更新伺服下发增益
-    res = (ResetKpByLoad(m_load) && ResetFricByLoad(m_load));
-    if (res != SOLVE_NOERROR) {
-        return res;
-    }
-
-    // 7. 将内部数据转换为伺服下发数据
+    // 6. 将内部数据转换为伺服下发数据
     m_servo_fc_convert_ptr->FcData2ServoData(m_fc_status_inner, m_fc_params_inner_ptr, m_fc_inner_servo_data);
     std::copy(m_fc_inner_servo_data.trq_cmd.cbegin(), m_fc_inner_servo_data.trq_cmd.cend(), fc_trq_cmd_to_servo.begin());
     std::copy(m_fc_inner_servo_data.trq_feedforward.cbegin(), m_fc_inner_servo_data.trq_feedforward.cend(),
@@ -283,7 +286,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     std::copy(m_fc_inner_servo_data.jnt_inertia.cbegin(), m_fc_inner_servo_data.jnt_inertia.cend(),
               fc_jnt_inertia_to_servo.begin());
 
-    // 8. 拷贝外部状态数据（加锁保护）
+    // 7. 拷贝外部状态数据（加锁保护）
     FcStatusCopy(m_fc_status_inner);
 
     return SOLVE_NOERROR;
