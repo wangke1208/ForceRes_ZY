@@ -125,8 +125,8 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
             model_out.link_inertia[i].centroid[j] = in.model_config_params.LINK_CENTROID[3 * t + j] / 1000.0;
         }
         for (unsigned int k = 0; k < 6; k++) {
-            model_out.link_inertia[i].moment[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA[3 * i + k] / 1000000.0;
-            model_out.link_inertia[i].moment_link[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA_LOW[3 * i + k] / 1000000.0;
+            model_out.link_inertia[i].moment[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA[6 * t + k] / 1000000.0;
+            model_out.link_inertia[i].moment_link[k] = in.model_config_params.LINK_MOMENT_OF_INERTIA_LOW[6 * t + k] / 1000000.0;
         }
     }
     // 1.2 RD参数

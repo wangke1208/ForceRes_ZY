@@ -97,10 +97,27 @@ class new_Logger {
 #define LOG_WARN(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::warn, __VA_ARGS__)
 #define LOG_ERROR(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::err, __VA_ARGS__)
 #define LOG_CRITICAL(...) BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::critical, __VA_ARGS__)
-#define SPD_EIGEN_MATRIX(MAT)                     \
-    do {                                          \
-        std::stringstream ss;                     \
-        ss << MAT;                                \
-        spdlog::info("{} =\n{}", #MAT, ss.str()); \
+
+//特殊变量日志宏封装
+#define SPD_EIGEN_MATRIX(MAT)                                                                              \
+    do {                                                                                                   \
+        std::stringstream ss;                                                                              \
+        ss << MAT;                                                                                         \
+        BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::info, "{} =\n{}", #MAT, ss.str()); \
     } while (0)
+
+#define SPD_CONTAINER(TAG, CONTAINER)                                                                  \
+    do {                                                                                               \
+        std::ostringstream oss;                                                                        \
+        auto it = (CONTAINER).begin();                                                                 \
+        if (it != (CONTAINER).end()) {                                                                 \
+            oss << *it;                                                                                \
+            ++it;                                                                                      \
+        }                                                                                              \
+        for (; it != (CONTAINER).end(); ++it) {                                                        \
+            oss << ", " << *it;                                                                        \
+        }                                                                                              \
+        BASELOG(new_Logger::getInstance()->getLogger(), spdlog::level::info, "{} {}", TAG, oss.str()); \
+    } while (0)
+
 }  // namespace RokaeApi

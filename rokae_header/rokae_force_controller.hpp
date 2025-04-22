@@ -14,15 +14,14 @@
 #ifndef ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_HPP_
 #define ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_HPP_
 
-#include <Eigen/Core>
-#include <array>
-#include <vector>
+#include "rokae_header/basic_interface.hpp"
+#include "rokae_header/data_structure_define.hpp"
 
 namespace RokaeApi {
 namespace External {
 // ================== 数据结构定义 ==================
 
-enum External_MechUnitType { UNKNOWN, DEFALUT_SENVEN_AXIS };
+enum External_MechUnitType { DEFALUT_SIX_AXIS, DEFALUT_SENVEN_AXIS };
 
 enum External_DragType {
     DRAG_JOINT,       //轴空间拖动（目前只支持这一种）

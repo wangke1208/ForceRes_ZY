@@ -119,7 +119,7 @@ const KDL::JntArray& DynamicSolver::GetColioTorque(const RokaeLoadInertia& load_
     KDL::SetToZero(m_trq_coriolis);
 
     m_chain_dyn_solver->CartToJnt(q, m_zeros_jntarry, m_zeros_jntarry, m_load_temp, m_trq_gravity);
-    m_chain_dyn_solver->CartToJnt(q, dq, m_zeros_jntarry, m_load_temp, m_trq_inertia);
+    m_chain_dyn_solver->CartToJnt(q, dq, m_zeros_jntarry, m_load_temp, m_trq_coriolis);
     KDL::Subtract(m_trq_coriolis, m_trq_gravity, m_trq_coriolis);
 
     return m_trq_coriolis;
