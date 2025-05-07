@@ -83,7 +83,7 @@ int RokaeForce_DragConfig(const std::vector<int32_t>& PDO_0x6064, const std::vec
  * @param [in] PDO_0x606C 相关的PDO_0x606C数据向量
  * @param [in] jnt_pos_cmd_from_user  用户输入的关节阻抗位置指令(仅关节阻抗生效)
  * @param [in] cart_pos_cmd_from_user 用户输入的笛卡尔阻抗位置指令(仅笛卡尔阻抗生效)
- * @param [in] jnt_trq_cmd_from_user  用户输入的关节阻抗力矩指令
+ * @param [in] jnt_trq_cmd_from_user  用户输入的关节力矩指令
  * @param [out] PDO_0x6071 输出的PDO_0x6071数据向量
  * @param [out] PDO_0x60B2 输出的PDO_0x60B2数据向量
  * @param [out] PDO_0x2201 输出的PDO_0x2201数据向量
