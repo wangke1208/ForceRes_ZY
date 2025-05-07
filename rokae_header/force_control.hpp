@@ -71,11 +71,12 @@ class ForceControl {
      * @param[in] analog_ch1 传感器通道1的数据PDO_0x2401
      * @param[in] analog_ch2 传感器通道2的数据PDO_0x2402
      * @param[in] drag_type 拖动类型(轴空间、笛卡尔仅平移、笛卡尔仅旋转、笛卡尔自由)
-     *
+     * @param[in] is_command_by_user 力矩指令是否由用户自己设置,true代表是
      * @return 成功返回 SOLVE_NOERROR，失败返回相应的错误码
      */
     int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
-                   const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const DragType& drag_type);
+                   const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const DragType& drag_type,
+                   const bool& is_command_by_user = false);
 
     /**
      * @brief 设置拖动指令
@@ -113,10 +114,11 @@ class ForceControl {
                  const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
                  const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
                  const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
-                 std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
-                 std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
-                 std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
-                 std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo);
+                 const std::vector<double>& jnt_trq_cmd_from_user, std::vector<int16_t>& fc_trq_cmd_to_servo,
+                 std::vector<int16_t>& fc_trq_feedforward_to_servo, std::vector<int16_t>& fc_kp_to_servo,
+                 std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
+                 std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo,
+                 std::vector<int16_t>& fc_jnt_inertia_to_servo);
 
     // 参数设置函数
     /**
@@ -381,6 +383,7 @@ class ForceControl {
     //用户设置的指令
     std::vector<double> m_joint_pos_command_from_user;
     std::array<double, 6> m_cart_pos_command_from_user;
+    bool m_is_command_by_user;
 
     // 求解器
     InitRobot* m_init_robot_ptr;

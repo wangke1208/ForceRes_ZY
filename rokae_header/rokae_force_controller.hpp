@@ -66,11 +66,12 @@ void RokaeForce_Deinit();
  * @param [in] PDO_0x2401 相关的PDO_0x2401数据向量
  * @param [in] PDO_0x2402 相关的PDO_0x2402数据向量
  * @param [in] drag_type 拖动类型
+ * @param [in] is_command_by_user 力矩指令是否由用户下发
  * @return 错误码
  */
 int RokaeForce_DragConfig(const std::vector<int32_t>& PDO_0x6064, const std::vector<int8_t>& PDO_0x6061,
                           const std::vector<int16_t>& PDO_0x2401, const std::vector<int16_t>& PDO_0x2402,
-                          const External_DragType& drag_type);
+                          const External_DragType& drag_type, const bool& is_command_by_user);
 
 /**
  * @brief 力控更新接口，用于更新力控相关的数据和状态
@@ -82,6 +83,7 @@ int RokaeForce_DragConfig(const std::vector<int32_t>& PDO_0x6064, const std::vec
  * @param [in] PDO_0x606C 相关的PDO_0x606C数据向量
  * @param [in] jnt_pos_cmd_from_user  用户输入的关节阻抗位置指令(仅关节阻抗生效)
  * @param [in] cart_pos_cmd_from_user 用户输入的笛卡尔阻抗位置指令(仅笛卡尔阻抗生效)
+ * @param [in] jnt_trq_cmd_from_user  用户输入的关节阻抗力矩指令
  * @param [out] PDO_0x6071 输出的PDO_0x6071数据向量
  * @param [out] PDO_0x60B2 输出的PDO_0x60B2数据向量
  * @param [out] PDO_0x2201 输出的PDO_0x2201数据向量
@@ -96,9 +98,10 @@ int RokaeForce_FcUpdate(const std::vector<int8_t>& PDO_0x6061, const std::vector
                         const std::vector<int16_t>& PDO_0x2402, const std::vector<int16_t>& PDO_0x2406,
                         const std::vector<int32_t>& PDO_0x6064, const std::vector<int32_t>& PDO_0x606C,
                         const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
-                        std::vector<int16_t>& PDO_0x6071, std::vector<int16_t>& PDO_0x60B2, std::vector<int16_t>& PDO_0x2201,
-                        std::vector<int16_t>& PDO_0x2202, std::vector<int16_t>& PDO_0x2203, std::vector<int16_t>& PDO_0x2204,
-                        std::vector<int16_t>& PDO_0x2205, std::vector<int16_t>& PDO_0x2206);
+                        const std::vector<double>& jnt_trq_cmd_from_user, std::vector<int16_t>& PDO_0x6071,
+                        std::vector<int16_t>& PDO_0x60B2, std::vector<int16_t>& PDO_0x2201, std::vector<int16_t>& PDO_0x2202,
+                        std::vector<int16_t>& PDO_0x2203, std::vector<int16_t>& PDO_0x2204, std::vector<int16_t>& PDO_0x2205,
+                        std::vector<int16_t>& PDO_0x2206);
 
 /**
  * @brief 停止力控，重置内部状态

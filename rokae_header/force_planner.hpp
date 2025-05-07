@@ -58,6 +58,13 @@ class ForcePlanner {
     void ForcePlannerUpdata();
 
     /**
+     * @brief 更新功能力计算（用户设定）
+     * @param[in] trq_cmd_by_user 用户设定的关节力矩指令
+     * @return 无
+     */
+    void ForcePlannerUpdataUser(const KDL::JntArray& trq_cmd_by_user);
+   
+    /**
      * @brief 更新关节阻抗力计算
      *
      * @param[out] function_imp_trq 输出关节阻抗力

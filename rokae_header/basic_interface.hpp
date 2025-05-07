@@ -47,7 +47,8 @@ void DeinitInterface();
  * @return 错误码，参考 SolverRes 枚举
  */
 int DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
-               const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const Control::DragType& drag_type);
+               const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2, const Control::DragType& drag_type,
+               const bool& is_command_by_user);
 
 /**
  * @brief 更新力控数据
@@ -74,11 +75,11 @@ int FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, const std::vector
              const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
              const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
              const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
-
-             std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
-             std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
-             std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
-             std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo);
+             const std::vector<double>& jnt_trq_cmd_from_user, std::vector<int16_t>& fc_trq_cmd_to_servo,
+             std::vector<int16_t>& fc_trq_feedforward_to_servo, std::vector<int16_t>& fc_kp_to_servo,
+             std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
+             std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo,
+             std::vector<int16_t>& fc_jnt_inertia_to_servo);
 
 /**
  * @brief 停止力控功能

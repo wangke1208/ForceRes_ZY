@@ -61,10 +61,10 @@ void RokaeForce_Deinit() { BasicInterface::DeinitInterface(); }
 // 3.1 拖动配置
 int RokaeForce_DragConfig(const std::vector<int32_t>& PDO_0x6064, const std::vector<int8_t>& PDO_0x6061,
                           const std::vector<int16_t>& PDO_0x2401, const std::vector<int16_t>& PDO_0x2402,
-                          const External_DragType& drag_type) {
+                          const External_DragType& drag_type, const bool& is_command_by_user) {
     try {
         auto drag_type_in = DragTypeConvert(drag_type);
-        return BasicInterface::DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type_in);
+        return BasicInterface::DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type_in, is_command_by_user);
 
     } catch (const std::exception& e) {
         std::cerr << "[RokaeForce_DragConfig] Exception: " << e.what() << std::endl;
@@ -76,12 +76,13 @@ int RokaeForce_FcUpdate(const std::vector<int8_t>& PDO_0x6061, const std::vector
                         const std::vector<int16_t>& PDO_0x2402, const std::vector<int16_t>& PDO_0x2406,
                         const std::vector<int32_t>& PDO_0x6064, const std::vector<int32_t>& PDO_0x606C,
                         const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
-                        std::vector<int16_t>& PDO_0x6071, std::vector<int16_t>& PDO_0x60B2, std::vector<int16_t>& PDO_0x2201,
-                        std::vector<int16_t>& PDO_0x2202, std::vector<int16_t>& PDO_0x2203, std::vector<int16_t>& PDO_0x2204,
-                        std::vector<int16_t>& PDO_0x2205, std::vector<int16_t>& PDO_0x2206) {
+                        const std::vector<double>& jnt_trq_cmd_from_user, std::vector<int16_t>& PDO_0x6071,
+                        std::vector<int16_t>& PDO_0x60B2, std::vector<int16_t>& PDO_0x2201, std::vector<int16_t>& PDO_0x2202,
+                        std::vector<int16_t>& PDO_0x2203, std::vector<int16_t>& PDO_0x2204, std::vector<int16_t>& PDO_0x2205,
+                        std::vector<int16_t>& PDO_0x2206) {
     return BasicInterface::FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd_from_user,
-                                    cart_pos_cmd_from_user, PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202, PDO_0x2203,
-                                    PDO_0x2204, PDO_0x2205, PDO_0x2206);
+                                    cart_pos_cmd_from_user, jnt_trq_cmd_from_user, PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202,
+                                    PDO_0x2203, PDO_0x2204, PDO_0x2205, PDO_0x2206);
 }
 
 int RokaeForce_FcStop(const std::vector<int8_t>& PDO_0x6061) { return BasicInterface::FcStop(PDO_0x6061); }

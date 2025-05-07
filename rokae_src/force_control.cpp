@@ -58,6 +58,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_cart_imp_damp_zeta_temp.resize(6);
     m_cart_imp_damp_temp.resize(6);
     m_jnt_imp_damp_temp.resize(m_jnt_num);
+    m_is_command_by_user = false;
 }
 
 ForceControl::~ForceControl() {
@@ -107,11 +108,11 @@ int ForceControl::Fcinit() {
 
 int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo, const std::vector<int8_t>& servo_mode_from_servo,
                              const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
-                             const DragType& drag_type) {
+                             const DragType& drag_type, const bool& is_command_by_user) {
     // 0. 重置拖动标志位
     m_enable_drag = false;
     m_is_first_drag = true;
-
+    m_is_command_by_user = false;
     // 1. 仅允许在位置模式下拖动，检查 servo_mode
     if (std::any_of(servo_mode_from_servo.cbegin(), servo_mode_from_servo.cend(),
                     [](int8_t type) { return type != POSITION_MODE; })) {
@@ -160,6 +161,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
 
     // 8. 更新拖动使能标志
     m_enable_drag = true;
+    m_is_command_by_user = is_command_by_user;
     return SOLVE_NOERROR;
 }
 
@@ -233,10 +235,11 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
                            const std::vector<int16_t>& pdo_analog_ch2, const std::vector<int16_t>& trq_encoder_from_servo,
                            const std::vector<int>& pos_encoder_from_servo, const std::vector<int>& vel_encoder_from_servo,
                            const std::vector<double>& jnt_pos_cmd_from_user, const std::array<double, 6>& cart_pos_cmd_from_user,
-                           std::vector<int16_t>& fc_trq_cmd_to_servo, std::vector<int16_t>& fc_trq_feedforward_to_servo,
-                           std::vector<int16_t>& fc_kp_to_servo, std::vector<int16_t>& fc_kd_to_servo,
-                           std::vector<int16_t>& fc_edb_cof_to_servo, std::vector<int16_t>& fc_edb_o_to_servo,
-                           std::vector<int16_t>& fc_fric_cof_to_servo, std::vector<int16_t>& fc_jnt_inertia_to_servo) {
+                           const std::vector<double>& jnt_trq_cmd_from_user, std::vector<int16_t>& fc_trq_cmd_to_servo,
+                           std::vector<int16_t>& fc_trq_feedforward_to_servo, std::vector<int16_t>& fc_kp_to_servo,
+                           std::vector<int16_t>& fc_kd_to_servo, std::vector<int16_t>& fc_edb_cof_to_servo,
+                           std::vector<int16_t>& fc_edb_o_to_servo, std::vector<int16_t>& fc_fric_cof_to_servo,
+                           std::vector<int16_t>& fc_jnt_inertia_to_servo) {
     // 1. 检查拖动使能和模式
     if (!m_enable_drag) {
         return ERROR_DRAG_ENABLE;
@@ -271,7 +274,12 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     }
 
     // 5. 内部功能力计算
-    m_force_planner_ptr->ForcePlannerUpdata();
+    if(m_is_command_by_user){
+        m_force_planner_ptr->ForcePlannerUpdataUser(VectorToJntArray(jnt_trq_cmd_from_user)); 
+    }else{
+        m_force_planner_ptr->ForcePlannerUpdata();
+    }
+    
 
     // 6. 将内部数据转换为伺服下发数据
     m_servo_fc_convert_ptr->FcData2ServoData(m_fc_status_inner, m_fc_params_inner_ptr, m_fc_inner_servo_data);
@@ -562,6 +570,7 @@ int ForceControl::ResetFcStatus() {
 
 void ForceControl::FcStatusRefresh() {
     m_enable_drag = false;
+    m_is_command_by_user = false;
     m_is_first_drag = true;
     m_fc_status_tracker_ptr->ResetCalStatus();
 }

@@ -93,7 +93,15 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
      }
      return;
  }
- 
+
+ void ForcePlanner::ForcePlannerUpdataUser(const KDL::JntArray& trq_cmd_by_user) {
+     // 1.用户设定的力矩
+     for (unsigned int i = 0; i < m_jnt_num; i++) {
+         FC->jnt_trq_final_cmd(i) = trq_cmd_by_user(i);
+     }
+     return;
+ }
+
  // --------------------- 阻抗力更新 ---------------------
  void ForcePlanner::JointImpedanceUpdate(KDL::JntArray& function_imp_trq) {
      if (FC->drag_type == Control::DragType::IMPEDANCE_JOINT) {
