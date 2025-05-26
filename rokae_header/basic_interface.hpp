@@ -18,8 +18,10 @@
 
 #include "rokae_header/data_structure_convert.hpp"
 #include "rokae_header/force_control.hpp"
+#include "rokae_header/inverse_kinematics_solver.hpp"
 #include "rokae_header/robot_config.hpp"
 #include "rokae_header/version.hpp"
+
 namespace RokaeApi {
 namespace BasicInterface {
 
@@ -293,6 +295,14 @@ int GetTotalTorque(const RokaeLoad& load_params, const std::vector<double>& q, c
  */
 int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos);
 
+/**
+ * @brief 获取运动学逆解
+ * @param[in] curJnt_origin 机器人初始关节角度
+ * @param[in] target_Flan 目标frame和psi信息
+ * @param[out] OutJointPose 目标位置对应的关节角度
+ * @return 错误码，参考 IkSolveRes 枚举
+ */
+int GetJointPos(const std::vector<double>& curJnt_origin, const GeneralizedFrame& target_Flan, std::vector<double>& OutJointPose);
 /**
  * @brief 从关节位置计算质量矩阵
  * @param[in] load_params 负载参数

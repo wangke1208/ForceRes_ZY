@@ -21,6 +21,7 @@ std::shared_ptr<Control::ForceControl> forcecontrol_ptr;
 std::shared_ptr<InitRobot> initrobot_ptr;
 std::shared_ptr<Axis_Convert> axisconvert_ptr;
 std::shared_ptr<DynamicSolver> dynamicsolver_ptr;
+std::shared_ptr<inverse_kinematics_solver> inverse_kinematics_solver_ptr;
 
 unsigned int jnt_num;  // 关节数
 bool is_initialized = false;  // 初始化标志
@@ -32,6 +33,8 @@ KDL::Vector gravity_vector;  //重力矢量
 KDL::Frame frame_base_in_world;  // 基坐标系在世界坐标系下的位置
 
 //计算运动学&动力学的临时变量
+KDL::JntArray q_inverse_out_temp;
+KDL::JntArray q_inverse_in_temp;
 KDL::JntArray q_temp;
 KDL::JntArray qd_temp;
 KDL::JntArray qdd_temp;
@@ -75,7 +78,8 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     // 3.初始化其他模块(用来计算的)
     axisconvert_ptr = std::make_shared<Axis_Convert>(initrobot_ptr->GetJntNum(), initrobot_ptr.get()->GetMechanicalParams());
     dynamicsolver_ptr = std::make_shared<DynamicSolver>(initrobot_ptr->GetChain(), initrobot_ptr->GetGravity());
-
+    inverse_kinematics_solver_ptr =
+        std::make_shared<inverse_kinematics_solver>(initrobot_ptr->GetChain(), initrobot_ptr->GetModelParams());
     // 4.初始化参数
     jnt_num = initrobot_ptr->GetJntNum();
     jnt_pos_kdl.resize(jnt_num);
@@ -83,6 +87,8 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     tcp_wrench.Zero();
     frame_base_in_world.Identity();
     gravity_vector = initrobot_ptr->GetGravity();
+    q_inverse_out_temp.resize(jnt_num);
+    q_inverse_in_temp.resize(jnt_num);
     q_temp.resize(jnt_num);
     qd_temp.resize(jnt_num);
     qdd_temp.resize(jnt_num);
@@ -430,6 +436,20 @@ int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::ar
     return SOLVE_NOERROR;
 }
 
+int GetJointPos(const std::vector<double>& curJnt_origin, const GeneralizedFrame& target_Flan,
+                std::vector<double>& OutJointPose) {
+    if (curJnt_origin.size() != jnt_num || OutJointPose.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(curJnt_origin, q_inverse_in_temp);
+    int res = inverse_kinematics_solver_ptr->CartToJnt(q_inverse_in_temp, target_Flan, q_inverse_out_temp);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
+    JntArrayToVector(q_inverse_out_temp, OutJointPose);
+    return SOLVE_NOERROR;
+}
+
 int GetMassMatrix(const RokaeLoad& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
     if (jnt_pos.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
@@ -562,6 +582,7 @@ void DeinitInterface() {
 
     jnt_pos_kdl = KDL::JntArray(DEFAULT_AXIS);
     jnt_ext_trq = KDL::JntArray(DEFAULT_AXIS);
+    q_inverse_temp = KDL::JntArray(DEFAULT_AXIS);
     q_temp = KDL::JntArray(DEFAULT_AXIS);
     qd_temp = KDL::JntArray(DEFAULT_AXIS);
     qdd_temp = KDL::JntArray(DEFAULT_AXIS);

@@ -185,5 +185,45 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
     return SOLVE_NOERROR;
 }
 
+inline double sign(double val, double eps = EPSILON10) {
+    if (val > eps) {
+        return 1;
+    } else if (val < -eps) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+// 矩阵转置
+inline KDL::Rotation MatrixTrans(const KDL::Rotation A) {
+    KDL::Rotation A_t;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            A_t(i, j) = A(j, i);
+        }
+    }
+    return A_t;
+}
+
+// 矩阵取反
+inline KDL::Rotation MatrixNeg(const KDL::Rotation A) {
+    KDL::Rotation A_neg;
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            A_neg(i, j) = -A(i, j);
+        }
+    }
+    return A_neg;
+}
+
+inline void ConvertFrameArray(KDL::Frame &frame, const std::array<double, 16> &arr)
+{
+	KDL::Vector V(arr[3], arr[7], arr[11]);
+	KDL::Rotation R(arr[0], arr[1], arr[2], arr[4], arr[5], arr[6], arr[8], arr[9], arr[10]);
+	frame.M = R;
+	frame.p = V;
+}
+
 }  // namespace RokaeApi
 #endif

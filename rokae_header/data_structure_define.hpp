@@ -82,6 +82,16 @@ enum SolverRes {
     ERROR_ALREADY_INIT = -18
 };
 
+enum IkSolveRes {
+    SUCCESS = 0,          //逆解成功, 其余皆为失败
+    JOINT_OVER_LIMIT,     //逆解超关节软限位
+    TARGET_OUT_OF_RANGE,  //目标点超出运动范围
+    TOO_LARGE_STEP,       //单步距离过大
+    INPUT_DATA_ERROR,     //输入参数有误
+    INPUT_DATA_SINGULAR,  //输入参考点为奇异点
+    OTHER_ERROR,          //其他错误
+};
+
 namespace Model {
 enum MechUnitType {
     DEFALUT_SIX_AXIS,
@@ -229,6 +239,40 @@ struct MechanicalParams {
     }
 };
 
+struct GeneralizedFrame {
+    KDL::Frame frame;
+    double psi;
+
+    GeneralizedFrame() : frame(KDL::Frame::Identity()), psi(0.0) {}
+
+    GeneralizedFrame(KDL::Frame frame_, double psi_) : frame(frame_), psi(psi_) {}
+
+    void SetValue(KDL::Frame frame_, double psi_) {
+        frame = frame_;
+        psi = psi_;
+    }
+
+    inline static GeneralizedFrame Identity() {
+        GeneralizedFrame gf(KDL::Frame::Identity(), 0.0);
+        return gf;
+    }
+
+    inline static GeneralizedFrame MakeGeneralizedFrame(KDL::Frame frame_) {
+        GeneralizedFrame gf(frame_, 0.0);
+        return gf;
+    }
+
+    inline static GeneralizedFrame MakeGeneralizedFrame(KDL::Frame frame_, double psi_) {
+        GeneralizedFrame gf(frame_, psi_);
+        return gf;
+    }
+
+    inline GeneralizedFrame& operator=(const GeneralizedFrame& arg) {
+        this->frame = arg.frame;
+        this->psi = arg.psi;
+        return *this;
+    }
+};
 struct RokaeLoadInertia {
     double mass{0.0};                   // 质量，单位kg
     KDL::Vector m_cog{0.0, 0.0, 0.0};   // 质心，单位m

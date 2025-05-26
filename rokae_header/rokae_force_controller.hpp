@@ -279,6 +279,17 @@ int RokaeForce_GetTotalTorque(const External_RokaeLoad& load, const std::vector<
 
 /**
  * @brief 获取TCP位姿
+ * @param[in] CartPos 目标笛卡尔空间位姿
+ * @param[in] psi 目标臂角
+ * @param[in] q_init 机器人初始关节角度
+ * @param[out] q_out 目标关节角度
+ * @return 错误码
+ */
+int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& psi, const std::vector<double>& q_init,
+                           std::vector<double>& q_out);
+
+/**
+ * @brief 获取TCP位姿
  * @param[in] load 负载信息
  * @param[in] jnt_pos 关节位置
  * @param[out] tcp_pos TCP位姿

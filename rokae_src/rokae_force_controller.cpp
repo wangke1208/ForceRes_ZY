@@ -169,6 +169,15 @@ int RokaeForce_GetTotalTorque(const External_RokaeLoad& load, const std::vector<
     return BasicInterface::GetTotalTorque(RokaeLoadConvert(load), jnt_pos, jnt_vel, jnt_acc, trq_total);
 }
 
+int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& psi, const std::vector<double>& q_init,
+                std::vector<double>& q_out) {
+    // LOG_INFO("command ***********: XmateModel::GetJointPos()");
+    KDL::Frame frame = KDL::Frame::Identity();
+    ConvertFrameArray(frame, CartPos);
+    GeneralizedFrame GF(frame, psi);
+    return BasicInterface::GetJointPos(q_init, GF, q_out);
+}
+
 int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos) {
     return BasicInterface::GetTcpPos(RokaeLoadConvert(load), jnt_pos, tcp_pos);
 }
@@ -178,7 +187,7 @@ int RokaeForce_GetMassMatrix(const External_RokaeLoad& load, const std::vector<d
 }
 
 int RokaeForce_GetTcpJacobian(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
-                   Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
+                              Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
     return BasicInterface::GetTcpJacobian(RokaeLoadConvert(load), jnt_pos, jacobian);
 }
 
@@ -188,13 +197,16 @@ int RokaeForce_GetAxisPosCurrent(std::vector<double>& jnt_pos_rad) { return Basi
 
 int RokaeForce_GetAxisVelCurrent(std::vector<double>& jnt_vel_rad) { return BasicInterface::GetAxisVelCurrent(jnt_vel_rad); }
 
-int RokaeForce_GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback) { return BasicInterface::GetCobotTrqCurrent(jnt_trq_feedback); }
+int RokaeForce_GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback) {
+    return BasicInterface::GetCobotTrqCurrent(jnt_trq_feedback);
+}
 
 int RokaeForce_GetTcpWrenchCurrent(std::array<double, 6>& ext_force) { return BasicInterface::GetTcpWrenchCurrent(ext_force); }
 
 int RokaeForce_GetTcpPosCurrent(std::array<double, 6>& tcp_pos) { return BasicInterface::GetTcpPosCurrent(tcp_pos); }
 
-int RokaeForce_GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis, Eigen::MatrixXd& mass_matrix) {
+int RokaeForce_GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis,
+                                       Eigen::MatrixXd& mass_matrix) {
     return BasicInterface::GetDynamicTorqueCurrent(trq_gravity, trq_coriolis, mass_matrix);
 }
 
@@ -205,8 +217,8 @@ int RokaeForce_GetJacobianCurrent(Eigen::Matrix<double, 6, Eigen::Dynamic>& jaco
 // ================== 其他功能 ==================
 
 int RokaeForce_CalibrateTrqSensor(const std::vector<int8_t>& PDO_0x6061, const std::vector<int32_t>& PDO_0x606C,
-                       const External_RokaeLoad& load_input, const std::vector<std::array<int16_t, 200>>& PDO_0x2401,
-                       const std::vector<std::array<int16_t, 200>>& PDO_0x2402, std::vector<double>& sensor_bias) {
+                                  const External_RokaeLoad& load_input, const std::vector<std::array<int16_t, 200>>& PDO_0x2401,
+                                  const std::vector<std::array<int16_t, 200>>& PDO_0x2402, std::vector<double>& sensor_bias) {
     return BasicInterface::CalibrateTrqSensor(PDO_0x6061, PDO_0x606C, RokaeLoadConvert(load_input), PDO_0x2401, PDO_0x2402,
                                               sensor_bias);
 }
