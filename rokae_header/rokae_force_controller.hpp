@@ -21,7 +21,7 @@ namespace RokaeApi {
 namespace External {
 // ================== 数据结构定义 ==================
 
-enum External_MechUnitType { DEFALUT_SIX_AXIS, DEFALUT_SENVEN_AXIS };
+enum External_MechUnitType { DEFALUT_SIX_AXIS, AR5_L, AR5_R };
 
 enum External_DragType {
     DRAG_JOINT,       //轴空间拖动（目前只支持这一种）

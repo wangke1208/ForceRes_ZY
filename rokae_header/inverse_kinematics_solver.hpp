@@ -56,17 +56,17 @@ class inverse_kinematics_solver {
                    KDL::JntArray& q);
     //一些小接口
     inline double ArcTangentSolver(double an, double bn, double cn, double ad, double bd, double cd, double psi) {
-        return atan2(an * sin(psi) + bn * cos(psi) + cn, ad * sin(psi) + bd * cos(psi) + cd);
+        return std::atan2(an * std::sin(psi) + bn * std::cos(psi) + cn, ad * std::sin(psi) + bd * std::cos(psi) + cd);
     }
 
     inline double ArcConsineSolver(double a, double b, double c, double psi) {
-        double cos_field_angle = a * sin(psi) + b * cos(psi) + c;
+        double cos_field_angle = a * std::sin(psi) + b * std::cos(psi) + c;
         if (cos_field_angle >= 1.0) {
             cos_field_angle = 1.0;
         } else if (cos_field_angle <= -1.0) {
             cos_field_angle = -1.0;
         }
-        return acos(cos_field_angle);
+        return std::acos(cos_field_angle);
     }
 
    private:

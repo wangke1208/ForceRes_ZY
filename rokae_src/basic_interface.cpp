@@ -582,7 +582,8 @@ void DeinitInterface() {
 
     jnt_pos_kdl = KDL::JntArray(DEFAULT_AXIS);
     jnt_ext_trq = KDL::JntArray(DEFAULT_AXIS);
-    q_inverse_temp = KDL::JntArray(DEFAULT_AXIS);
+    q_inverse_out_temp = KDL::JntArray(DEFAULT_AXIS);
+    q_inverse_in_temp = KDL::JntArray(DEFAULT_AXIS);
     q_temp = KDL::JntArray(DEFAULT_AXIS);
     qd_temp = KDL::JntArray(DEFAULT_AXIS);
     qdd_temp = KDL::JntArray(DEFAULT_AXIS);

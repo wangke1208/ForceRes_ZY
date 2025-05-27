@@ -13,6 +13,7 @@
 
 #include "inverse_kinematics_solver.hpp"
 
+using namespace std;
 namespace RokaeApi {
 namespace Model {
 inverse_kinematics_solver::inverse_kinematics_solver(const KDL::Chain& chain, const ModelParams& model_param)
@@ -31,8 +32,8 @@ inverse_kinematics_solver::inverse_kinematics_solver(const KDL::Chain& chain, co
 
     m_d_mm = m_rob_dim.L34x;  //肘部偏移
     m_d_bs = m_rob_dim.L12z;
-    m_d_se = sqrt(m_rob_dim.L23z * m_rob_dim.L23z + m_d_mm * m_d_mm);
-    m_d_ew = sqrt(m_rob_dim.L45z * m_rob_dim.L45z + m_d_mm * m_d_mm);
+    m_d_se = std::sqrt(m_rob_dim.L23z * m_rob_dim.L23z + m_d_mm * m_d_mm);
+    m_d_ew = std::sqrt(m_rob_dim.L45z * m_rob_dim.L45z + m_d_mm * m_d_mm);
     m_d_wt = m_rob_dim.L67z;
 
     Lbs0(2) = m_d_bs;  //  Lbs0 = (0,0, 0.0, m_d_bs)
@@ -49,8 +50,12 @@ inverse_kinematics_solver::inverse_kinematics_solver(const KDL::Chain& chain, co
     xw_origin = xend_origin - R7_0_offset * Lwt7;
     xsw_origin = xw_origin - Lbs0;
     d_xsw_origin = xsw_origin.Norm();
-    m_q4_offset = acos((d_xsw_origin * d_xsw_origin - m_d_se * m_d_se - m_d_ew * m_d_ew) / (2 * m_d_se * m_d_ew));  //初始偏置角度
+    m_q4_offset = std::acos((d_xsw_origin * d_xsw_origin - m_d_se * m_d_se - m_d_ew * m_d_ew) / (2 * m_d_se * m_d_ew));  //初始偏置角度
 };
+
+inverse_kinematics_solver::~inverse_kinematics_solver(){
+    delete m_fkpos_ptr;
+}
 
 IkSolveRes inverse_kinematics_solver::CartToJnt(const KDL::JntArray& curJnt_origin, const GeneralizedFrame& target_Flan,
                                                 KDL::JntArray& OutJointPose) {
@@ -175,9 +180,9 @@ IkSolveRes inverse_kinematics_solver::CartToJnt(const KDL::JntArray& curJnt_orig
 bool inverse_kinematics_solver::IsSingular(const KDL::JntArray& q) {
     //如果二轴、四轴或六轴处于奇异位置
     // if(KDL::Equal(q(1), 0.0, KDL::PI/360.0) or KDL::Equal(q(3), 0.0, KDL::PI/360.0) or KDL::Equal(q(5), 0.0, KDL::PI/360.0)){
-    if ((KDL::Equal(q(1), 0.0, KDL::PI / 360.0) && KDL::Equal(cos(q(2)), 0.0, KDL::PI / 360.0)) ||
+    if ((KDL::Equal(q(1), 0.0, KDL::PI / 360.0) && KDL::Equal(std::cos(q(2)), 0.0, KDL::PI / 360.0)) ||
         KDL::Equal(q(3), 0.0, KDL::PI / 360.0) ||
-        (KDL::Equal(q(5), 0.0, KDL::PI / 360.0) && KDL::Equal(cos(q(4)), 0.0, KDL::PI / 360.0)) ||
+        (KDL::Equal(q(5), 0.0, KDL::PI / 360.0) && KDL::Equal(std::cos(q(4)), 0.0, KDL::PI / 360.0)) ||
         (KDL::Equal(q(1), 0.0, KDL::PI / 360.0) && KDL::Equal(q(5), 0.0, KDL::PI / 360.0))) {
         return true;
     }
@@ -203,7 +208,6 @@ bool inverse_kinematics_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, 
         conf_xmate.cf4_offset = sign(cur_Jnt(3) + m_q4_offset);
     }
 
-    double cur_Psi;
     //初始位置姿态
     Rotation Rd70_temp = cur_Flan.M;
     KDL::Vector Xd70_temp = cur_Flan.p;
@@ -215,9 +219,9 @@ bool inverse_kinematics_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, 
      */
     double q1_0[2], q2_0[2];
     //==== 计算q2_0 ====
-    double a = -(Lse3(0) + cos(cur_Jnt(3)) * Lew4(0) + sin(cur_Jnt(3)) * Lew4(2));
-    double b = -(Lse3(1) + sin(cur_Jnt(3)) * Lew4(0) - cos(cur_Jnt(3)) * Lew4(2));
-    double rou = sqrt(a * a + b * b);
+    double a = -(Lse3(0) + std::cos(cur_Jnt(3)) * Lew4(0) + std::sin(cur_Jnt(3)) * Lew4(2));
+    double b = -(Lse3(1) + std::sin(cur_Jnt(3)) * Lew4(0) - std::cos(cur_Jnt(3)) * Lew4(2));
+    double rou = std::sqrt(a * a + b * b);
     double div = Xsw0_temp(2) / rou;
     // acos边界保护
     if (fabs(div) > (1.0 - EPSILON15)) {
@@ -227,18 +231,18 @@ bool inverse_kinematics_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, 
     if (fabs(a) < EPSILON15 && fabs(b) < EPSILON15) {
         return false;
     }
-    q2_0[0] = atan2(a, b) + acos(div);  // DLOG(ERROR)<< " theta1= "<<atan2(a, b)<< " theta2= "<<acos(div);
-    q2_0[1] = atan2(a, b) - acos(div);
+    q2_0[0] = std::atan2(a, b) + std::acos(div);  // DLOG(ERROR)<< " theta1= "<<std::atan2(a, b)<< " theta2= "<<std::acos(div);
+    q2_0[1] = std::atan2(a, b) - std::acos(div);
     int index_q20 = 2;  //两组解若相等, 只取一组, 否则==2
     if (q2_0[0] == q2_0[1]) {
         index_q20 = 1;
     }
     for (int i = 0; i < index_q20; i++) {
-        double temp = -a * cos(q2_0[i]) + b * sin(q2_0[i]);
+        double temp = -a * std::cos(q2_0[i]) + b * std::sin(q2_0[i]);
         if (fabs(Xsw0_temp(0)) < EPSILON6 && fabs(Xsw0_temp(1)) < EPSILON6) {
             q1_0[i] = 0.0;
         } else {
-            q1_0[i] = atan2(sign(temp) * Xsw0_temp(1), sign(temp) * Xsw0_temp(0));
+            q1_0[i] = std::atan2(sign(temp) * Xsw0_temp(1), sign(temp) * Xsw0_temp(0));
         }
     }
 
@@ -270,7 +274,7 @@ bool inverse_kinematics_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, 
     if (fabs(fabs(U_dot) - 1.0) <= EPSILON10) {  //数值精度保护
         U_dot = sign(U_dot);
     }
-    psi = sign(dot(Un_sew_0 * Un_sew, Xsw0_temp)) * acos(U_dot);
+    psi = sign(dot(Un_sew_0 * Un_sew, Xsw0_temp)) * std::acos(U_dot);
     conf_xmate.q2_0 = q2_0[k];
     return true;
 }
@@ -296,10 +300,10 @@ int inverse_kinematics_solver::Compute_Q4_ABC(const KDL::Frame& tar_Flan, const 
     //计算实际的q4(TODO:是不是存在边界效应? )
     if (m_d_mm > 0) {
         // case1:正偏置 m_d_mm>0
-        q4_abc.q4 = conf_xmate.cf4_offset * acos(C4) + m_q4_offset;
+        q4_abc.q4 = conf_xmate.cf4_offset * std::acos(C4) + m_q4_offset;
     } else {
         // case2:负偏置 m_d_mm<0
-        q4_abc.q4 = conf_xmate.cf4_offset * acos(C4) - m_q4_offset;
+        q4_abc.q4 = conf_xmate.cf4_offset * std::acos(C4) - m_q4_offset;
     }
 
     if (q4_abc.q4 > m_max_joint[3] || q4_abc.q4 < m_min_joint[3]) {
@@ -308,12 +312,12 @@ int inverse_kinematics_solver::Compute_Q4_ABC(const KDL::Frame& tar_Flan, const 
     }
 
     //==== 计算q2_0 ====
-    double a = -(Lse3(0) + cos(q4_abc.q4) * Lew4(0) + sin(q4_abc.q4) * Lew4(2));
-    double b = -(Lse3(1) + sin(q4_abc.q4) * Lew4(0) - cos(q4_abc.q4) * Lew4(2));
-    double rou = sqrt(a * a + b * b);
+    double a = -(Lse3(0) + std::cos(q4_abc.q4) * Lew4(0) + std::sin(q4_abc.q4) * Lew4(2));
+    double b = -(Lse3(1) + std::sin(q4_abc.q4) * Lew4(0) - std::cos(q4_abc.q4) * Lew4(2));
+    double rou = std::sqrt(a * a + b * b);
     double div = Xsw0(2) / rou;
-    double temp1 = atan2(a, b) + acos(div);
-    double temp2 = atan2(a, b) - acos(div);
+    double temp1 = std::atan2(a, b) + std::acos(div);
+    double temp2 = std::atan2(a, b) - std::acos(div);
     double q2_0;
 
     if (conf_xmate.q2_0 < -10) {
@@ -324,8 +328,8 @@ int inverse_kinematics_solver::Compute_Q4_ABC(const KDL::Frame& tar_Flan, const 
         q2_0 = (fabs(temp1 - conf_xmate.q2_0) < fabs(temp2 - conf_xmate.q2_0)) ? temp1 : temp2;
     }
 
-    double temp = -a * cos(q2_0) + b * sin(q2_0);
-    double q1_0 = atan2(sign(temp) * Xsw0(1), sign(temp) * Xsw0(0));
+    double temp = -a * std::cos(q2_0) + b * std::sin(q2_0);
+    double q1_0 = std::atan2(sign(temp) * Xsw0(1), sign(temp) * Xsw0(0));
     KDL::Rotation R30_0 = KDL::Rotation::RotZ(q1_0) * KDL::Rotation::RotX(-KDL::PI / 2) * KDL::Rotation::RotZ(q2_0) *
                           KDL::Rotation::RotX(KDL::PI / 2) * KDL::Rotation::RotX(-KDL::PI / 2);
 
