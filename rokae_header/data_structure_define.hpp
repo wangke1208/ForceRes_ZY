@@ -84,12 +84,12 @@ enum SolverRes {
 
 enum IkSolveRes {
     SUCCESS = 0,          //逆解成功, 其余皆为失败
-    JOINT_OVER_LIMIT,     //逆解超关节软限位
-    TARGET_OUT_OF_RANGE,  //目标点超出运动范围
-    TOO_LARGE_STEP,       //单步距离过大
-    INPUT_DATA_ERROR,     //输入参数有误
-    INPUT_DATA_SINGULAR,  //输入参考点为奇异点
-    OTHER_ERROR,          //其他错误
+    JOINT_OVER_LIMIT = -1,     //逆解超关节软限位
+    TARGET_OUT_OF_RANGE = -2,  //目标点超出运动范围
+    TOO_LARGE_STEP = -3,       //单步距离过大
+    INPUT_DATA_ERROR = -4,     //输入参数有误
+    INPUT_DATA_SINGULAR = -5,  //输入参考点为奇异点
+    OTHER_ERROR = -6,          //其他错误
 };
 
 namespace Model {

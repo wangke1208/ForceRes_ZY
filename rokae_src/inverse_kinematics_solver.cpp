@@ -11,7 +11,7 @@
  * @brief: 逆运动学求解接口
  */
 
-#include "inverse_kinematics_solver.hpp"
+#include "rokae_header/inverse_kinematics_solver.hpp"
 
 using namespace std;
 namespace RokaeApi {
