@@ -95,7 +95,8 @@ enum IkSolveRes {
 namespace Model {
 enum MechUnitType {
     DEFALUT_SIX_AXIS,
-    DEFALUT_SENVEN_AXIS
+    AR5_L,
+    AR5_R
 };
 
 struct ModelParams {

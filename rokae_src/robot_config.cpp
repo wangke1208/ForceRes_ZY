@@ -106,50 +106,52 @@ RobotConfiguration::RobotConfiguration(unsigned int jnt_num)
 
 RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
     switch (robot_type) {
-    case MechUnitType::DEFALUT_SENVEN_AXIS:
+    case MechUnitType::AR5_L:
         this->Resize(SEVEN_AXIS_ROBOT);
         // ModelConfigParams
-        model_config_params.ROBOT_NAME = "xMatePro7";
+        model_config_params.ROBOT_NAME = "AR5_L";
         model_config_params.AXIS_NUM = 7;
-        model_config_params.MAX_LOAD = 7;
+        model_config_params.MAX_LOAD = 5;
         model_config_params.MAX_LOAD_TCP_LENGTH = 0.3;
 
         model_config_params.JOINT_TYPE = {8, 3, 2, 3, 2, 3, 2, 3};
         model_config_params.ROT_AXIS = {0, 0, 0, 0, 0, 0, 0, 0};
         model_config_params.ROT_ANGLE = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
-        model_config_params.LINK_MASS = {5.179, 4.566, 3.163, 2.990, 2.501, 2.192, 0.961};
+        model_config_params.LINK_MASS = {2.400, 2.260, 1.850, 1.190, 0.950, 1.060, 0.180};
 
-        model_config_params.LINK_CENTROID = {-0.042,  -13.288, 327.892, -0.020,  27.853, 103.134, -0.333,
-                                             -11.578, -63.455, -0.278,  19.667,  88.966, 0.178,   -12.921,
-                                             -57.504, -0.062,  13.079,  114.262, 0.574,  16.762,  -51.921};
+        model_config_params.LINK_CENTROID = {0.026805,  1.174921,   171.179958, 0.010382,  -3.330598, 100.666568, -7.574792,
+                                             1.848523,  -17.501298, 7.943048,   -5.043471, 70.013368, 0.012128,   1.731178,
+                                             -2.652562, -0.053371,  -2.338131,  76.153958, -0.158025, 0.036244,   -17.928215};
 
         model_config_params.LINK_MOMENT_OF_INERTIA = {
-            53972.936, 51289.371,   8130842.419, -37.314,   37.357,     -4638.570,   68949.385, 8182756.988, 11550.531,
-            12.027,    -55.853,     -11570.623,  22329.438, 21179.904,  1405507.522, 14.054,    19.681,      -2019.482,
-            29059.862, 1427298.713, 5269.376,    -12.758,   45.389,     -4638.908,   19660.795, 17807.651,   468417.825,
-            -34.156,   21.141,      -1551.880,   17043.207, 479915.258, 3121.779,    -2.744,    -9.340,      -2964.904,
-            2275.892,  1503.751,    465395.271,  1.551,     5.105,      -282.405};
+            3979.647236102, 3153.608616,  3579.792654, 3.028196641,  0.352045521, 24.41954637, 9984.556133,
+            8642.427123,    3979.094239,  0.113661929, -0.493471216, 709.4387148, 5149.01341,  4558.395976,
+            2498.658938,    7.046503262,  335.2268369, 53.13042131,  3585.14617,  2888.200439, 1733.465859,
+            -50.09269845,   -166.4539576, 413.9160045, 943.702398,   714.8274519, 867.2998326, 0.569137902,
+            0.595997585,    9.192853216,  2307.592731, 1956.768415,  1033.9388,   -0.66612469, 0.715815857,
+            187.1128396,    99.75647412,  96.7123724,  148.2758075,  1.386868756, 0.247604245, 0.357437425};
 
         model_config_params.LINK_MOMENT_OF_INERTIA_LOW = {
-            53972.936, 51289.371, 13773.619,  -37.314,   37.357,    -4638.570, 68949.385, 65688.188, 11550.531,
-            12.027,    -55.853,   -11570.623, 22329.438, 21179.904, 5307.522,  14.054,    19.681,    -2019.482,
-            29059.862, 27098.713, 5269.376,   -12.758,   45.389,    -4638.908, 19660.795, 17807.651, 4577.825,
-            -34.156,   21.141,    -1551.880,  17043.207, 16075.258, 3121.779,  -2.744,    -9.340,    -2964.904,
-            2275.892,  1503.751,  1555.271,   1.551,     5.105,     -282.405};
+            3979.647236102, 3153.608616,  3579.792654, 3.028196641,  0.352045521, 24.41954637, 9984.556133,
+            8642.427123,    3979.094239,  0.113661929, -0.493471216, 709.4387148, 5149.01341,  4558.395976,
+            2498.658938,    7.046503262,  335.2268369, 53.13042131,  3585.14617,  2888.200439, 1733.465859,
+            -50.09269845,   -166.4539576, 413.9160045, 943.702398,   714.8274519, 867.2998326, 0.569137902,
+            0.595997585,    9.192853216,  2307.592731, 1956.768415,  1033.9388,   -0.66612469, 0.715815857,
+            187.1128396,    99.75647412,  96.7123724,  148.2758075,  1.386868756, 0.247604245, 0.357437425};
 
-        model_config_params.ROBOT_DIMENSIONS = {0.00, 0.00, 0.00,   0.00, 0.00, 404.00, 0.00, 0.00, 437.50, 0.00, 0.00, 0.00,
-                                                0.00, 0.00, 412.50, 0.00, 0.00, 0.00,   0.00, 0.00, 275.50, 0.00, 0.00, 0.00};
+        model_config_params.ROBOT_DIMENSIONS = {0.00,  0.00, 0.00,   0.00, 0.00, 174.50, 0.00, 0.00, 305.00, -10.00, 0.00, 0.00,
+                                                10.00, 0.00, 179.00, 0.00, 0.00, 0.00,   0.00, 0.00, 166.00, 0.00,   0.00, 0.00};
 
-        model_config_params.JOINT_RANGE_MIN_CUSTOMIZE = {-165, -115, -165, -115, -165, -115, -355};
-        model_config_params.JOINT_RANGE_MAX_CUSTOMIZE = {165, 115, 165, 115, 165, 115, 355};
-        model_config_params.JOINT_RANGE_MIN_NEW = {-170, -120, -170, -120, -170, -120, -360};
-        model_config_params.JOINT_RANGE_MAX_NEW = {170, 120, 170, 120, 170, 120, 360};
+        model_config_params.JOINT_RANGE_MIN_CUSTOMIZE = {-178, -120, -178, -145, -178, -110, -180};
+        model_config_params.JOINT_RANGE_MAX_CUSTOMIZE = {178, 120, 178, 80, 178, 110, 180};
+        model_config_params.JOINT_RANGE_MIN_NEW = {-178, -120, -178, -145, -178, -110, -180};
+        model_config_params.JOINT_RANGE_MAX_NEW = {178, 120, 178, 80, 178, 110, 180};
 
         // control_config_params
-        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {30.0, 30.0, 30.0, 30.0, 30.0, 30.0, 40.0};
+        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {30.0, 30.0, 30.0, 30.0, 40.0, 40.0, 40.0};
         control_config_params.CTRL_ZETA_SERVO_EXEC = {0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7};
-        control_config_params.FRICTION_COF_DRAG = {0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8};
+        control_config_params.FRICTION_COF_DRAG = {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9};
         control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
         control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
         control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
@@ -160,13 +162,80 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         // mechanical_config_params
         mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0, 0};
         mechanical_config_params.ENCODER_RESOLUTION = {262144, 262144, 262144, 262144, 262144, 262144, 262144};
-        mechanical_config_params.REDUCTION_RATIO_NUMERATOR = {160, 160, 100, 100, 100, 100, 100};
+        mechanical_config_params.REDUCTION_RATIO_NUMERATOR = {120, 120, 100, 100, 100, 100, 100};
         mechanical_config_params.REDUCTION_RATIO_DENOMINATOR = {1, 1, 1, 1, 1, 1, 1};
-        mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH = {210, 210, 110, 110, 60, 60, 60};
+        mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH = {110, 110, 70, 70, 25, 25, 25};
         mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_LOW = {2.25, 2.25, 2.25, 2.25, 2.25, 2.25, 2.25};
-        mechanical_config_params.SENSOR_BIAS = {2000, 2000, 2000, 2000, 2000, 2000, 2000};
+        mechanical_config_params.SENSOR_BIAS = {2500, 2500, 2500, 2500, 2500, 2500, 25000};
         mechanical_config_params.SENSOR_AMPLIFY = {1, 1, 1, 1, 1, 1, 1};
-        mechanical_config_params.RATED_TORQUE = {1.5, 1.5, 0.939, 0.939, 0.415, 0.415, 0.415};
+        mechanical_config_params.RATED_TORQUE = {1, 1, 0.45, 0.45, 0.2, 0.2, 0.2};
+
+        // protect_config_params
+        protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL = {25.0, 25.0, 20.0, 25.0, 15.0, 15.0, 10.0};
+        break;
+    case MechUnitType::AR5_R:
+        this->Resize(SEVEN_AXIS_ROBOT);
+        // ModelConfigParams
+        model_config_params.ROBOT_NAME = "AR5_R";
+        model_config_params.AXIS_NUM = 7;
+        model_config_params.MAX_LOAD = 5;
+        model_config_params.MAX_LOAD_TCP_LENGTH = 0.3;
+
+        model_config_params.JOINT_TYPE = {8, 3, 2, 3, 2, 3, 2, 3};
+        model_config_params.ROT_AXIS = {0, 0, 0, 0, 0, 0, 0, 0};
+        model_config_params.ROT_ANGLE = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+        model_config_params.LINK_MASS = {2.400, 2.260, 1.850, 1.190, 0.950, 1.060, 0.180};
+
+        model_config_params.LINK_CENTROID = {0.026805,  1.174921,   171.179958, 0.010382,  -3.330598, 100.666568, 7.574792,
+                                             1.848523,  -17.501298, -7.943048,  -5.043471, 70.013368, 0.012128,   1.731178,
+                                             -2.652562, -0.053371,  -2.338131,  76.153958, -0.158025, 0.036244,   -17.928215};
+
+        model_config_params.LINK_MOMENT_OF_INERTIA = {
+            3979.647236102, 3153.608616,  3579.792654, 3.028196641,  0.352045521, 24.41954637, 9984.556133,
+            8642.427123,    3979.094239,  0.113661929, -0.493471216, 709.4387148, 5149.01341,  4558.395976,
+            2498.658938,    7.046503262,  335.2268369, 53.13042131,  3585.14617,  2888.200439, 1733.465859,
+            -50.09269845,   -166.4539576, 413.9160045, 943.702398,   714.8274519, 867.2998326, 0.569137902,
+            0.595997585,    9.192853216,  2307.592731, 1956.768415,  1033.9388,   -0.66612469, 0.715815857,
+            187.1128396,    99.75647412,  96.7123724,  148.2758075,  1.386868756, 0.247604245, 0.357437425};
+
+        model_config_params.LINK_MOMENT_OF_INERTIA_LOW = {
+            3979.647236102, 3153.608616,  3579.792654, 3.028196641,  0.352045521, 24.41954637, 9984.556133,
+            8642.427123,    3979.094239,  0.113661929, -0.493471216, 709.4387148, 5149.01341,  4558.395976,
+            2498.658938,    7.046503262,  335.2268369, 53.13042131,  3585.14617,  2888.200439, 1733.465859,
+            -50.09269845,   -166.4539576, 413.9160045, 943.702398,   714.8274519, 867.2998326, 0.569137902,
+            0.595997585,    9.192853216,  2307.592731, 1956.768415,  1033.9388,   -0.66612469, 0.715815857,
+            187.1128396,    99.75647412,  96.7123724,  148.2758075,  1.386868756, 0.247604245, 0.357437425};
+
+        model_config_params.ROBOT_DIMENSIONS = {0.00,   0.00, 0.00,   0.00, 0.00, 174.50, 0.00, 0.00, 305.00, 10.00, 0.00, 0.00,
+                                                -10.00, 0.00, 179.00, 0.00, 0.00, 0.00,   0.00, 0.00, 166.00, 0.00,  0.00, 0.00};
+
+        model_config_params.JOINT_RANGE_MIN_CUSTOMIZE = {-178, -120, -178, -80, -178, -110, -180};
+        model_config_params.JOINT_RANGE_MAX_CUSTOMIZE = {178, 120, 178, 145, 178, 110, 180};
+        model_config_params.JOINT_RANGE_MIN_NEW = {-178, -120, -178, -80, -178, -110, -180};
+        model_config_params.JOINT_RANGE_MAX_NEW = {178, 120, 178, 145, 178, 110, 180};
+
+        // control_config_params
+        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {30.0, 30.0, 30.0, 30.0, 40.0, 40.0, 40.0};
+        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7};
+        control_config_params.FRICTION_COF_DRAG = {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9};
+        control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
+        control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
+        control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
+        control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
+        control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {0.8, 0.8, 0.7, 0.5, 0.3, 0.3, 0.3};
+        control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.5, 0.5, 0.5, 0.3, 0.3, 0.3};
+
+        // mechanical_config_params
+        mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0, 0};
+        mechanical_config_params.ENCODER_RESOLUTION = {262144, 262144, 262144, 262144, 262144, 262144, 262144};
+        mechanical_config_params.REDUCTION_RATIO_NUMERATOR = {120, 120, 100, 100, 100, 100, 100};
+        mechanical_config_params.REDUCTION_RATIO_DENOMINATOR = {1, 1, 1, 1, 1, 1, 1};
+        mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH = {110, 110, 70, 70, 25, 25, 25};
+        mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_LOW = {2.25, 2.25, 2.25, 2.25, 2.25, 2.25, 2.25};
+        mechanical_config_params.SENSOR_BIAS = {2500, 2500, 2500, 2500, 2500, 2500, 25000};
+        mechanical_config_params.SENSOR_AMPLIFY = {1, 1, 1, 1, 1, 1, 1};
+        mechanical_config_params.RATED_TORQUE = {1, 1, 0.45, 0.45, 0.2, 0.2, 0.2};
 
         // protect_config_params
         protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL = {25.0, 25.0, 20.0, 25.0, 15.0, 15.0, 10.0};
