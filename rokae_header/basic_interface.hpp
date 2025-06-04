@@ -303,6 +303,15 @@ int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::ar
  * @return 错误码，参考 IkSolveRes 枚举
  */
 int GetJointPos(const std::vector<double>& curJnt_origin, const GeneralizedFrame& target_Flan, std::vector<double>& OutJointPose);
+
+/**
+ * @brief 获取运动学逆解
+ * @param[in] curJntPose 机器人当前关节角度
+ * @param[out] psi 当前臂角
+ * @return 错误码，参考 IkSolveRes 枚举
+ */
+int GetCurPsi(const std::vector<double>& curJntPose, double& psi);
+
 /**
  * @brief 从关节位置计算质量矩阵
  * @param[in] load_params 负载参数

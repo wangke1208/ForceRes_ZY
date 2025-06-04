@@ -170,12 +170,15 @@ int RokaeForce_GetTotalTorque(const External_RokaeLoad& load, const std::vector<
 }
 
 int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& psi, const std::vector<double>& q_init,
-                std::vector<double>& q_out) {
-    // LOG_INFO("command ***********: XmateModel::GetJointPos()");
+                           std::vector<double>& q_out) {
     KDL::Frame frame = KDL::Frame::Identity();
     ConvertFrameArray(frame, CartPos);
     GeneralizedFrame GF(frame, psi);
     return BasicInterface::GetJointPos(q_init, GF, q_out);
+}
+
+int RokaeForce_GetCurPsi(const std::vector<double>& curJntPose, double& psi) {
+    return BasicInterface::GetCurPsi(curJntPose, psi);
 }
 
 int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos) {

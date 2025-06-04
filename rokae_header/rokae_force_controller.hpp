@@ -38,7 +38,7 @@ struct External_RokaeLoad {
     //动力学参数
     double mass{0.0};                                             // 质量，单位kg
     std::array<double, 3> centroid{0.0, 0.0, 0.0};                // 质心，单位m
-    std::array<double, 6> inertia{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // 惯性矩阵，单位kg·m²
+    std::array<double, 6> inertia{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};  // 惯性矩阵，单位kg·m² Ixx Iyy Izz Ixy Ixz Iyz
 };
 // ================== 初始化整体模块 ==================
 
@@ -287,6 +287,14 @@ int RokaeForce_GetTotalTorque(const External_RokaeLoad& load, const std::vector<
  */
 int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& psi, const std::vector<double>& q_init,
                            std::vector<double>& q_out);
+
+/**
+ * @brief 获取运动学逆解
+ * @param[in] curJntPose 机器人当前关节角度
+ * @param[out] psi 当前臂角
+ * @return 错误码，参考 IkSolveRes 枚举
+ */
+int RokaeForce_GetCurPsi(const std::vector<double>& curJntPose, double& psi);
 
 /**
  * @brief 获取TCP位姿

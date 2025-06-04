@@ -35,6 +35,7 @@ KDL::Frame frame_base_in_world;  // 基坐标系在世界坐标系下的位置
 //计算运动学&动力学的临时变量
 KDL::JntArray q_inverse_out_temp;
 KDL::JntArray q_inverse_in_temp;
+KDL::JntArray q_psi_temp;
 KDL::JntArray q_temp;
 KDL::JntArray qd_temp;
 KDL::JntArray qdd_temp;
@@ -97,6 +98,7 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     gravity_vector = initrobot_ptr->GetGravity();
     q_inverse_out_temp.resize(jnt_num);
     q_inverse_in_temp.resize(jnt_num);
+    q_psi_temp.resize(jnt_num);
     q_temp.resize(jnt_num);
     qd_temp.resize(jnt_num);
     qdd_temp.resize(jnt_num);
@@ -471,6 +473,15 @@ int GetJointPos(const std::vector<double>& curJnt_origin, const GeneralizedFrame
     }
     JntArrayToVector(q_inverse_out_temp, OutJointPose);
     return SOLVE_NOERROR;
+}
+
+int GetCurPsi(const std::vector<double>& curJntPose, double& psi) {
+    VectorToJntArray(curJntPose, q_psi_temp);
+    if (inverse_kinematics_solver_ptr->GetCurPsi(q_psi_temp, psi)) {
+        return SOLVE_NOERROR;
+    } else {
+        return OTHER_ERROR;
+    }
 }
 
 int GetMassMatrix(const RokaeLoad& load_params, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {

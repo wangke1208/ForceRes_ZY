@@ -54,6 +54,8 @@ class inverse_kinematics_solver {
     int Compute_Q4_ABC(const KDL::Frame& tar_Flan, const Conf_xMate& conf_xmate, Q4_ABC& q4_abc);
     void Solve_Jnt(const KDL::JntArray& curJntPose, const Conf_xMate& conf_xmate, const double& targ_Psi, const Q4_ABC& q4_abc,
                    KDL::JntArray& q);
+    bool GetCurPsi(const KDL::JntArray& curJntPose, double& psi);
+
     //一些小接口
     inline double ArcTangentSolver(double an, double bn, double cn, double ad, double bd, double cd, double psi) {
         return std::atan2(an * std::sin(psi) + bn * std::cos(psi) + cn, ad * std::sin(psi) + bd * std::cos(psi) + cd);

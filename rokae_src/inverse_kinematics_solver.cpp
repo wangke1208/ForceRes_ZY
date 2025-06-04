@@ -455,5 +455,16 @@ void inverse_kinematics_solver::Solve_Jnt(const KDL::JntArray& curJntPose, const
     }
 }
 
+bool inverse_kinematics_solver::GetCurPsi(const KDL::JntArray& curJntPose, double& psi){
+    if(curJntPose.rows() != 7){
+        return false;
+    }
+    KDL::Frame curFlanPose;
+    m_fkpos_ptr->JntToCart(curJntPose, curFlanPose);
+    Conf_xMate conf_xmate;
+    return Solve_CurPsi_Conf(curJntPose, curFlanPose, conf_xmate, psi);
+}
+
+
 }  // namespace Model
 }  // namespace RokaeApi
