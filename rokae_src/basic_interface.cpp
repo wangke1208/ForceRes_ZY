@@ -57,7 +57,14 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     conf_log.size = 10 * 1024 * 1024;  // 10MB
     conf_log.count = 10;               // 最多保留100个文件
     INITLOG(conf_log);
-    // 1.初始化参数模块
+    LOG_INFO("日志模块初始化成功！");
+
+    // 1.读取版本号，并输出
+    LOG_INFO("=========================================================");
+    LOG_INFO("Algorithm    ver: {}", VERSION);
+    LOG_INFO("=========================================================");
+
+    // 2.初始化参数模块
     try {
         initrobot_ptr = std::make_shared<InitRobot>(robot_type);
         auto res_initialize = initrobot_ptr->CreateModels();
@@ -68,19 +75,20 @@ int InitInterface(const Model::MechUnitType& robot_type) {
         std::cerr << "Failed to initialize InitRobot: " << e.what() << std::endl;
         return ERROR_ROBOTTYPE;
     }
-    // 2.初始化力控模块
+
+    // 3.初始化力控模块
     forcecontrol_ptr = std::make_shared<Control::ForceControl>(initrobot_ptr.get());
     auto res_forcecontrol = forcecontrol_ptr->Fcinit();
     if (res_forcecontrol != SOLVE_NOERROR) {
         return res_forcecontrol;
     }
 
-    // 3.初始化其他模块(用来计算的)
+    // 4.初始化其他模块(用来计算的)
     axisconvert_ptr = std::make_shared<Axis_Convert>(initrobot_ptr->GetJntNum(), initrobot_ptr.get()->GetMechanicalParams());
     dynamicsolver_ptr = std::make_shared<DynamicSolver>(initrobot_ptr->GetChain(), initrobot_ptr->GetGravity());
     inverse_kinematics_solver_ptr =
         std::make_shared<inverse_kinematics_solver>(initrobot_ptr->GetChain(), initrobot_ptr->GetModelParams());
-    // 4.初始化参数
+    // 5.初始化参数
     jnt_num = initrobot_ptr->GetJntNum();
     jnt_pos_kdl.resize(jnt_num);
     jnt_ext_trq.resize(jnt_num);
@@ -160,7 +168,16 @@ int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<
         return ERROR_DRAG_STATUS;
     }
     //设置线性度
-    return (forcecontrol_ptr->SetSensorLinearity(analog2trq_low) && axisconvert_ptr->SetSensorLinearity(analog2trq_low));
+    auto res1 = forcecontrol_ptr->SetSensorLinearity(analog2trq_low);
+    auto res2 = axisconvert_ptr->SetSensorLinearity(analog2trq_low);
+
+    if (res1 != SOLVE_NOERROR) {
+        return res1;
+    }
+    if (res2 != SOLVE_NOERROR) {
+        return res2;
+    }
+    return SOLVE_NOERROR;
 }
 
 int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog_bias) {
@@ -175,8 +192,11 @@ int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<doubl
     //设置传感器零点
     auto res1 = forcecontrol_ptr->SetSensorBias(analog_bias);
     auto res2 = axisconvert_ptr->SetSensorBias(analog_bias);
-    if (res1 != SOLVE_NOERROR || res2 != SOLVE_NOERROR) {
+    if (res1 != SOLVE_NOERROR) {
         return res1;
+    }
+    if (res2 != SOLVE_NOERROR) {
+        return res2;
     }
     return SOLVE_NOERROR;
 }
@@ -193,8 +213,11 @@ int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<in
     //设置编码器零点
     auto res1 = forcecontrol_ptr->SetEncoderOffset(encoder_offset);
     auto res2 = axisconvert_ptr->SetEncoderBias(encoder_offset);
-    if (res1 != SOLVE_NOERROR || res2 != SOLVE_NOERROR) {
+    if (res1 != SOLVE_NOERROR) {
         return res1;
+    }
+    if (res2 != SOLVE_NOERROR) {
+        return res2;
     }
     return SOLVE_NOERROR;
 }
