@@ -150,8 +150,8 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
 
         // control_config_params
         control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {30.0, 30.0, 30.0, 30.0, 40.0, 40.0, 40.0};
-        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7};
-        control_config_params.FRICTION_COF_DRAG = {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9};
+        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.3, 0.3, 0.3, 0.5, 0.3, 0.3, 0.3};
+        control_config_params.FRICTION_COF_DRAG = {0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8};
         control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
         control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
         control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
@@ -217,8 +217,8 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
 
         // control_config_params
         control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {30.0, 30.0, 30.0, 30.0, 40.0, 40.0, 40.0};
-        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7};
-        control_config_params.FRICTION_COF_DRAG = {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9};
+        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.3, 0.3, 0.3, 0.5, 0.3, 0.3, 0.3};
+        control_config_params.FRICTION_COF_DRAG = {0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8};
         control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
         control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
         control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};

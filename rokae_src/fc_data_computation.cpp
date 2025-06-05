@@ -30,6 +30,7 @@ FcStatusTracker::FcStatusTracker(InitRobot* init_robot_ptr, FcStatusInner* fc_st
     m_is_rot_angle_outof_range = false;
     KDL::SetToZero(m_orient_delta_d);
     KDL::SetToZero(m_orient_delta_d_last);
+    m_jnt_sensor_ext_torque.resize(m_jnt_num);
     m_cart_stiffness.resize(6, 100.0);
     m_load.SetZero();
     m_base_frame_buffer.resize(2);
@@ -166,11 +167,21 @@ int FcStatusTracker::FcStatusUpdataCommon() {
     //雅可比计算部分
     m_dynamic_solver->GetFlanJacobian(FC->jnt_pos_measure, FC->jac_measure_flan_in_base);
     FC->jac_trans_measure_flan_in_base = FC->jac_measure_flan_in_base.data.transpose();
-    SPD_EIGEN_MATRIX(FC->jac_measure_flan_in_base.data);
     m_dynamic_solver->GetJacobianTransInverse(FC->jac_measure_flan_in_base, FC->jac_trans_inv_measure_flan_in_base);
 
+    //计算可操作度
+    FC->mani_measure = m_dynamic_solver->GetManipulate(FC->jac_measure_flan_in_base);
+
     //计算外力部分
-    FCVectorXdToWrench(FC->jac_trans_inv_measure_flan_in_base * FC->jnt_trq_sensor_measure.data, FC->flan_wrench);
+    KDL::Subtract(FC->jnt_gravity_trq_measure, FC->jnt_trq_sensor_measure, m_jnt_sensor_ext_torque);
+
+    //根据可操作度进行Wrench计算
+    if(FC->mani_measure < EPSILON5){
+        KDL::SetToZero(FC->flan_wrench);
+    }else{
+        FCVectorXdToWrench(FC->jac_trans_inv_measure_flan_in_base * m_jnt_sensor_ext_torque.data, FC->flan_wrench);
+    }
+
     //转换到TCP末端的Wrench
     FC->tcp_wrench = FC->flan_wrench.RefPoint(m_tool_in_flan.p);
     return SOLVE_NOERROR;

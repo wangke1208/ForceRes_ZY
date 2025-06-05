@@ -249,6 +249,7 @@ void Servo_Fc_Convert::FcData2ServoData(const Control::FcStatusInner& fc_status_
             (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_friction")[i] * 100);
         fc_inner_servo_data.jnt_inertia[i] = (int16_t)(fc_status_inner.jnt_inertia(i) * 100);
     }
+    //SPD_CONTAINER("fc_status_inner.jnt_trq_final_cmd = ",fc_status_inner.jnt_trq_final_cmd.data);
     return;
 }
 

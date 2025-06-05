@@ -148,6 +148,9 @@ class FcStatusTracker {
     KDL::Vector m_orient_delta_d;
     KDL::Vector m_orient_delta_d_last;
 
+    //计算外力
+    KDL::JntArray m_jnt_sensor_ext_torque;  //外力
+
     KDL::Frame m_tool_in_flan;                    // 工具在法兰坐标系下位姿
     KDL::Frame m_fc_frame;                        // 力控坐标系（默认为工具坐标系）
     FcFrameType m_fc_frame_type;                  // 力控坐标系类型
