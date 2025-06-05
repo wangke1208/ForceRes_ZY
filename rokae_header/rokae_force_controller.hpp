@@ -297,13 +297,22 @@ int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& 
 int RokaeForce_GetCurPsi(const std::vector<double>& curJntPose, double& psi);
 
 /**
+ * @brief 获取Flan位姿
+ * @param[in] jnt_pos 关节位置
+ * @param[out] flanTobase_pos 法兰到基座的变换矩阵
+ * @return 错误码
+ */
+int RokaeForce_GetFlanPos(const std::vector<double>& jnt_pos, std::array<double, 16>& flanTobase_pos);
+/**
  * @brief 获取TCP位姿
  * @param[in] load 负载信息
  * @param[in] jnt_pos 关节位置
+ * @param[out] toolTobase_pos 工具到基座的变换矩阵
  * @param[out] tcp_pos TCP位姿
  * @return 错误码
  */
-int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos);
+int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
+                         std::array<double, 16>& toolTobase_pos, std::array<double, 6>& tcp_pos);
 
 /**
  * @brief 从关节位置计算质量矩阵

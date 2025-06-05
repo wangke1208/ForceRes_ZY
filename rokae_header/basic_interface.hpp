@@ -288,12 +288,22 @@ int GetTotalTorque(const RokaeLoad& load_params, const std::vector<double>& q, c
 
 /**
  * @brief 获取 TCP 位置
+ * @param[in] jnt_pos 关节位置，使用 std::vector<double> 表示
+ * @param[out] flanTobase_pos 法兰到基座的变换矩阵
+ * @return 错误码，参考 SolverRes 枚举
+ */
+int GetFlanPos(const std::vector<double>& jnt_pos, std::array<double, 16>& flanTobase_pos);
+
+/**
+ * @brief 获取 TCP 位置
  * @param[in] load 负载信息
  * @param[in] jnt_pos 关节位置，使用 std::vector<double> 表示
+ * @param[out] toolTobase_pos 工具到基座的变换矩阵
  * @param[out] tcp_pos TCP 位置，使用 std::array<double, 6> 存储
  * @return 错误码，参考 SolverRes 枚举
  */
-int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos);
+int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 16>& toolTobase_pos,
+              std::array<double, 6>& tcp_pos);
 
 /**
  * @brief 获取运动学逆解

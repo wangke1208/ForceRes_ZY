@@ -181,8 +181,14 @@ int RokaeForce_GetCurPsi(const std::vector<double>& curJntPose, double& psi) {
     return BasicInterface::GetCurPsi(curJntPose, psi);
 }
 
-int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos) {
-    return BasicInterface::GetTcpPos(RokaeLoadConvert(load), jnt_pos, tcp_pos);
+int RokaeForce_GetFlanPos(const std::vector<double>& jnt_pos,
+                         std::array<double, 16>& flanTobase_pos) {
+
+    return BasicInterface::GetFlanPos(jnt_pos, flanTobase_pos);
+}
+int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
+                         std::array<double, 16>& toolTobase_pos, std::array<double, 6>& tcp_pos) {
+    return BasicInterface::GetTcpPos(RokaeLoadConvert(load), jnt_pos, toolTobase_pos, tcp_pos);
 }
 
 int RokaeForce_GetMassMatrix(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {

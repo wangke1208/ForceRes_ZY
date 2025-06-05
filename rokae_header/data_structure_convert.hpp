@@ -65,6 +65,34 @@ inline std::vector<double> JntArrayToVector(const KDL::JntArray& in) {
     return out;
 }
 
+inline int FrameToArray(const KDL::Frame& in, std::array<double, 16>& out) {
+    if (out.size() != 16) return -1;
+
+    //旋转部分
+    out[0] = in.M(0, 0);  // 第1列
+    out[1] = in.M(0, 1);
+    out[2] = in.M(0, 2);
+    out[12] = 0.0;
+
+    out[4] = in.M(1, 0);  // 第2列
+    out[5] = in.M(1, 1);
+    out[6] = in.M(1, 2);
+    out[13] = 0.0;
+
+    out[8] = in.M(2, 0);  // 第3列
+    out[9] = in.M(2, 1);
+    out[10] = in.M(2, 2);
+    out[14] = 0.0;
+
+    // 平移向量部分
+    out[3] = in.p[0];  // 第4列
+    out[7] = in.p[1];
+    out[11] = in.p[2];
+    out[15] = 1.0;
+
+    return 0;
+}
+
 // 向量与Wrench转换函数
 inline void FCVectorXdToWrench(const Eigen::VectorXd& in, KDL::Wrench& out) {
     for (unsigned int i = 0; i < 3; i++) {

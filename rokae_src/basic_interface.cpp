@@ -21,6 +21,7 @@ std::shared_ptr<Control::ForceControl> forcecontrol_ptr;
 std::shared_ptr<InitRobot> initrobot_ptr;
 std::shared_ptr<Axis_Convert> axisconvert_ptr;
 std::shared_ptr<DynamicSolver> dynamicsolver_ptr;
+std::shared_ptr<KDL::ChainFkSolverPos_recursive> fkpos_ptr;
 std::shared_ptr<inverse_kinematics_solver> inverse_kinematics_solver_ptr;
 
 unsigned int jnt_num;  // 关节数
@@ -45,6 +46,7 @@ KDL::JntArray trq_coriolis_temp;
 KDL::JntArray trq_inertia_temp;
 KDL::JntArray trq_ext_temp;
 KDL::Frame tcp_frame_temp;
+KDL::Frame flan_frame_temp;
 KDL::Jacobian jacobian_temp;
 KDL::JntSpaceInertiaMatrix inertia_matrix_temp;
 
@@ -86,6 +88,7 @@ int InitInterface(const Model::MechUnitType& robot_type) {
 
     // 4.初始化其他模块(用来计算的)
     axisconvert_ptr = std::make_shared<Axis_Convert>(initrobot_ptr->GetJntNum(), initrobot_ptr.get()->GetMechanicalParams());
+    fkpos_ptr = std::make_shared<KDL::ChainFkSolverPos_recursive>(initrobot_ptr->GetChain());
     dynamicsolver_ptr = std::make_shared<DynamicSolver>(initrobot_ptr->GetChain(), initrobot_ptr->GetGravity());
     inverse_kinematics_solver_ptr =
         std::make_shared<inverse_kinematics_solver>(initrobot_ptr->GetChain(), initrobot_ptr->GetModelParams());
@@ -446,12 +449,25 @@ int GetTotalTorque(const RokaeLoad& load_params, const std::vector<double>& q, c
     return SOLVE_NOERROR;
 }
 
-int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 6>& tcp_pos) {
+int GetFlanPos(const std::vector<double>& jnt_pos, std::array<double, 16>& flanTobase_pos) {
+    if (jnt_pos.size() != jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    VectorToJntArray(jnt_pos, q_temp);
+    fkpos_ptr->JntToCart(q_temp, flan_frame_temp);
+    FrameToArray(flan_frame_temp, flanTobase_pos);
+    return SOLVE_NOERROR;
+}
+
+int GetTcpPos(const RokaeLoad& load, const std::vector<double>& jnt_pos, std::array<double, 16>& toolTobase_pos,
+              std::array<double, 6>& tcp_pos) {
     if (jnt_pos.size() != jnt_num) {
         return ERROR_SIZE_WRONG;
     }
     VectorToJntArray(jnt_pos, q_temp);
     dynamicsolver_ptr->GetTcpPos(load, q_temp, tcp_frame_temp);
+    FrameToArray(tcp_frame_temp, toolTobase_pos);
+
     std::copy(tcp_frame_temp.p.data, tcp_frame_temp.p.data + 3, tcp_pos.begin());
     tcp_frame_temp.M.GetRPY(tcp_pos[3], tcp_pos[4], tcp_pos[5]);
     //弧度转角度
