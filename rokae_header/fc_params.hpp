@@ -17,7 +17,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
-
+#include "rokae_header/log_util.hpp"
 #define ADD_PARAM_VECTOR(name, default_value, value_size)      \
     std::vector<double> data##name(value_size, default_value); \
     InsertParams(#name, data##name);
@@ -188,7 +188,7 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         }
         std::array<double, 3> rot_damp_temp;  // TODO:没有加上根据负载调节阻尼的部分
         for (int i = 0; i < 3; i++) {
-            rot_damp_temp[i] = std::sqrt(trans_stiff[i]) * 2 * 0.5;
+            rot_damp_temp[i] = std::sqrt(trans_stiff[i]) * 2 * 2.0;
         }
         return FixedX(trans_stiff[0], rot_damp_temp[0]) && FixedY(trans_stiff[1], rot_damp_temp[1]) &&
                FixedZ(trans_stiff[2], rot_damp_temp[2]);
@@ -200,7 +200,7 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         }
         std::array<double, 3> rot_damp_temp;
         for (int i = 0; i < 3; i++) {
-            rot_damp_temp[i] = std::sqrt(rot_stiff[i]) * 2 * 2.0;
+            rot_damp_temp[i] = std::sqrt(rot_stiff[i]) * 2 * 0.5;
         }
         return FixedA(rot_stiff[0], rot_damp_temp[0]) && FixedB(rot_stiff[1], rot_damp_temp[1]) &&
                FixedC(rot_stiff[2], rot_damp_temp[2]);

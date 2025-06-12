@@ -387,12 +387,12 @@ int ForceControl::SetImpedenceGain(const DragType& drag_type) {
     // 2. 根据拖动类型设置参数（配置文件中预置）
     switch (drag_type) {
     case DragType::DRAG_CART_ROT:
-        m_fc_params_inner_ptr->m_function_params.SetRotParams(
+        m_fc_params_inner_ptr->m_function_params.SetTransParams(
             m_init_robot_ptr->GetControlParams().m_gain_params.rot_drag_trans_stiff,
             m_init_robot_ptr->GetControlParams().m_gain_params.rot_drag_trans_damp);
         break;
     case DragType::DRAG_CART_TRANS:
-        m_fc_params_inner_ptr->m_function_params.SetTransParams(
+        m_fc_params_inner_ptr->m_function_params.SetRotParams(
             m_init_robot_ptr->GetControlParams().m_gain_params.trans_drag_rot_stiff,
             m_init_robot_ptr->GetControlParams().m_gain_params.trans_drag_rot_damp);
         break;

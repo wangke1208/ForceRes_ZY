@@ -27,6 +27,7 @@ namespace Model {
 const unsigned int SIX_AXIS_ROBOT = 6;
 const unsigned int SEVEN_AXIS_ROBOT = 7;
 const unsigned int DEFAULT_CART_PARAMS_SIZE = 6;
+const unsigned int DEFAULT_CART_GAIN_SIZE = 3;
 const unsigned int SIZE_LINK_INERITA = 6;
 const unsigned int SIZE_LINK_CENTROID = 3;
 const unsigned int SIZE_LINK_RD = 3;

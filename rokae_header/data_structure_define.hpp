@@ -454,10 +454,10 @@ struct GainParams {
           joint_gain_kp(jnt_num, 1.0),
           joint_damp_zeta(jnt_num, 0.707),
           friction_cof_servo(jnt_num, 0.6),
-          trans_drag_rot_stiff(6, 300.0),
-          trans_drag_rot_damp(6, 5.0),
-          rot_drag_trans_stiff(6, 2000),
-          rot_drag_trans_damp(6, 10.0),
+          trans_drag_rot_stiff(3, 300.0),
+          trans_drag_rot_damp(3, 5.0),
+          rot_drag_trans_stiff(3, 2000),
+          rot_drag_trans_damp(3, 10.0),
           jnt_imp_damp_zeta(jnt_num, 0.5),
           cart_imp_damp_zeta(6, 0.5) {}
 };
