@@ -59,6 +59,10 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_cart_imp_damp_temp.resize(6);
     m_jnt_imp_damp_temp.resize(m_jnt_num);
     m_is_command_by_user = false;
+    m_jnt_pos.resize(m_jnt_num);
+    m_jnt_vel.resize(m_jnt_num);
+    m_dynamic_sensor_bias.resize(m_jnt_num);
+    m_dynamic_sensor_bias_baseline.resize(m_jnt_num);
 }
 
 ForceControl::~ForceControl() {
@@ -77,6 +81,11 @@ int ForceControl::Fcinit() {
     // 把多个初始化接口封装为一个 lambda 列表，然后遍历调用
     std::vector<std::function<int()>> func_calls = {
         [this]() { return SetEncoderOffset(m_init_robot_ptr->GetMechanicalParams().encoder_offset); },
+        [this]() {
+            return SetSensorFIxParams(m_init_robot_ptr->GetControlParams().m_gain_params.sensor_bias_dynamic,
+                                      m_init_robot_ptr->GetControlParams().m_gain_params.pos_fix_params,
+                                      m_init_robot_ptr->GetControlParams().m_gain_params.neg_fix_params);
+        },
         [this]() { return SetSensorBias(m_init_robot_ptr->GetMechanicalParams().analog_bias); },
         [this]() { return SetSensorLinearity(m_init_robot_ptr->GetMechanicalParams().analog2trq_low); },
         [this]() {
@@ -173,6 +182,11 @@ void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
     m_servo_fc_convert_ptr->GetAxisVel(servo_data_fc_inner.vel_feedback, m_fc_status_inner.jnt_vel_measure);
     m_servo_fc_convert_ptr->GetCobotTrq(servo_data_fc_inner.analog_ch1, servo_data_fc_inner.analog_ch2,
                                         m_fc_status_inner.jnt_trq_sensor_measure);
+
+    //传感器动态拟合
+    JntArrayToVector(m_fc_status_inner.jnt_pos_measure, m_jnt_pos);
+    JntArrayToVector(m_fc_status_inner.jnt_vel_measure, m_jnt_vel);
+
     // 设置拖动类型
     m_fc_status_inner.drag_type = m_drag_type;
 
@@ -267,21 +281,25 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     }
     SetFcCommand(m_servo_data_fc_inner);
 
-    // 4. 执行力控数据流计算
+    // 4. 更新传感器动态拟合部分
+    m_servo_fc_convert_ptr->CalFixTorque(m_servo_data_fc_inner.analog_ch1, m_servo_data_fc_inner.analog_ch2, m_jnt_pos, m_jnt_vel,
+                                         m_fc_status_inner.analog_fix, m_fc_status_inner.analog_bias_fix,
+                                         m_fc_status_inner.torque_fix);
+
+    // 5. 执行力控数据流计算
     res = m_fc_status_tracker_ptr->FcStatusUpdata();
     if (res != SOLVE_NOERROR) {
         return res;
     }
 
-    // 5. 内部功能力计算
+    // 6. 内部功能力计算
     if(m_is_command_by_user){
         m_force_planner_ptr->ForcePlannerUpdataUser(VectorToJntArray(jnt_trq_cmd_from_user)); 
     }else{
         m_force_planner_ptr->ForcePlannerUpdata();
     }
-    
 
-    // 6. 将内部数据转换为伺服下发数据
+    // 7. 将内部数据转换为伺服下发数据
     m_servo_fc_convert_ptr->FcData2ServoData(m_fc_status_inner, m_fc_params_inner_ptr, m_fc_inner_servo_data);
     std::copy(m_fc_inner_servo_data.trq_cmd.cbegin(), m_fc_inner_servo_data.trq_cmd.cend(), fc_trq_cmd_to_servo.begin());
     std::copy(m_fc_inner_servo_data.trq_feedforward.cbegin(), m_fc_inner_servo_data.trq_feedforward.cend(),
@@ -289,12 +307,13 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     std::copy(m_fc_inner_servo_data.k_p.cbegin(), m_fc_inner_servo_data.k_p.cend(), fc_kp_to_servo.begin());
     std::copy(m_fc_inner_servo_data.k_d.cbegin(), m_fc_inner_servo_data.k_d.cend(), fc_kd_to_servo.begin());
     std::copy(m_fc_inner_servo_data.edb_cof.cbegin(), m_fc_inner_servo_data.edb_cof.cend(), fc_edb_cof_to_servo.begin());
-    std::copy(m_fc_inner_servo_data.edb_o.cbegin(), m_fc_inner_servo_data.edb_o.cend(), fc_edb_o_to_servo.begin());
+    //此处改为下发拟合后的参数
+    std::copy(m_fc_inner_servo_data.edb_o_fix.cbegin(), m_fc_inner_servo_data.edb_o_fix.cend(), fc_edb_o_to_servo.begin());
     std::copy(m_fc_inner_servo_data.fric_cof.cbegin(), m_fc_inner_servo_data.fric_cof.cend(), fc_fric_cof_to_servo.begin());
     std::copy(m_fc_inner_servo_data.jnt_inertia.cbegin(), m_fc_inner_servo_data.jnt_inertia.cend(),
               fc_jnt_inertia_to_servo.begin());
 
-    // 7. 拷贝外部状态数据（加锁保护）
+    // 8. 拷贝外部状态数据（加锁保护）
     FcStatusCopy(m_fc_status_inner);
 
     return SOLVE_NOERROR;
@@ -306,7 +325,7 @@ int ForceControl::SetSensorLinearity(const std::vector<double>& analog2trq_low) 
     if (m_jnt_num != analog2trq_low.size()) {
         return ERROR_SIZE_WRONG;
     }
-    m_fc_params_inner_ptr->m_hardware_params.SetParam("analog2trq_low", m_init_robot_ptr->GetMechanicalParams().analog2trq_low);
+    m_fc_params_inner_ptr->m_hardware_params.SetParam("analog2trq_low", analog2trq_low);
     m_servo_fc_convert_ptr->SetSensorLinearity(analog2trq_low);
     return SOLVE_NOERROR;
 }
@@ -315,8 +334,13 @@ int ForceControl::SetSensorBias(const std::vector<double>& analog_bias) {
     if (m_jnt_num != analog_bias.size()) {
         return ERROR_SIZE_WRONG;
     }
-    m_fc_params_inner_ptr->m_hardware_params.SetParam("analog_bias", m_init_robot_ptr->GetMechanicalParams().analog_bias);
+    m_fc_params_inner_ptr->m_hardware_params.SetParam("analog_bias", analog_bias);
     m_servo_fc_convert_ptr->SetSensorBias(analog_bias);
+    for (unsigned int i = 0; i < m_jnt_num; i++) {
+        m_dynamic_sensor_bias[i] = analog_bias[i] - m_dynamic_sensor_bias_baseline[i];
+    }
+
+    m_servo_fc_convert_ptr->SetDynamicSensorBias(m_dynamic_sensor_bias);
     return SOLVE_NOERROR;
 }
 
@@ -324,10 +348,30 @@ int ForceControl::SetEncoderOffset(const std::vector<int32_t>& encoder_offset) {
     if (m_jnt_num != encoder_offset.size()) {
         return ERROR_SIZE_WRONG;
     }
-    std::vector<double> encoder_offset_temp(encoder_offset.begin(), encoder_offset.end());
+    std::vector<double> encoder_offset_temp(m_jnt_num, 2500.0);
+    for (int32_t value : encoder_offset) {
+        encoder_offset_temp.push_back(static_cast<double>(value));
+    }
     m_fc_params_inner_ptr->m_hardware_params.SetParam("encoder_offset", encoder_offset_temp);
     m_servo_fc_convert_ptr->SetEncoderBias(encoder_offset);
     return SOLVE_NOERROR;
+}
+
+int ForceControl::SetSensorFIxParams(const std::vector<double>& dynamic_sensor_bias_baseline,
+                                     const std::vector<double>& pos_sensor_fix_params,
+                                     const std::vector<double>& neg_sensor_fix_params) {
+    if (m_jnt_num != dynamic_sensor_bias_baseline.size() || pos_sensor_fix_params.size() != m_jnt_num * 9 ||
+        neg_sensor_fix_params.size() != m_jnt_num * 9) {
+        return ERROR_SIZE_WRONG;
+    }
+
+    //设置参数
+    m_fc_params_inner_ptr->m_hardware_params.SetParam("dynamic_sensor_bias_baseline", dynamic_sensor_bias_baseline);
+    m_fc_params_inner_ptr->m_hardware_params.SetParam("pos_sensor_fix_params", pos_sensor_fix_params);
+    m_fc_params_inner_ptr->m_hardware_params.SetParam("neg_sensor_fix_params", neg_sensor_fix_params);
+    std::copy(dynamic_sensor_bias_baseline.cbegin(), dynamic_sensor_bias_baseline.cend(), m_dynamic_sensor_bias_baseline.begin());
+    return (m_servo_fc_convert_ptr->SetFixParams(pos_sensor_fix_params, neg_sensor_fix_params,
+                                                 m_init_robot_ptr->GetControlParams().m_gain_params.is_support_sensor_fix));
 }
 
 int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const std::vector<double>& joint_range_max) {

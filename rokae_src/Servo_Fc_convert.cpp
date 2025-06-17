@@ -33,6 +33,15 @@ Axis_Convert::Axis_Convert(unsigned int axis_num, const Model::MechanicalParams&
     m_jnt_to_encoder_scale.resize(m_axis_num);
     m_encoder_to_jnt_scale.resize(m_axis_num);
 
+    //传感器动态补偿参数初始化
+    m_sensor_bias_dynamic.resize(m_axis_num, 2500);
+    m_pos_fix_params.resize(m_axis_num);
+    m_neg_fix_params.resize(m_axis_num);
+    m_gain_bias.resize(m_axis_num, 0);
+    m_threshold_of_vel_noise = 0.003;                    //单位：rad/s
+    m_current_vel_is_positive.resize(m_axis_num, true);  ///< 当前速度是否为正
+    m_last_vel_is_positive.resize(m_axis_num, true);     ///< 上一次速度是否为正
+    m_analog_error.resize(m_axis_num, 0);                ///< 补偿的电压误差
     //赋初值
     std::copy(mec_params_input.encoder_offset.cbegin(), mec_params_input.encoder_offset.cend(),
               m_motorside_encoder_offset.begin());
@@ -47,7 +56,8 @@ Axis_Convert::Axis_Convert(unsigned int axis_num, const Model::MechanicalParams&
     std::copy(mec_params_input.analog2trq_high.cbegin(), mec_params_input.analog2trq_high.cend(), m_analog2trq_high.begin());
     std::copy(mec_params_input.analog2trq_low.cbegin(), mec_params_input.analog2trq_low.cend(), m_analog2trq_low.begin());
     std::copy(mec_params_input.sensor_amplify.cbegin(), mec_params_input.sensor_amplify.cend(), m_sensor_amplify.begin());
-
+    std::fill(m_pos_fix_params.begin(), m_pos_fix_params.end(), std::array<double, 9>());
+    std::fill(m_neg_fix_params.begin(), m_neg_fix_params.end(), std::array<double, 9>());
     // std::transform(m_motorside_reduce_retio_high.begin(), m_motorside_reduce_retio_high.end(),
     //                m_motorside_reduce_retio_low.begin(), m_motorside_reduce_ratio.begin(),
     //                [](double high, double low) { return high / low; });
@@ -68,6 +78,85 @@ int Axis_Convert::SetEncoderBias(const std::vector<int>& encoder_bias_set) {
         m_motorside_encoder_offset[i] = encoder_bias_set[i]; 
     }
     return SOLVE_NOERROR;
+}
+
+int Axis_Convert::SetDynamicSensorBias(const std::vector<double>& dynamic_bias) {
+    if (dynamic_bias.size() != m_axis_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    for (unsigned int i = 0; i < m_axis_num; i++) {
+        m_sensor_bias_dynamic[i] = dynamic_bias[i];
+    }
+    return SOLVE_NOERROR;
+}
+
+int Axis_Convert::SetFixParams(const std::vector<double>& positive_fix_params, const std::vector<double>& negative_fix_params,
+                               const std::vector<bool>& is_support_sensor_fix) {
+    if (positive_fix_params.size() != m_axis_num * 9 || negative_fix_params.size() != m_axis_num * 9 ||
+        is_support_sensor_fix.size() != m_axis_num) {
+        return ERROR_SIZE_WRONG;
+    }
+
+    for (unsigned int i = 0; i < m_axis_num; i++) {
+        for (unsigned int j = 0; j < 9; j++) {
+            m_pos_fix_params[i][j] = positive_fix_params[i * 9 + j];
+            m_neg_fix_params[i][j] = negative_fix_params[i * 9 + j];
+        }
+        if (is_support_sensor_fix[i]) {
+            m_gain_bias[i] = 1;
+        } else {
+            m_gain_bias[i] = 0;
+        }
+    }
+    return SOLVE_NOERROR;
+}
+
+void Axis_Convert::CalFixAnalog(const unsigned int jnt_num, const bool& is_positive, const double& jnt_pos,
+                                double& error_analog) {
+    if (is_positive) {
+        error_analog =
+            m_pos_fix_params[jnt_num][0] * std::sin(m_pos_fix_params[jnt_num][1] * jnt_pos + m_pos_fix_params[jnt_num][2]) +
+            m_pos_fix_params[jnt_num][3] * std::sin(m_pos_fix_params[jnt_num][4] * jnt_pos + m_pos_fix_params[jnt_num][5]) +
+            m_pos_fix_params[jnt_num][6] * std::sin(m_pos_fix_params[jnt_num][7] * jnt_pos + m_pos_fix_params[jnt_num][8]);
+    } else {
+        error_analog =
+            m_neg_fix_params[jnt_num][0] * std::sin(m_neg_fix_params[jnt_num][1] * jnt_pos + m_neg_fix_params[jnt_num][2]) +
+            m_neg_fix_params[jnt_num][3] * std::sin(m_neg_fix_params[jnt_num][4] * jnt_pos + m_neg_fix_params[jnt_num][5]) +
+            m_neg_fix_params[jnt_num][6] * std::sin(m_neg_fix_params[jnt_num][7] * jnt_pos + m_neg_fix_params[jnt_num][8]);
+    }
+}
+
+void Axis_Convert::CalFixTorque(const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
+                                const std::vector<double>& jnt_pos, const std::vector<double>& jnt_vel,
+                                std::vector<int>& analog_fix, std::vector<int>& analog_bias_fix,
+                                std::vector<double>& torque_fix) {
+    if (analog_ch1.size() != m_axis_num || analog_ch2.size() != m_axis_num || jnt_pos.size() != m_axis_num ||
+        jnt_vel.size() != m_axis_num || torque_fix.size() != m_axis_num) {
+        return;
+    }
+
+    for (unsigned int i = 0; i < m_axis_num; i++) {
+        // 1.计算速度补偿方向(暂时只考虑正方向)
+        if (jnt_vel[i] >= m_threshold_of_vel_noise) {
+            m_current_vel_is_positive[i] = true;
+        } else if (jnt_vel[i] <= -m_threshold_of_vel_noise) {
+            m_current_vel_is_positive[i] = true;  // TODO:先暂时都给true，后续再分类讨论
+        } else {
+            m_current_vel_is_positive[i] = m_last_vel_is_positive[i];
+        }
+
+        // 2.计算拟合后的电压值和力矩
+        CalFixAnalog(i, m_current_vel_is_positive[i], jnt_pos[i], m_analog_error[i]);
+        analog_fix[i] = static_cast<int>((analog_ch1[i] + analog_ch2[i]) / 2 -
+                                         (m_analog_error[i] - m_gain_bias[i] * m_sensor_bias_dynamic[i]));
+        torque_fix[i] = (static_cast<double>(analog_fix[i]) - m_analog_bias[i]) / 1000.0 * m_analog2trq[i] / m_sensor_amplify[i];
+
+        // 3.计算折算出来的传感器零点电压(只用于下发伺服)
+        analog_bias_fix[i] = static_cast<int>(m_analog_bias[i] + (m_analog_error[i] - m_gain_bias[i] * m_sensor_bias_dynamic[i]));
+
+        // 4.更新上一次速度方向
+        m_current_vel_is_positive[i] = m_last_vel_is_positive[i];
+    }
 }
 
 /****************************************电机相关************************************ */
@@ -245,6 +334,8 @@ void Servo_Fc_Convert::FcData2ServoData(const Control::FcStatusInner& fc_status_
         fc_inner_servo_data.edb_cof[i] = (int16_t)(2.25 / fabs(m_analog2trq_low[i]) * 100.0);
         fc_inner_servo_data.edb_cof[i] = (fc_inner_servo_data.edb_cof[i] < 90) ? 90 : fc_inner_servo_data.edb_cof[i];
         fc_inner_servo_data.edb_o[i] = (int16_t)((m_analog_bias[i] - 2500) / 1000.0 / 2.25 * m_analog2trq_high[i] * 100);
+        fc_inner_servo_data.edb_o_fix[i] =
+            (int16_t)((fc_status_inner.analog_bias_fix[i] - 2500) / 1000.0 / 2.25 * m_analog2trq_high[i] * 100);
         fc_inner_servo_data.fric_cof[i] =
             (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_friction")[i] * 100);
         fc_inner_servo_data.jnt_inertia[i] = (int16_t)(fc_status_inner.jnt_inertia(i) * 100);

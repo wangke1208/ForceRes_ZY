@@ -227,6 +227,29 @@ int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<in
     return SOLVE_NOERROR;
 }
 
+int SetSensorFixParams(const std::vector<int8_t>& servo_mode, const std::vector<double>& dynamic_sensor_bias_baseline,
+                       const std::vector<double>& pos_sensor_fix_params, const std::vector<double>& neg_sensor_fix_params) {
+    //判断伺服模式是否处于位置模式
+    if (IsInPositionMode(servo_mode) != true) {
+        return ERROR_SERVO_MODE;
+    }
+    //判断是否进行了DragConfig
+    if (forcecontrol_ptr->GetDragStatus() == true) {
+        return ERROR_DRAG_STATUS;
+    }
+
+    //设置动态补偿参数
+    auto is_support_dynamic_fix = initrobot_ptr->GetControlParams().m_gain_params.is_support_sensor_fix;
+    auto res1 = forcecontrol_ptr->SetSensorFIxParams(dynamic_sensor_bias_baseline, pos_sensor_fix_params, neg_sensor_fix_params);
+    auto res2 = axisconvert_ptr->SetFixParams(pos_sensor_fix_params, neg_sensor_fix_params, is_support_dynamic_fix);
+    if (res1 != SOLVE_NOERROR) {
+        return res1;
+    }
+    if (res2 != SOLVE_NOERROR) {
+        return res2;
+    }
+    return SOLVE_NOERROR;
+}
 int SetSoftLimit(const std::vector<int8_t>& servo_mode, const std::vector<double>& joint_range_min,
                  const std::vector<double>& joint_range_max) {
     //判断伺服模式是否处于位置模式

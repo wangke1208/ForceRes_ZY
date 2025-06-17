@@ -18,7 +18,19 @@ namespace RokaeApi {
 namespace Model {
 
 ControlConfigParams::ControlConfigParams(unsigned int jnt_num)
-    : CTRL_BANDWIDTH_SERVO_EXEC(jnt_num, 0.0), CTRL_ZETA_SERVO_EXEC(jnt_num, 0.0), FRICTION_COF_DRAG(jnt_num, 0.0) {}
+    : CTRL_BANDWIDTH_SERVO_EXEC(jnt_num, 0.0),
+      CTRL_ZETA_SERVO_EXEC(jnt_num, 0.0),
+      FRICTION_COF_DRAG(jnt_num, 0.0),
+      ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING(DEFAULT_CART_GAIN_SIZE, 0.0),
+      ROTATION_DAMPING_OF_TRANSLATION_DRAGGING(DEFAULT_CART_GAIN_SIZE, 0.0),
+      TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING(DEFAULT_CART_GAIN_SIZE, 0.0),
+      TRANSLATION_DAMPING_OF_ROTATION_DRAGGING(DEFAULT_CART_GAIN_SIZE, 0.0),
+      JOINT_IMPEDANCE_CTRL_DAMP_ZETA(jnt_num, 0.0),
+      CART_IMPEDANCE_CTRL_DAMP_ZETA(DEFAULT_CART_PARAMS_SIZE, 0.0),
+      SENSOR_BIAS_DYNAMIC(jnt_num, 2500),
+      POS_FIX_PARMAS(DEFAULT_SENSOR_FIX_SIZE, 0.0),
+      NEG_FIX_PARMAS(DEFAULT_SENSOR_FIX_SIZE, 0.0),
+      IS_SUPPORT_SENSOR_FIX(jnt_num, false) {}
 
 void ControlConfigParams::Resize(unsigned int jnt_num) {
     CTRL_BANDWIDTH_SERVO_EXEC.resize(jnt_num, 0.0);
@@ -30,6 +42,10 @@ void ControlConfigParams::Resize(unsigned int jnt_num) {
     TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.resize(DEFAULT_CART_GAIN_SIZE, 0.0);
     JOINT_IMPEDANCE_CTRL_DAMP_ZETA.resize(jnt_num, 0.0);
     CART_IMPEDANCE_CTRL_DAMP_ZETA.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
+    SENSOR_BIAS_DYNAMIC.resize(jnt_num, 2500);
+    POS_FIX_PARMAS.resize(DEFAULT_SENSOR_FIX_SIZE * jnt_num, 0.0);
+    NEG_FIX_PARMAS.resize(DEFAULT_SENSOR_FIX_SIZE * jnt_num, 0.0);
+    IS_SUPPORT_SENSOR_FIX.resize(jnt_num, false);
 }
 
 MechanicalConfigParams::MechanicalConfigParams(unsigned int jnt_num)
@@ -158,6 +174,15 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
         control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {0.8, 0.8, 0.7, 0.5, 0.3, 0.3, 0.3};
         control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.5, 0.5, 0.5, 0.3, 0.3, 0.3};
+        //传感器动态拟合参数
+        control_config_params.SENSOR_BIAS_DYNAMIC = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
+        control_config_params.POS_FIX_PARMAS = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        control_config_params.NEG_FIX_PARMAS = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        control_config_params.IS_SUPPORT_SENSOR_FIX = {true, true, true, true, false, false, false};
 
         // mechanical_config_params
         mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0, 0};
@@ -226,6 +251,16 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {0.8, 0.8, 0.7, 0.5, 0.3, 0.3, 0.3};
         control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.5, 0.5, 0.5, 0.3, 0.3, 0.3};
 
+        //传感器动态拟合参数
+        control_config_params.SENSOR_BIAS_DYNAMIC = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
+        control_config_params.POS_FIX_PARMAS = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        control_config_params.NEG_FIX_PARMAS = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        control_config_params.IS_SUPPORT_SENSOR_FIX = {true, true, true, true, false, false, false};
+
         // mechanical_config_params
         mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0, 0};
         mechanical_config_params.ENCODER_RESOLUTION = {262144, 262144, 262144, 262144, 262144, 262144, 262144};
@@ -287,6 +322,14 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
         control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {1.0, 0.7, 0.5, 0.5, 0.5, 0.3};
         control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {1.1, 1.1, 1.1, 0.4, 0.4, 0.4};
+
+        //传感器动态拟合参数
+        control_config_params.SENSOR_BIAS_DYNAMIC = {2500, 2500, 2500, 2500, 2500, 2500};
+        control_config_params.POS_FIX_PARMAS = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        control_config_params.NEG_FIX_PARMAS = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        control_config_params.IS_SUPPORT_SENSOR_FIX = {false, false, false, false, false, false, false};
 
         // mechanical_config_params
         mechanical_config_params.ENCODER_OFFESET = {0, 0, 0, 0, 0, 0};

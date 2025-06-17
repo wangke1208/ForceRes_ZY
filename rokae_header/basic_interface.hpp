@@ -115,6 +115,16 @@ int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<doubl
 int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<int32_t>& encoder_offset);
 
 /**
+ * @brief 设置传感器动态补偿参数
+ * @param[in] servo_mode  伺服模式
+ * @param[in] dynamic_sensor_bias_baseline 传感器基准零点
+ * @param[in] pos_sensor_fix_params 正向拟合参数
+ * @param[in] neg_sensor_fix_params 负向拟合参数
+ * @return
+ */
+int SetSensorFixParams(const std::vector<int8_t>& servo_mode, const std::vector<double>& dynamic_sensor_bias_baseline,
+                       const std::vector<double>& pos_sensor_fix_params, const std::vector<double>& neg_sensor_fix_params);
+/**
  * @brief 设置关节软限位
  * @param[in] servo_mode 伺服模式数据
  * @param[in] joint_range_min 关节最小范围

@@ -101,6 +101,13 @@ int RokaeForce_SetEncoderOffset(const std::vector<int8_t>& PDO_0x6061, const std
     return BasicInterface::SetEncoderOffset(PDO_0x6061, encoder_offset);
 }
 
+int RokaeForce_SetSensorFixParams(const std::vector<int8_t>& servo_mode, const std::vector<double>& dynamic_sensor_bias_baseline,
+                                  const std::vector<double>& pos_sensor_fix_params,
+                                  const std::vector<double>& neg_sensor_fix_params) {
+    return BasicInterface::SetSensorFixParams(servo_mode, dynamic_sensor_bias_baseline, pos_sensor_fix_params,
+                                              neg_sensor_fix_params);
+}
+
 int RokaeForce_SetSoftLimit(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& joint_range_min,
                             const std::vector<double>& joint_range_max) {
     return BasicInterface::SetSoftLimit(PDO_0x6061, joint_range_min, joint_range_max);

@@ -152,6 +152,18 @@ class ForceControl {
     int SetEncoderOffset(const std::vector<int32_t>& encoder_offset);
 
     /**
+     * @brief 设置传感器动态补偿参数
+     *
+     * 此函数用于设置传感器动态补偿参数
+     *
+     * @param[in] dynamic_sensor_bias 输入：基准传感器零点
+     * @param[in] pos_sensor_fix_params 输入：正向拟合参数
+     * @param[in] neg_sensor_fix_params 输入：负向拟合参数
+     * @return 输出：成功返回 SOLVE_NOERROR，失败返回相应的错误码
+     */
+    int SetSensorFIxParams(const std::vector<double>& dynamic_sensor_bias, const std::vector<double>& pos_sensor_fix_params,
+                           const std::vector<double>& neg_sensor_fix_params);
+    /**
      * @brief 设置软限位
      *
      * 此函数用于设置关节的软限位参数。(软限位要小于硬限位，同时负限位小于0，正限位大于0)
@@ -368,6 +380,12 @@ class ForceControl {
     std::vector<double> m_cart_imp_damp_zeta_temp;
     std::vector<double> m_jnt_imp_damp_temp;
     std::vector<double> m_cart_imp_damp_temp;
+
+    //传感器动态补偿
+    std::vector<double> m_jnt_pos;
+    std::vector<double> m_jnt_vel;
+    std::vector<double> m_dynamic_sensor_bias;
+    std::vector<double> m_dynamic_sensor_bias_baseline;  //基准电压
     // 内部状态标志位
     bool m_enable_drag;
     bool m_is_first_drag;
