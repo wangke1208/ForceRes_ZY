@@ -163,6 +163,17 @@ class ForceControl {
      */
     int SetSensorFIxParams(const std::vector<double>& dynamic_sensor_bias, const std::vector<double>& pos_sensor_fix_params,
                            const std::vector<double>& neg_sensor_fix_params);
+
+    /**
+     * @brief 设置动态补偿开启状态
+     *
+     * 此函数用于设置动态补偿开启状态
+     *
+     * @param[in] is_support_sensor_fix 是否允许开启动态补偿
+     * @return 输出：成功返回 SOLVE_NOERROR，失败返回相应的错误码
+     */
+    int SetSensorDynamicFixSwitch(const std::vector<bool>& is_support_sensor_fix);
+
     /**
      * @brief 设置软限位
      *
@@ -386,6 +397,7 @@ class ForceControl {
     std::vector<double> m_jnt_vel;
     std::vector<double> m_dynamic_sensor_bias;
     std::vector<double> m_dynamic_sensor_bias_baseline;  //基准电压
+    std::vector<bool> m_is_support_sensor_fix;
     // 内部状态标志位
     bool m_enable_drag;
     bool m_is_first_drag;

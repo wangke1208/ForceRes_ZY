@@ -108,6 +108,10 @@ int RokaeForce_SetSensorFixParams(const std::vector<int8_t>& servo_mode, const s
                                               neg_sensor_fix_params);
 }
 
+int RokaeForce_SetSensorDynamicFixSwitch(const std::vector<int8_t>& servo_mode, const std::vector<bool>& is_support_sensor_fix) {
+    return BasicInterface::SetSensorDynamicFixSwitch(servo_mode, is_support_sensor_fix);
+}
+
 int RokaeForce_SetSoftLimit(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& joint_range_min,
                             const std::vector<double>& joint_range_max) {
     return BasicInterface::SetSoftLimit(PDO_0x6061, joint_range_min, joint_range_max);

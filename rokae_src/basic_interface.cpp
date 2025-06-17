@@ -250,6 +250,20 @@ int SetSensorFixParams(const std::vector<int8_t>& servo_mode, const std::vector<
     }
     return SOLVE_NOERROR;
 }
+
+int SetSensorDynamicFixSwitch(const std::vector<int8_t>& servo_mode, const std::vector<bool>& is_support_sensor_fix) {
+    //判断伺服模式是否处于位置模式
+    if (IsInPositionMode(servo_mode) != true) {
+        return ERROR_SERVO_MODE;
+    }
+    //判断是否进行了DragConfig
+    if (forcecontrol_ptr->GetDragStatus() == true) {
+        return ERROR_DRAG_STATUS;
+    }
+    auto res1 = forcecontrol_ptr->SetSensorDynamicFixSwitch(is_support_sensor_fix);
+    return SOLVE_NOERROR;
+}
+
 int SetSoftLimit(const std::vector<int8_t>& servo_mode, const std::vector<double>& joint_range_min,
                  const std::vector<double>& joint_range_max) {
     //判断伺服模式是否处于位置模式

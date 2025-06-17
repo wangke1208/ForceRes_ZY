@@ -63,6 +63,10 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_jnt_vel.resize(m_jnt_num);
     m_dynamic_sensor_bias.resize(m_jnt_num);
     m_dynamic_sensor_bias_baseline.resize(m_jnt_num);
+    m_is_support_sensor_fix.resize(m_jnt_num, false);
+
+    //赋值
+    m_is_support_sensor_fix = m_init_robot_ptr->GetControlParams().m_gain_params.is_support_sensor_fix;
 }
 
 ForceControl::~ForceControl() {
@@ -372,6 +376,13 @@ int ForceControl::SetSensorFIxParams(const std::vector<double>& dynamic_sensor_b
     std::copy(dynamic_sensor_bias_baseline.cbegin(), dynamic_sensor_bias_baseline.cend(), m_dynamic_sensor_bias_baseline.begin());
     return (m_servo_fc_convert_ptr->SetFixParams(pos_sensor_fix_params, neg_sensor_fix_params,
                                                  m_init_robot_ptr->GetControlParams().m_gain_params.is_support_sensor_fix));
+}
+
+int ForceControl::SetSensorDynamicFixSwitch(const std::vector<bool>& is_support_sensor_fix) {
+    if (is_support_sensor_fix.size() != m_jnt_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    std::copy(is_support_sensor_fix.cbegin(), is_support_sensor_fix.cend(), m_is_support_sensor_fix.begin());
 }
 
 int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const std::vector<double>& joint_range_max) {

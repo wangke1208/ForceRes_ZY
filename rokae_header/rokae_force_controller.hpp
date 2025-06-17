@@ -148,6 +148,14 @@ int RokaeForce_SetSensorFixParams(const std::vector<int8_t>& servo_mode, const s
                                   const std::vector<double>& neg_sensor_fix_params);
 
 /**
+ * @brief 设置传感器动态补偿开关
+ * @param[in] servo_mode 伺服模式
+ * @param[in] is_support_sensor_fix 是否允许开启传感器动态补偿
+ * @return
+ */
+int RokaeForce_SetSensorDynamicFixSwitch(const std::vector<int8_t>& servo_mode, const std::vector<bool>& is_support_sensor_fix);
+
+/**
  * @brief 设置关节软限位
  * @param[in] PDO_0x6061
  * @param[in] joint_range_min 关节最小范围
