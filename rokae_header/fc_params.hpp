@@ -115,8 +115,8 @@ struct HardwareParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(joint_angle_limit_min, -180.0, jnt_num);
         //动态补偿传感器部分字段
         ADD_PARAM_VECTOR(dynamic_sensor_bias_baseline, 2500, jnt_num);
-        ADD_PARAM_VECTOR(pos_sensor_fix_params, 0.0, jnt_num * DEFAULT_SENSOR_FIX_SIZE);
-        ADD_PARAM_VECTOR(neg_sensor_fix_params, 0.0, jnt_num * DEFAULT_SENSOR_FIX_SIZE);
+        ADD_PARAM_VECTOR(pos_sensor_fix_params, 0.0, jnt_num * 9);
+        ADD_PARAM_VECTOR(neg_sensor_fix_params, 0.0, jnt_num * 9);
     }
     void ResetParamsToDefault() override{};
 };
