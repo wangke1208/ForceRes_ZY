@@ -40,6 +40,8 @@ struct ControlConfigParams {
     std::vector<double> ROTATION_DAMPING_OF_TRANSLATION_DRAGGING;
     std::vector<double> TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING;
     std::vector<double> TRANSLATION_DAMPING_OF_ROTATION_DRAGGING;
+    std::vector<double> CTRL_BANDWIDTH_SERVO_EXEC_IMPE;  //阻抗带宽
+    std::vector<double> FRICTION_COF_IMPED;              //阻抗摩擦力补偿
     std::vector<double> JOINT_IMPEDANCE_CTRL_DAMP_ZETA;
     std::vector<double> CART_IMPEDANCE_CTRL_DAMP_ZETA;
     std::vector<double> SENSOR_BIAS_DYNAMIC;

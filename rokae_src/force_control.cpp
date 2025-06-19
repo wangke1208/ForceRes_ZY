@@ -28,6 +28,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
       m_drag_type(DragType::DRAG_JOINT),
       m_enable_drag(false),
       m_is_first_drag(true),
+      m_is_impedence_type(false),
       m_gravity_vector(init_robot_ptr->GetGravity()) {
     // 初始化求解器和模块接口
     m_fc_params_inner_ptr = new FcParamsInner(m_jnt_num);
@@ -156,6 +157,9 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
         return ERROR_DRAGTYPE;
     }
     m_drag_type = drag_type;
+    if (m_drag_type == DragType::IMPEDANCE_CART || m_drag_type == DragType::IMPEDANCE_JOINT) {
+        m_is_impedence_type = true;
+    }
     SetImpedenceGain(m_drag_type);  // 内部参数固定配置
 
     // 6.根据负载信息调节增益
@@ -304,7 +308,8 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
     }
 
     // 7. 将内部数据转换为伺服下发数据
-    m_servo_fc_convert_ptr->FcData2ServoData(m_fc_status_inner, m_fc_params_inner_ptr, m_fc_inner_servo_data);
+    m_servo_fc_convert_ptr->FcData2ServoData(m_is_impedence_type, m_fc_status_inner, m_fc_params_inner_ptr,
+                                             m_fc_inner_servo_data);
     std::copy(m_fc_inner_servo_data.trq_cmd.cbegin(), m_fc_inner_servo_data.trq_cmd.cend(), fc_trq_cmd_to_servo.begin());
     std::copy(m_fc_inner_servo_data.trq_feedforward.cbegin(), m_fc_inner_servo_data.trq_feedforward.cend(),
               fc_trq_feedforward_to_servo.begin());
@@ -458,6 +463,22 @@ int ForceControl::SetImpedenceGain(const DragType& drag_type) {
             m_init_robot_ptr->GetControlParams().m_gain_params.trans_drag_rot_stiff,
             m_init_robot_ptr->GetControlParams().m_gain_params.trans_drag_rot_damp);
         break;
+    case DragType::IMPEDANCE_CART:
+        m_fc_params_inner_ptr->m_function_params.SetCartImpedenceParams(
+            m_init_robot_ptr->GetControlParams().m_gain_params.cart_imp_damp_zeta);
+        m_fc_params_inner_ptr->m_function_params.SetParam(
+            "impedence_joint_servo_kp", m_init_robot_ptr->GetControlParams().m_gain_params.impedence_joint_servo_kp);
+        m_fc_params_inner_ptr->m_function_params.SetParam(
+            "impedence_joint_servo_friction", m_init_robot_ptr->GetControlParams().m_gain_params.impedence_friction_cof_servo);
+        break;
+    case DragType::IMPEDANCE_JOINT:
+        m_fc_params_inner_ptr->m_function_params.SetJointImpedenceParams(
+            m_init_robot_ptr->GetControlParams().m_gain_params.jnt_imp_damp_zeta);
+        m_fc_params_inner_ptr->m_function_params.SetParam(
+            "impedence_joint_servo_kp", m_init_robot_ptr->GetControlParams().m_gain_params.impedence_joint_servo_kp);
+        m_fc_params_inner_ptr->m_function_params.SetParam(
+            "impedence_joint_servo_friction", m_init_robot_ptr->GetControlParams().m_gain_params.impedence_friction_cof_servo);
+        break;
     default:
         break;
     }
@@ -608,7 +629,7 @@ int ForceControl::ResetFcStatus() {
     // 1.重置内部状态参数
     m_enable_drag = false;
     m_is_first_drag = true;
-
+    m_is_impedence_type = false;
     // 2.重置拖动类型
     m_drag_type = DragType::DRAG_JOINT;
 

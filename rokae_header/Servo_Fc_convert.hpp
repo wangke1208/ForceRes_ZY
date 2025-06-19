@@ -257,12 +257,13 @@ class Servo_Fc_Convert : public Axis_Convert {
 
     /**
      * @brief 将FcInner数据转换为伺服数据
+     * @param [in] is_impedence_type 当前是否为阻抗模式
      * @param [in] fc_status_inner 输入的FcStatusInner数据
      * @param [in] fc_params_inner 可选的FcParamsInner数据
      * @param [out] fc_inner_to_servo 输出的伺服数据
      */
-    void FcData2ServoData(const Control::FcStatusInner& fc_status_inner, const Control::FcParamsInner* fc_params_inner,
-                          Control::FcInner_To_Servo& fc_inner_to_servo);
+    void FcData2ServoData(const bool& is_impedence_type, const Control::FcStatusInner& fc_status_inner,
+                          const Control::FcParamsInner* fc_params_inner, Control::FcInner_To_Servo& fc_inner_to_servo);
 
    private:
     std::vector<int16_t> m_zero_feedforward_trq;  ///< 前馈力矩(力矩模式前馈目前给0)

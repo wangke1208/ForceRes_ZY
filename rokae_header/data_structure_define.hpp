@@ -446,13 +446,15 @@ struct GainParams {
     std::vector<double> trans_drag_rot_damp;
     std::vector<double> rot_drag_trans_stiff;
     std::vector<double> rot_drag_trans_damp;
+    std::vector<double> impedence_friction_cof_servo;
+    std::vector<double> impedence_joint_servo_kp;
     std::vector<double> jnt_imp_damp_zeta;
     std::vector<double> cart_imp_damp_zeta;
     std::vector<double> sensor_bias_dynamic;
     std::vector<double> pos_fix_params;
     std::vector<double> neg_fix_params;
     std::vector<bool> is_support_sensor_fix;
-    GainParams(unsigned int jnt_num = 6)
+    GainParams(unsigned int jnt_num = 7)
         : m_jnt_num(jnt_num),
           joint_gain_kp(jnt_num, 1.0),
           joint_damp_zeta(jnt_num, 0.707),
@@ -461,6 +463,8 @@ struct GainParams {
           trans_drag_rot_damp(3, 5.0),
           rot_drag_trans_stiff(3, 2000),
           rot_drag_trans_damp(3, 10.0),
+          impedence_friction_cof_servo(jnt_num, 0.4),
+          impedence_joint_servo_kp(jnt_num, 1.0),
           jnt_imp_damp_zeta(jnt_num, 0.5),
           cart_imp_damp_zeta(6, 0.5),
           sensor_bias_dynamic(jnt_num, 2500),

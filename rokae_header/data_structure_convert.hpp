@@ -203,6 +203,11 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
     std::copy(in.control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.begin(),
               in.control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.end(),
               control_out.m_gain_params.trans_drag_rot_damp.begin());
+    std::copy(in.control_config_params.FRICTION_COF_IMPED.begin(), in.control_config_params.FRICTION_COF_IMPED.end(),
+              control_out.m_gain_params.impedence_friction_cof_servo.begin());
+    std::copy(in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC_IMPE.begin(),
+              in.control_config_params.CTRL_BANDWIDTH_SERVO_EXEC_IMPE.end(),
+              control_out.m_gain_params.impedence_joint_servo_kp.begin());
     std::copy(in.control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA.begin(),
               in.control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA.end(), control_out.m_gain_params.jnt_imp_damp_zeta.begin());
     std::copy(in.control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA.begin(),

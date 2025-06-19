@@ -320,7 +320,7 @@ int Servo_Fc_Convert::ServoData2FcInner(const std::vector<int8_t>& pdo_mode_oper
     return SOLVE_NOERROR;
 }
 
-void Servo_Fc_Convert::FcData2ServoData(const Control::FcStatusInner& fc_status_inner,
+void Servo_Fc_Convert::FcData2ServoData(const bool& is_impedence_type, const Control::FcStatusInner& fc_status_inner,
                                         const Control::FcParamsInner* fc_params_inner,
                                         Control::FcInner_To_Servo& fc_inner_servo_data) {
     //整合到m_fc_to_servo
@@ -330,16 +330,24 @@ void Servo_Fc_Convert::FcData2ServoData(const Control::FcStatusInner& fc_status_
         //前馈力矩为0
         fc_inner_servo_data.trq_feedforward[i] =
             (int16_t)(m_zero_feedforward_trq[i] * 1000 / (m_rated_torque[i] * m_motorside_reduce_ratio[i]));
-        fc_inner_servo_data.k_p[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_kp")[i] * 100);
         fc_inner_servo_data.k_d[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_dmap_kv")[i] * 100);
         fc_inner_servo_data.edb_cof[i] = (int16_t)(2.25 / fabs(m_analog2trq_low[i]) * 100.0);
         fc_inner_servo_data.edb_cof[i] = (fc_inner_servo_data.edb_cof[i] < 90) ? 90 : fc_inner_servo_data.edb_cof[i];
         fc_inner_servo_data.edb_o[i] = (int16_t)((m_analog_bias[i] - 2500) / 1000.0 / 2.25 * m_analog2trq_high[i] * 100);
         fc_inner_servo_data.edb_o_fix[i] =
             (int16_t)((fc_status_inner.analog_bias_fix[i] - 2500) / 1000.0 / 2.25 * m_analog2trq_high[i] * 100);
-        fc_inner_servo_data.fric_cof[i] =
-            (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_friction")[i] * 100);
         fc_inner_servo_data.jnt_inertia[i] = (int16_t)(fc_status_inner.jnt_inertia(i) * 100);
+        //增益和摩擦力 拖动与阻抗不一样
+        if (is_impedence_type == true) {
+            fc_inner_servo_data.k_p[i] =
+                (int16_t)(fc_params_inner->m_function_params.m_params.at("impedence_joint_servo_kp")[i] * 100);
+            fc_inner_servo_data.fric_cof[i] =
+                (int16_t)(fc_params_inner->m_function_params.m_params.at("impedence_joint_servo_friction")[i] * 100);
+        } else {
+            fc_inner_servo_data.fric_cof[i] =
+                (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_friction")[i] * 100);
+            fc_inner_servo_data.k_p[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_kp")[i] * 100);
+        }
     }
     return;
 }

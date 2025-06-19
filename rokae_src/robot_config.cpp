@@ -25,6 +25,8 @@ ControlConfigParams::ControlConfigParams(unsigned int jnt_num)
       ROTATION_DAMPING_OF_TRANSLATION_DRAGGING(DEFAULT_CART_GAIN_SIZE, 0.0),
       TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING(DEFAULT_CART_GAIN_SIZE, 0.0),
       TRANSLATION_DAMPING_OF_ROTATION_DRAGGING(DEFAULT_CART_GAIN_SIZE, 0.0),
+      FRICTION_COF_IMPED(jnt_num, 0.0),
+      CTRL_BANDWIDTH_SERVO_EXEC_IMPE(jnt_num, 0.0),
       JOINT_IMPEDANCE_CTRL_DAMP_ZETA(jnt_num, 0.0),
       CART_IMPEDANCE_CTRL_DAMP_ZETA(DEFAULT_CART_PARAMS_SIZE, 0.0),
       SENSOR_BIAS_DYNAMIC(jnt_num, 2500),
@@ -40,6 +42,8 @@ void ControlConfigParams::Resize(unsigned int jnt_num) {
     ROTATION_DAMPING_OF_TRANSLATION_DRAGGING.resize(DEFAULT_CART_GAIN_SIZE, 0.0);
     TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING.resize(DEFAULT_CART_GAIN_SIZE, 0.0);
     TRANSLATION_DAMPING_OF_ROTATION_DRAGGING.resize(DEFAULT_CART_GAIN_SIZE, 0.0);
+    FRICTION_COF_IMPED.resize(jnt_num, 0.0);
+    CTRL_BANDWIDTH_SERVO_EXEC_IMPE.resize(jnt_num, 0.0);
     JOINT_IMPEDANCE_CTRL_DAMP_ZETA.resize(jnt_num, 0.0);
     CART_IMPEDANCE_CTRL_DAMP_ZETA.resize(DEFAULT_CART_PARAMS_SIZE, 0.0);
     SENSOR_BIAS_DYNAMIC.resize(jnt_num, 2500);
@@ -165,15 +169,19 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         model_config_params.JOINT_RANGE_MAX_NEW = {178, 120, 178, 80, 178, 110, 180};
 
         // control_config_params
-        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {30.0, 30.0, 30.0, 30.0, 40.0, 40.0, 40.0};
-        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.3, 0.3, 0.3, 0.5, 0.3, 0.3, 0.3};
-        control_config_params.FRICTION_COF_DRAG = {0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8};
+        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {25.0, 25.0, 30.0, 25.0, 40.0, 40.0, 40.0};
+        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3};
+        control_config_params.FRICTION_COF_DRAG = {0.7, 0.5, 0.7, 0.5, 0.7, 0.7, 0.7};
         control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
         control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
         control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
         control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
+        //阻抗部分
+        control_config_params.FRICTION_COF_IMPED = {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4};
+        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC_IMPE = {20.0, 20.0, 25.0, 25.0, 30.0, 30.0, 30.0};
         control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {0.8, 0.8, 0.7, 0.5, 0.3, 0.3, 0.3};
-        control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.5, 0.5, 0.5, 0.3, 0.3, 0.3};
+        control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.3, 0.3, 0.3, 0.7, 0.7, 0.7};
+
         //传感器动态拟合参数
         control_config_params.SENSOR_BIAS_DYNAMIC = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
         control_config_params.POS_FIX_PARMAS = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -241,15 +249,19 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         model_config_params.JOINT_RANGE_MAX_NEW = {178, 120, 178, 145, 178, 110, 180};
 
         // control_config_params
-        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {30.0, 30.0, 30.0, 30.0, 40.0, 40.0, 40.0};
-        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.3, 0.3, 0.3, 0.5, 0.3, 0.3, 0.3};
-        control_config_params.FRICTION_COF_DRAG = {0.8, 0.8, 0.8, 0.8, 0.8, 0.8, 0.8};
+        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC = {25.0, 25.0, 30.0, 25.0, 40.0, 40.0, 40.0};
+        control_config_params.CTRL_ZETA_SERVO_EXEC = {0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3};
+        control_config_params.FRICTION_COF_DRAG = {0.7, 0.5, 0.7, 0.5, 0.7, 0.7, 0.7};
         control_config_params.ROTATION_STIFFNESS_OF_TRANSLATION_DRAGGING = {300, 300, 300};
         control_config_params.ROTATION_DAMPING_OF_TRANSLATION_DRAGGING = {5.0, 5.0, 5.0};
         control_config_params.TRANSLATION_STIFFNESS_OF_ROTATION_DRAGGING = {2000, 2000, 2000};
         control_config_params.TRANSLATION_DAMPING_OF_ROTATION_DRAGGING = {10.0, 10.0, 10.0};
+
+        //阻抗部分
+        control_config_params.FRICTION_COF_IMPED = {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4};
+        control_config_params.CTRL_BANDWIDTH_SERVO_EXEC_IMPE = {20.0, 20.0, 25.0, 25.0, 30.0, 30.0, 30.0};
         control_config_params.JOINT_IMPEDANCE_CTRL_DAMP_ZETA = {0.8, 0.8, 0.7, 0.5, 0.3, 0.3, 0.3};
-        control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.5, 0.5, 0.5, 0.3, 0.3, 0.3};
+        control_config_params.CART_IMPEDANCE_CTRL_DAMP_ZETA = {0.3, 0.3, 0.3, 0.7, 0.7, 0.7};
 
         //传感器动态拟合参数
         control_config_params.SENSOR_BIAS_DYNAMIC = {2500, 2500, 2500, 2500, 2500, 2500, 2500};

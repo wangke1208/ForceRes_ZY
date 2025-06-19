@@ -157,8 +157,10 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(cart_damp, 10.0, 6);
         ADD_PARAM_VECTOR(null_stiff, 100.0, 1);
         ADD_PARAM_VECTOR(null_damp, 10.0, 1);
-        ADD_PARAM_VECTOR(joint_damp_zeta, 0.707, jnt_num);
-        ADD_PARAM_VECTOR(cart_damp_zeta, 0.707, 6);
+        ADD_PARAM_VECTOR(joint_damp_zeta, 0.707, jnt_num);               //阻抗
+        ADD_PARAM_VECTOR(cart_damp_zeta, 0.707, 6);                      //阻抗
+        ADD_PARAM_VECTOR(impedence_joint_servo_kp, 10, jnt_num);         //阻抗
+        ADD_PARAM_VECTOR(impedence_joint_servo_friction, 0.4, jnt_num);  //阻抗
         ADD_PARAM_VECTOR(soft_limit_stiff, 1000, jnt_num);
         ADD_PARAM_VECTOR(soft_limit_damp, 10, jnt_num);
     }
@@ -174,6 +176,8 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         std::fill(m_params["cart_damp"].begin(), m_params["cart_damp"].end(), 10.0);
         std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 100.0);
         std::fill(m_params["null_damp"].begin(), m_params["null_damp"].end(), 10.0);
+        std::fill(m_params["impedence_joint_servo_kp"].begin(), m_params["impedence_joint_servo_kp"].end(), 10);
+        std::fill(m_params["impedence_joint_servo_friction"].begin(), m_params["impedence_joint_servo_friction"].end(), 0.4);
         std::fill(m_params["joint_damp_zeta"].begin(), m_params["joint_damp_zeta"].end(), 0.707);
         std::fill(m_params["cart_damp_zeta"].begin(), m_params["cart_damp_zeta"].end(), 0.707);
         std::fill(m_params["soft_limit_stiff"].begin(), m_params["soft_limit_stiff"].end(), 1000);
@@ -215,6 +219,34 @@ struct FunctionParamsInner : public FcParamsInnerBase {
     bool FixedA(double stiff, double damp) { return SetParam("cart_stiff", stiff, 3) && SetParam("cart_damp", damp, 3); }
     bool FixedB(double stiff, double damp) { return SetParam("cart_stiff", stiff, 4) && SetParam("cart_damp", damp, 4); }
     bool FixedC(double stiff, double damp) { return SetParam("cart_stiff", stiff, 5) && SetParam("cart_damp", damp, 5); }
+
+    void SetCartImpedenceParams(const std::vector<double>& cart_imp_damp_zeta) {
+        std::vector<double> cart_stiff_default = {2000, 2000, 2000, 200, 200, 200};
+        std::vector<double> cart_damp_default(6);
+        for (unsigned int i = 0; i < 6; i++) {
+            cart_damp_default[i] = std::sqrt(cart_stiff_default[i]) * 2 * cart_imp_damp_zeta[i];
+        }
+        std::copy(m_params["cart_stiff"].begin(), m_params["cart_stiff"].end(), cart_stiff_default.begin());
+        std::copy(m_params["cart_damp"].begin(), m_params["cart_damp"].end(), cart_damp_default.begin());
+
+        SetZero("joint_stiff");
+        SetZero("joint_damp");
+    }
+
+    void SetJointImpedenceParams(const std::vector<double>& joint_imp_damp_zeta) {
+        std::vector<double> joint_stiff_default(m_jnt_num);
+        std::vector<double> joint_damp_default(m_jnt_num);
+
+        for (unsigned int i = 0; i < m_jnt_num; i++) {
+            joint_stiff_default[i] = 500;
+            joint_damp_default[i] = std::sqrt(joint_stiff_default[i]) * 2 * joint_imp_damp_zeta[i];
+        }
+        std::copy(m_params["joint_stiff"].begin(), m_params["joint_stiff"].end(), joint_stiff_default.begin());
+        std::copy(m_params["joint_damp"].begin(), m_params["joint_damp"].end(), joint_damp_default.begin());
+
+        SetZero("cart_stiff");
+        SetZero("cart_damp");
+    }
 };
 struct FcParamsInner {
     ProtectParamsInner m_protect_params;
