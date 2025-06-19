@@ -329,8 +329,11 @@ int ForceControl::SetSensorLinearity(const std::vector<double>& analog2trq_low) 
     if (m_jnt_num != analog2trq_low.size()) {
         return ERROR_SIZE_WRONG;
     }
+    int res = m_servo_fc_convert_ptr->SetSensorLinearity(analog2trq_low);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
     m_fc_params_inner_ptr->m_hardware_params.SetParam("analog2trq_low", analog2trq_low);
-    m_servo_fc_convert_ptr->SetSensorLinearity(analog2trq_low);
     return SOLVE_NOERROR;
 }
 
@@ -338,8 +341,12 @@ int ForceControl::SetSensorBias(const std::vector<double>& analog_bias) {
     if (m_jnt_num != analog_bias.size()) {
         return ERROR_SIZE_WRONG;
     }
+    int res = m_servo_fc_convert_ptr->SetSensorBias(analog_bias);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
     m_fc_params_inner_ptr->m_hardware_params.SetParam("analog_bias", analog_bias);
-    m_servo_fc_convert_ptr->SetSensorBias(analog_bias);
+
     for (unsigned int i = 0; i < m_jnt_num; i++) {
         m_dynamic_sensor_bias[i] = analog_bias[i] - m_dynamic_sensor_bias_baseline[i];
     }

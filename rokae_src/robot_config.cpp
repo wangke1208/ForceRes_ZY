@@ -191,7 +191,7 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         mechanical_config_params.REDUCTION_RATIO_DENOMINATOR = {1, 1, 1, 1, 1, 1, 1};
         mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH = {110, 110, 70, 70, 25, 25, 25};
         mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_LOW = {2.25, 2.25, 2.25, 2.25, 2.25, 2.25, 2.25};
-        mechanical_config_params.SENSOR_BIAS = {2500, 2500, 2500, 2500, 2500, 2500, 25000};
+        mechanical_config_params.SENSOR_BIAS = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
         mechanical_config_params.SENSOR_AMPLIFY = {1, 1, 1, 1, 1, 1, 1};
         mechanical_config_params.RATED_TORQUE = {1, 1, 0.45, 0.45, 0.2, 0.2, 0.2};
 
@@ -268,7 +268,7 @@ RobotConfiguration::RobotConfiguration(MechUnitType robot_type) {
         mechanical_config_params.REDUCTION_RATIO_DENOMINATOR = {1, 1, 1, 1, 1, 1, 1};
         mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_HIGH = {110, 110, 70, 70, 25, 25, 25};
         mechanical_config_params.SENSOR_ANALOG_TO_TORQUE_LOW = {2.25, 2.25, 2.25, 2.25, 2.25, 2.25, 2.25};
-        mechanical_config_params.SENSOR_BIAS = {2500, 2500, 2500, 2500, 2500, 2500, 25000};
+        mechanical_config_params.SENSOR_BIAS = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
         mechanical_config_params.SENSOR_AMPLIFY = {1, 1, 1, 1, 1, 1, 1};
         mechanical_config_params.RATED_TORQUE = {1, 1, 0.45, 0.45, 0.2, 0.2, 0.2};
 

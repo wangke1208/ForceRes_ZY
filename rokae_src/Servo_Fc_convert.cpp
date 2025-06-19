@@ -261,7 +261,8 @@ int Axis_Convert::SetSensorLinearity(const std::vector<double>& analog_low_set) 
         return ERROR_SIZE_WRONG;
     }
     for (unsigned int i = 0; i < m_axis_num; i++) {
-        if (analog_low_set[i] < 1.75 || analog_low_set[i] > 2.75) {
+        //线性度误差提高到1V
+        if (analog_low_set[i] < 1.25 || analog_low_set[i] > 3.25) {
             return ERROR_SENSOR_LINERALITY_SET;
         }
     }
