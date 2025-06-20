@@ -23,7 +23,7 @@ inline Model::MechUnitType MechUnitTypeConvert(const External_MechUnitType& exte
 }
 
 inline Control::DragType DragTypeConvert(const External_DragType& external_type) {
-    if (external_type < 0 || external_type > 5) {
+    if (external_type < 0 || external_type > 4) {
         throw std::invalid_argument("Invalid drag type: value out of expected range [0, 3].");
     }
     return static_cast<Control::DragType>(external_type);

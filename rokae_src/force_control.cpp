@@ -153,7 +153,7 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     }
 
     // 5. 拖动类型判断及设置阻抗参数
-    if (drag_type < 0 || drag_type > 5) {
+    if (drag_type < 0 || drag_type > 4) {
         return ERROR_DRAGTYPE;
     }
     m_drag_type = drag_type;
@@ -211,7 +211,6 @@ void ForceControl::SetFcCommand(const Servo_To_FcInner& servo_data_fc_inner) {
         break;
     case DragType::DRAG_CART_TRANS:
     case DragType::DRAG_CART_ROT:
-    case DragType::DRAG_CART_FREE:
         if (m_is_first_drag) {
             m_fc_status_inner.cart_pos_jnt_command = m_fc_status_inner.jnt_pos_measure;
             m_fkpos_ptr->JntToCart(m_fc_status_inner.cart_pos_jnt_command, m_fc_status_inner.cart_pos_command_flan_in_base);

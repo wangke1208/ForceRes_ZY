@@ -54,7 +54,6 @@ int FcStatusTracker::FcStatusUpdata() {
         return FcStatusUpdataJoint();
     case Control::DragType::DRAG_CART_TRANS:
     case Control::DragType::DRAG_CART_ROT:
-    case Control::DragType::DRAG_CART_FREE:
     case Control::DragType::IMPEDANCE_CART:
         return FcStatusUpdataCart();
 

@@ -27,7 +27,6 @@ enum External_DragType {
     DRAG_JOINT,       //轴空间拖动（目前只支持这一种）
     DRAG_CART_TRANS,  //笛卡尔空间仅平移
     DRAG_CART_ROT,    //笛卡尔空间仅旋转
-    DRAG_CART_FREE,   //笛卡尔自由
     IMPEDANCE_JOINT,  //关节阻抗
     IMPEDANCE_CART    //笛卡尔阻抗
 };
