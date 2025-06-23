@@ -3,6 +3,8 @@
 using namespace RokaeApi;
 using namespace RokaeApi::External;
 int main() {
+    SetConsoleOutputCP(CP_UTF8);
+
     // ---------------------------模型初始化部分-----------------------
     int res = 0;
 
@@ -10,7 +12,7 @@ int main() {
     RokaeForce_Deinit();
 
     // 2.建立机器人模型(7轴机器人)
-    auto mechUnitType = External_MechUnitType::DEFALUT_SENVEN_AXIS;
+    auto mechUnitType = External_MechUnitType::AR5_R;
     res = RokaeForce_Init(mechUnitType);
     if (res != 0) {
         LOG_ERROR("机器人初始化失败,错误码为 {}", res);
@@ -22,7 +24,7 @@ int main() {
     // ---------------------------基础参数初始化部分-----------------------
     // 1.设置编码器零点
     std::vector<int8_t> PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<int32_t> encoder_offset = {0, 0, 0, 0, 0, 0, 0};
+    std::vector<int32_t> encoder_offset = {6954651, -20169, 42141, -209178, -33577, 383115, -38823};
     res = RokaeForce_SetEncoderOffset(PDO_0x6061, encoder_offset);
     if (res != 0) {
         LOG_ERROR("编码器零点设置失败,错误码为 {}", res);
@@ -58,10 +60,10 @@ int main() {
     //动力学参数
     load_input.centroid = {0.0, 0.0, 0.0};
     load_input.inertia = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    load_input.mass = 7;
+    load_input.mass = 0;
     //坐标系参数
     load_input.position_offset = {0.0, 0.0, 0.0};
-    load_input.posture_rpy = {180.0, 0.0, 0.0};
+    load_input.posture_rpy = {0.0, 0.0, 0.0};
     res = RokaeForce_SetFcLoad(PDO_0x6061, load_input);
     if (res != 0) {
         LOG_ERROR("负载参数设置失败,错误码为 {}", res);
@@ -103,8 +105,8 @@ int main() {
 
     // 6.设置力控软限位
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<double> soft_limit_low = {-165, -115, -165, -115, -165, -115, -355};
-    std::vector<double> soft_limit_high = {165, 115, 165, 115, 165, 115, 355};
+    std::vector<double> soft_limit_low = {-178, -120, -178, -80, -178, -110, -180};
+    std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 110, 180};
 
     res = RokaeForce_SetSoftLimit(PDO_0x6061, soft_limit_low, soft_limit_high);
     if (res != 0) {
@@ -114,30 +116,12 @@ int main() {
         LOG_INFO("力控软限位设置成功");
     }
 
-    // 7.设置力控增益接口(可选)
-    PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<double> kp_gain_set = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    res = RokaeForce_SetKpGain(PDO_0x6061, kp_gain_set);
-    if (res != 0) {
-        LOG_ERROR("力控增益设置失败,错误码为 {}", res);
-        return -1;
-    } else {
-        LOG_INFO("力控增益设置成功");
-    }
+    // 7.设置力控增益接口(阻抗不支持改变增益，调用该接口无效)
 
-    // 8.设置摩擦力增益接口(可选)
-    std::vector<double> fric_gain_set = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
-
-    res = RokaeForce_SetFricGain(PDO_0x6061, fric_gain_set);
-    if (res != 0) {
-        LOG_ERROR("摩擦力增益设置失败,错误码为 {}", res);
-        return -1;
-    } else {
-        LOG_INFO("摩擦力增益设置成功");
-    }
+    // 8.设置摩擦力增益接口(阻抗不支持改变摩擦力增益，调用该接口无效)
 
     // 9.设置轴空间阻抗刚度
-    std::vector<double> joint_stiffness = {3000, 3000, 2500, 2500, 2000, 1000,1000};
+    std::vector<double> joint_stiffness = {2000, 2000, 1500, 1500, 500, 500, 500};
     res = RokaeForce_SetJointImpedance(PDO_0x6061,joint_stiffness);
     if (res != 0) {
         LOG_ERROR("笛卡尔阻抗刚度设置失败,错误码为 {}", res);
@@ -155,7 +139,8 @@ int main() {
     std::vector<int16_t> PDO_0x2402 = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
     External_DragType drag_type = External_DragType::IMPEDANCE_JOINT;
 
-    res = RokaeForce_DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type);
+    bool is_command_by_user = false;
+    res = RokaeForce_DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type, is_command_by_user);
     if (res != 0) {
         LOG_ERROR("力控配置出错,错误码为 {}", res);
         return -1;
@@ -169,7 +154,7 @@ int main() {
     PDO_0x2401 = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
     PDO_0x2402 = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
     std::vector<int16_t> PDO_0x2406 = {4000, 3500, 3000, 2500, 2000, 1500, 1500};
-    PDO_0x6064 = {0, 0, 0, 0, 0, 0, 0};
+    PDO_0x6064 = {2264206, 2998976, -4816443, 5852990, -630057, 5115646, 827439};
     std::vector<int32_t> PDO_0x606C = {0, 0, 0, 0, 0, 0, 0};
     //输出参数(需要发送给伺服)
     std::vector<int16_t> PDO_0x6071(7);
@@ -188,6 +173,8 @@ int main() {
     double angle = 0.0;
     std::vector<double> jnt_pos_init(7);           //弧度
     std::vector<double> jnt_pos_cmd(7);  //轴空间关节指令
+    std::vector<double> jnt_trq_cmd_from_user(7);
+    jnt_trq_cmd_from_user = {5, 5, 5, 5, 5, 5, 5};
     std::array<double, 6> cart_cmd_zero; //笛卡尔空间指令随便给个值即可，不参与计算
     std::array<double, 6> init_pos;
     while (time < continue_time) {
@@ -201,8 +188,9 @@ int main() {
         angle = KDL::PI / 4 * (1 - std::cos(KDL::PI / 2 * time));
         jnt_pos_cmd[6] = jnt_pos_init[6] + angle;
 
-        res = RokaeForce_FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd,cart_cmd_zero, PDO_0x6071,
-                                  PDO_0x60B2, PDO_0x2201, PDO_0x2202, PDO_0x2203, PDO_0x2204, PDO_0x2205, PDO_0x2206);
+        res = RokaeForce_FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd,
+                                  cart_cmd_zero, jnt_trq_cmd_from_user, PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202,
+                                  PDO_0x2203, PDO_0x2204, PDO_0x2205, PDO_0x2206);
         if (res != 0) {
             LOG_ERROR("力控指令更新出错,不允许下发给伺服，错误码为 {}", res);
             return -1;
