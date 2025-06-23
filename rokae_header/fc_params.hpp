@@ -188,6 +188,7 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         SetZero("joint_damp");
         SetZero("cart_stiff");
         SetZero("cart_damp");
+        SetZero("null_stiff");  //拖动将零空间刚度设置为0
     }
 
     bool SetTransParams(const std::vector<double>& trans_stiff, const std::vector<double>& trans_damp) {
@@ -228,7 +229,8 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         }
         std::copy(m_params["cart_stiff"].begin(), m_params["cart_stiff"].end(), cart_stiff_default.begin());
         std::copy(m_params["cart_damp"].begin(), m_params["cart_damp"].end(), cart_damp_default.begin());
-
+        //阻抗将零空间阻抗设置为100，暂不支持用户自由设置
+        std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 100);
         SetZero("joint_stiff");
         SetZero("joint_damp");
     }
@@ -243,7 +245,6 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         }
         std::copy(m_params["joint_stiff"].begin(), m_params["joint_stiff"].end(), joint_stiff_default.begin());
         std::copy(m_params["joint_damp"].begin(), m_params["joint_damp"].end(), joint_damp_default.begin());
-
         SetZero("cart_stiff");
         SetZero("cart_damp");
     }
