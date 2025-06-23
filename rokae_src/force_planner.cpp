@@ -91,7 +91,6 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
      for (unsigned int i = 0; i < m_jnt_num; i++) {
          FC->jnt_trq_final_cmd(i) = m_function_jnt_gravity(i) + m_function_imp_trq(i) + m_function_jnt_limit_trq(i);
      }
-     SPD_CONTAINER("jnt_trq_final_cmd = ", FC->jnt_trq_final_cmd.data);
      return;
  }
 
@@ -129,8 +128,6 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
      for (unsigned int i = 0; i < 6; i++) {
          m_function_cart_imp_trq_in_base(i) = m_function_cart_imp_trq_in_base_wrench(i);
      }
-     SPD_CONTAINER("m_function_cart_imp_trq_in_base = ",m_function_cart_imp_trq_in_base);
-     SPD_EIGEN_MATRIX(FC->jac_trans_measure_tcp_in_base);
      function_imp_trq.data = FC->jac_trans_measure_tcp_in_base * m_function_cart_imp_trq_in_base;
      //零空间阻抗(TODO)
      m_function_null_space_trq.data = m_null_stiff[0] * (FC->cart_pos_jnt_command.data - FC->jnt_pos_measure.data) -

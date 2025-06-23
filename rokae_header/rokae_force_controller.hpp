@@ -44,9 +44,10 @@ struct External_RokaeLoad {
 /**
  * @brief 初始化力控模块
  * @param [in] robot_type 机器人类型，参考枚举External_MechUnitType
+ * @param [in] log_save_path 日志存储位置
  * @return 错误码，成功返回SOLVE_NOERROR，失败返回相应的错误码
  */
-int RokaeForce_Init(const External_MechUnitType& robot_type);
+int RokaeForce_Init(const External_MechUnitType& robot_type, const std::string& log_save_path);
 
 /**
  * @brief 反初始化力控模块，释放相关资源
