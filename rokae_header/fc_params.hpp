@@ -221,30 +221,14 @@ struct FunctionParamsInner : public FcParamsInnerBase {
     bool FixedB(double stiff, double damp) { return SetParam("cart_stiff", stiff, 4) && SetParam("cart_damp", damp, 4); }
     bool FixedC(double stiff, double damp) { return SetParam("cart_stiff", stiff, 5) && SetParam("cart_damp", damp, 5); }
 
-    void SetCartImpedenceParams(const std::vector<double>& cart_imp_damp_zeta) {
-        std::vector<double> cart_stiff_default = {2000, 2000, 2000, 200, 200, 200};
-        std::vector<double> cart_damp_default(6);
-        for (unsigned int i = 0; i < 6; i++) {
-            cart_damp_default[i] = std::sqrt(cart_stiff_default[i]) * 2 * cart_imp_damp_zeta[i];
-        }
-        std::copy(m_params["cart_stiff"].begin(), m_params["cart_stiff"].end(), cart_stiff_default.begin());
-        std::copy(m_params["cart_damp"].begin(), m_params["cart_damp"].end(), cart_damp_default.begin());
+    void SetCartImpedenceParams() {
         //阻抗将零空间阻抗设置为100，暂不支持用户自由设置
-        std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 100);
+        std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 0);
         SetZero("joint_stiff");
         SetZero("joint_damp");
     }
 
-    void SetJointImpedenceParams(const std::vector<double>& joint_imp_damp_zeta) {
-        std::vector<double> joint_stiff_default(m_jnt_num);
-        std::vector<double> joint_damp_default(m_jnt_num);
-
-        for (unsigned int i = 0; i < m_jnt_num; i++) {
-            joint_stiff_default[i] = 500;
-            joint_damp_default[i] = std::sqrt(joint_stiff_default[i]) * 2 * joint_imp_damp_zeta[i];
-        }
-        std::copy(m_params["joint_stiff"].begin(), m_params["joint_stiff"].end(), joint_stiff_default.begin());
-        std::copy(m_params["joint_damp"].begin(), m_params["joint_damp"].end(), joint_damp_default.begin());
+    void SetJointImpedenceParams() {
         SetZero("cart_stiff");
         SetZero("cart_damp");
     }

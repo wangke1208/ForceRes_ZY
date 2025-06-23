@@ -79,7 +79,8 @@ enum SolverRes {
     ERROR_ROBOTTYPE = -15,
     ERROR_DRAGTYPE = -16,
     ERROR_SERVO_MODE = -17,
-    ERROR_ALREADY_INIT = -18
+    ERROR_ALREADY_INIT = -18,
+    ERROR_IMPEDENCE_PARAMS = -19
 };
 
 enum IkSolveRes {

@@ -65,6 +65,7 @@ ForceControl::ForceControl(InitRobot* init_robot_ptr)
     m_dynamic_sensor_bias.resize(m_jnt_num);
     m_dynamic_sensor_bias_baseline.resize(m_jnt_num);
     m_is_support_sensor_fix.resize(m_jnt_num, false);
+    m_is_impedence_params_set.resize(m_jnt_num, false);
 
     //赋值
     m_is_support_sensor_fix = m_init_robot_ptr->GetControlParams().m_gain_params.is_support_sensor_fix;
@@ -156,10 +157,25 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     if (drag_type < 0 || drag_type > 4) {
         return ERROR_DRAGTYPE;
     }
-    m_drag_type = drag_type;
-    if (m_drag_type == DragType::IMPEDANCE_CART || m_drag_type == DragType::IMPEDANCE_JOINT) {
+    //如果是阻抗模式，判断是否进行了阻抗参数设定
+    switch (drag_type) {
+    case DragType::IMPEDANCE_JOINT:
+        if (m_is_impedence_params_set[0] != true) {
+            return ERROR_IMPEDENCE_PARAMS;
+        }
         m_is_impedence_type = true;
+        break;
+    case DragType::IMPEDANCE_CART:
+        if (m_is_impedence_params_set[1] != true) {
+            return ERROR_IMPEDENCE_PARAMS;
+        }
+        m_is_impedence_type = true;
+        break;
+    default:
+        break;
     }
+
+    m_drag_type = drag_type;
     SetImpedenceGain(m_drag_type);  // 内部参数固定配置
 
     // 6.根据负载信息调节增益
@@ -463,16 +479,14 @@ int ForceControl::SetImpedenceGain(const DragType& drag_type) {
             m_init_robot_ptr->GetControlParams().m_gain_params.trans_drag_rot_damp);
         break;
     case DragType::IMPEDANCE_CART:
-        m_fc_params_inner_ptr->m_function_params.SetCartImpedenceParams(
-            m_init_robot_ptr->GetControlParams().m_gain_params.cart_imp_damp_zeta);
+        m_fc_params_inner_ptr->m_function_params.SetCartImpedenceParams();
         m_fc_params_inner_ptr->m_function_params.SetParam(
             "impedence_joint_servo_kp", m_init_robot_ptr->GetControlParams().m_gain_params.impedence_joint_servo_kp);
         m_fc_params_inner_ptr->m_function_params.SetParam(
             "impedence_joint_servo_friction", m_init_robot_ptr->GetControlParams().m_gain_params.impedence_friction_cof_servo);
         break;
     case DragType::IMPEDANCE_JOINT:
-        m_fc_params_inner_ptr->m_function_params.SetJointImpedenceParams(
-            m_init_robot_ptr->GetControlParams().m_gain_params.jnt_imp_damp_zeta);
+        m_fc_params_inner_ptr->m_function_params.SetJointImpedenceParams();
         m_fc_params_inner_ptr->m_function_params.SetParam(
             "impedence_joint_servo_kp", m_init_robot_ptr->GetControlParams().m_gain_params.impedence_joint_servo_kp);
         m_fc_params_inner_ptr->m_function_params.SetParam(
@@ -561,6 +575,9 @@ int ForceControl::SetJointImpedance(const std::vector<double>& joint_stiffness) 
     }
     //设置阻尼
     m_fc_params_inner_ptr->m_function_params.SetParam("joint_damp", m_jnt_imp_damp_temp);
+    //成功设置参数，标志位改变
+    m_is_impedence_params_set[0] = true;
+
     return SOLVE_NOERROR;
 }
 
@@ -584,6 +601,8 @@ int ForceControl::SetCartImpedance(const std::array<double, 6>& cart_stiffness) 
     }
     //设置阻尼
     m_fc_params_inner_ptr->m_function_params.SetParam("cart_damp", m_cart_imp_damp_temp);
+    //成功设置参数，标志位改变
+    m_is_impedence_params_set[1] = true;
     return SOLVE_NOERROR;
 }
 

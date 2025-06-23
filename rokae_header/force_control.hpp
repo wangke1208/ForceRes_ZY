@@ -402,6 +402,7 @@ class ForceControl {
     bool m_enable_drag;
     bool m_is_first_drag;
     bool m_is_impedence_type;
+    std::vector<bool> m_is_impedence_params_set;
     // 内部数据流
     Servo_To_FcInner m_servo_data_fc_inner;
     FcInner_To_Servo m_fc_inner_servo_data;
