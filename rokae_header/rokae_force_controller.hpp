@@ -6,7 +6,6 @@
  * And may contains trade secrets that must be stored and viewed confidentially.
  *
  * @file: rokae_force_controller.hpp
- * @author: wangke
  * @date: 2025/4/11
  * @brief:力控对外接口
  */
@@ -308,7 +307,7 @@ int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& 
                            std::vector<double>& q_out);
 
 /**
- * @brief 获取运动学逆解
+ * @brief 获取当前臂角
  * @param[in] curJntPose 机器人当前关节角度
  * @param[out] psi 当前臂角
  * @return 错误码，参考 IkSolveRes 枚举
