@@ -97,7 +97,9 @@ namespace Model {
 enum MechUnitType {
     DEFALUT_SIX_AXIS,
     AR5_L,
-    AR5_R
+    AR5_R,
+    AR5C_L,
+    AR5C_R
 };
 
 struct ModelParams {
