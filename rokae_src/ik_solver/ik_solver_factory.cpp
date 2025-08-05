@@ -19,14 +19,14 @@ namespace Model {
 IKSolverFactory::IKSolverFactory(const KDL::Chain& chain, const Model::ModelParams& model_param)
     : m_chain(chain), m_model_param(model_param) {}
 
-std::unique_ptr<IKSolverBase> IKSolverFactory::CreateIkSolverPos() {
+std::shared_ptr<IKSolverBase> IKSolverFactory::CreateIkSolverPos() {
     if (m_model_param.axis_num != 7) {
         return nullptr;
     }
     if (m_model_param.is_wrist_cross) {
-        return std::make_unique<inverse_kinematics_cross_solver>(m_chain, m_model_param);
+        return std::make_shared<inverse_kinematics_cross_solver>(m_chain, m_model_param);
     } else {
-        return std::make_unique<inverse_kinematics_solver>(m_chain, m_model_param);
+        return std::make_shared<inverse_kinematics_solver>(m_chain, m_model_param);
     }
 }
 

@@ -15,7 +15,7 @@ public:
     ~IKSolverFactory() = default;
 
     // 返回智能指针，调用者负责生命周期
-    std::unique_ptr<IKSolverBase> CreateIkSolverPos();
+    std::shared_ptr<IKSolverBase> CreateIkSolverPos();
 
 private:
     KDL::Chain m_chain;
