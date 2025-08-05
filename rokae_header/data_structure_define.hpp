@@ -95,7 +95,6 @@ enum IkSolveRes {
 
 namespace Model {
 enum MechUnitType {
-    DEFALUT_SIX_AXIS,
     AR5_L,
     AR5_R,
     AR5C_L,
@@ -180,7 +179,7 @@ struct ModelParams {
     std::vector<double> joint_range_max_new;        // 硬限位
     double max_load;                                // 最大负载
     double max_load_tcp_length;                     // 最大负载末端执行器长度
-
+    bool is_wrist_cross;                            // 是否 wrist 轴交叉
     // 构造函数
     ModelParams(unsigned int segments_cnt) { this->Resize(segments_cnt); }
 
@@ -196,6 +195,7 @@ struct ModelParams {
         joint_range_max_new.resize(segments_cnt - 1);
         max_load = 0.0;
         max_load_tcp_length = 0.3;
+        is_wrist_cross = false;
     }
 };
 

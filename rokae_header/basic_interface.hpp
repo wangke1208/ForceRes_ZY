@@ -18,10 +18,9 @@
 
 #include "rokae_header/data_structure_convert.hpp"
 #include "rokae_header/force_control.hpp"
-#include "rokae_header/inverse_kinematics_solver.hpp"
 #include "rokae_header/robot_config.hpp"
 #include "rokae_header/version.hpp"
-
+#include "rokae_header/ik_solver/ik_solver_factory.hpp"
 namespace RokaeApi {
 namespace BasicInterface {
 

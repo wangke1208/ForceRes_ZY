@@ -1,23 +1,22 @@
-/**
+﻿/**
  * Copyright(C) 2024 Rokae Technology Co., Ltd.
  * All Rights Reserved.
  *
  * Information in this file is the intellectual property of Rokae Technology Co., Ltd,
  * And may contains trade secrets that must be stored and viewed confidentially.
  *
- * @file: inverse_kinematics_solver.cpp
+ * @file: inverse_kinematics_cross_solver.cpp
  * @author: wangke
- * @date: 2025/5/26
- * @brief: 逆运动学求解接口
+ * @date: 2025/8/4
+ * @brief: 十字手腕逆运动学求解接口
  */
 
-#include "rokae_header/inverse_kinematics_solver.hpp"
-
-using namespace std;
+#include "rokae_header/ik_solver/inverse_kinematics_cross_solver.hpp"
 namespace RokaeApi {
 namespace Model {
-inverse_kinematics_solver::inverse_kinematics_solver(const KDL::Chain& chain, const ModelParams& model_param)
-    : m_chain(chain), m_model_param(model_param), m_joint_num(chain.getNrOfJoints()) {
+
+inverse_kinematics_cross_solver::inverse_kinematics_cross_solver(const KDL::Chain& chain, const ModelParams& model_param)
+    : IKSolverBase(chain, model_param), m_joint_num(chain.getNrOfJoints()) {
     m_max_joint.resize(m_joint_num);  //初始化最大角度
     m_min_joint.resize(m_joint_num);  //初始化最小角度
 
@@ -26,38 +25,34 @@ inverse_kinematics_solver::inverse_kinematics_solver(const KDL::Chain& chain, co
     m_min_joint = model_param.joint_range_min_new;
     m_rob_dim = model_param.rob_dimensions;
 
-    m_fkpos_ptr = new KDL::ChainFkSolverPos_recursive(m_chain);
-
-    m_length_max = m_rob_dim.L12z + m_rob_dim.L23z + m_rob_dim.L45z + m_rob_dim.L67z;
+    m_length_max = m_rob_dim.L12z + m_rob_dim.L23z + m_rob_dim.L45z + m_rob_dim.L78z;
 
     m_d_mm = m_rob_dim.L34x;  //肘部偏移
     m_d_bs = m_rob_dim.L12z;
     m_d_se = std::sqrt(m_rob_dim.L23z * m_rob_dim.L23z + m_d_mm * m_d_mm);
     m_d_ew = std::sqrt(m_rob_dim.L45z * m_rob_dim.L45z + m_d_mm * m_d_mm);
-    m_d_wt = m_rob_dim.L67z;
+    m_d_wt = m_rob_dim.L78z;
 
     Lbs0(2) = m_d_bs;  //  Lbs0 = (0,0, 0.0, m_d_bs)
     Lse3(0) = m_d_mm;
     Lse3(1) = -m_rob_dim.L23z;  //  Lse3 = (m_d_mm, -m_rob_dim.L23z, 0.0)
     Lew4(0) = -m_d_mm;
     Lew4(2) = m_rob_dim.L45z;  //  Lew4 = (-m_d_mm, 0.0, m_rob_dim.L45z)
-    Lwt7(2) = m_d_wt;          //  Lwt7 = (0,0, 0.0, m_d_wt)
+    Lwt7(2) = -m_d_wt;         //  Lwt7 = (0,0, 0.0, m_d_wt)
 
     //初始角度
-    xend_origin = KDL::Vector(0, 0, m_rob_dim.L12z + m_rob_dim.L23z + m_rob_dim.L45z + m_rob_dim.L67z);
+    xend_origin = KDL::Vector(0, 0, m_rob_dim.L12z + m_rob_dim.L23z + m_rob_dim.L45z + m_rob_dim.L78z);
     R7_0_offset = Rotation::RotX(-PI / 2) * Rotation::RotX(PI / 2) * Rotation::RotX(-PI / 2) * Rotation::RotX(PI / 2) *
-                  Rotation::RotX(-PI / 2) * Rotation::RotX(PI / 2);
-    xw_origin = xend_origin - R7_0_offset * Lwt7;
+                  Rotation::RotX(-PI / 2) * Rotation::RotZ(-PI / 2) * Rotation::RotX(-PI / 2) * Rotation::RotZ(-PI / 2) *
+                  Rotation::RotX(-PI / 2) * Rotation::RotZ(-PI / 2);
+    xw_origin = xend_origin + R7_0_offset * Lwt7;
     xsw_origin = xw_origin - Lbs0;
     d_xsw_origin = xsw_origin.Norm();
-    m_q4_offset = std::acos((d_xsw_origin * d_xsw_origin - m_d_se * m_d_se - m_d_ew * m_d_ew) / (2 * m_d_se * m_d_ew));  //初始偏置角度
+    m_q4_offset =
+        std::acos((d_xsw_origin * d_xsw_origin - m_d_se * m_d_se - m_d_ew * m_d_ew) / (2 * m_d_se * m_d_ew));  //初始偏置角度
 };
 
-inverse_kinematics_solver::~inverse_kinematics_solver(){
-    delete m_fkpos_ptr;
-}
-
-IkSolveRes inverse_kinematics_solver::CartToJnt(const KDL::JntArray& curJnt_origin, const GeneralizedFrame& target_Flan,
+IkSolveRes inverse_kinematics_cross_solver::CartToJnt(const KDL::JntArray& curJnt_origin, const GeneralizedFrame& target_Flan,
                                                 KDL::JntArray& OutJointPose) {
     double xabs = fabs(target_Flan.frame.p.x());
     double yabs = fabs(target_Flan.frame.p.y());
@@ -177,7 +172,7 @@ IkSolveRes inverse_kinematics_solver::CartToJnt(const KDL::JntArray& curJnt_orig
     return IkSolveRes::SUCCESS;
 }
 
-bool inverse_kinematics_solver::IsSingular(const KDL::JntArray& q) {
+bool inverse_kinematics_cross_solver::IsSingular(const KDL::JntArray& q) {
     //如果二轴、四轴或六轴处于奇异位置
     // if(KDL::Equal(q(1), 0.0, KDL::PI/360.0) or KDL::Equal(q(3), 0.0, KDL::PI/360.0) or KDL::Equal(q(5), 0.0, KDL::PI/360.0)){
     if ((KDL::Equal(q(1), 0.0, KDL::PI / 360.0) && KDL::Equal(std::cos(q(2)), 0.0, KDL::PI / 360.0)) ||
@@ -195,10 +190,12 @@ bool inverse_kinematics_solver::IsSingular(const KDL::JntArray& q) {
     return false;
 }
 
-bool inverse_kinematics_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, const KDL::Frame& cur_Flan,
+bool inverse_kinematics_cross_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, const KDL::Frame& cur_Flan,
                                                   Conf_xMate& conf_xmate, double& psi) {
     conf_xmate.cf2 = sign(cur_Jnt(1));
+    // 6轴的conf
     conf_xmate.cf6 = sign(cur_Jnt(5));
+    conf_xmate.cf6_cos = sign(std::cos(cur_Jnt(5)));
 
     // 4轴的conf
     conf_xmate.cf4 = sign(cur_Jnt(3));  //判断4轴是否大于0
@@ -211,7 +208,7 @@ bool inverse_kinematics_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, 
     //初始位置姿态
     Rotation Rd70_temp = cur_Flan.M;
     KDL::Vector Xd70_temp = cur_Flan.p;
-    KDL::Vector Xsw0_temp = Xd70_temp - Lbs0 - Rd70_temp * Lwt7;
+    KDL::Vector Xsw0_temp = Xd70_temp - Lbs0 + Rd70_temp * Lwt7;
     KDL::Vector Usw0_temp = Xsw0_temp / Xsw0_temp.Norm();
 
     /*
@@ -279,11 +276,11 @@ bool inverse_kinematics_solver::Solve_CurPsi_Conf(const KDL::JntArray& cur_Jnt, 
     return true;
 }
 
-int inverse_kinematics_solver::Compute_Q4_ABC(const KDL::Frame& tar_Flan, const Conf_xMate& conf_xmate, Q4_ABC& q4_abc) {
+int inverse_kinematics_cross_solver::Compute_Q4_ABC(const KDL::Frame& tar_Flan, const Conf_xMate& conf_xmate, Q4_ABC& q4_abc) {
     //目标位置姿态
     KDL::Rotation Rd70 = tar_Flan.M;
     KDL::Vector Xd70 = tar_Flan.p;
-    KDL::Vector Xsw0 = Xd70 - Lbs0 - Rd70 * Lwt7;
+    KDL::Vector Xsw0 = Xd70 - Lbs0 + Rd70 * Lwt7;
     KDL::Vector Usw0 = Xsw0 / Xsw0.Norm();
     /*
      * =====================计算肘角度q4 =====================
@@ -374,28 +371,28 @@ int inverse_kinematics_solver::Compute_Q4_ABC(const KDL::Frame& tar_Flan, const 
     q4_abc.bd_q3 = -Bs(2, 0) * conf_xmate.cf2;
     q4_abc.cd_q3 = -Cs(2, 0) * conf_xmate.cf2;
 
-    q4_abc.an_q5 = Aw(1, 2) * conf_xmate.cf6;
-    q4_abc.bn_q5 = Bw(1, 2) * conf_xmate.cf6;
-    q4_abc.cn_q5 = Cw(1, 2) * conf_xmate.cf6;
-    q4_abc.ad_q5 = Aw(0, 2) * conf_xmate.cf6;
-    q4_abc.bd_q5 = Bw(0, 2) * conf_xmate.cf6;
-    q4_abc.cd_q5 = Cw(0, 2) * conf_xmate.cf6;
+    q4_abc.an_q5 = Aw(1, 0) * conf_xmate.cf6_cos;
+    q4_abc.bn_q5 = Bw(1, 0) * conf_xmate.cf6_cos;
+    q4_abc.cn_q5 = Cw(1, 0) * conf_xmate.cf6_cos;
+    q4_abc.ad_q5 = Aw(0, 0) * conf_xmate.cf6_cos;
+    q4_abc.bd_q5 = Bw(0, 0) * conf_xmate.cf6_cos;
+    q4_abc.cd_q5 = Cw(0, 0) * conf_xmate.cf6_cos;
 
-    q4_abc.a_q6 = Aw(2, 2);
-    q4_abc.b_q6 = Bw(2, 2);
-    q4_abc.c_q6 = Cw(2, 2);
+    q4_abc.a_q6 = -Aw(2, 0);
+    q4_abc.b_q6 = -Bw(2, 0);
+    q4_abc.c_q6 = -Cw(2, 0);
 
-    q4_abc.an_q7 = Aw(2, 1) * conf_xmate.cf6;
-    q4_abc.bn_q7 = Bw(2, 1) * conf_xmate.cf6;
-    q4_abc.cn_q7 = Cw(2, 1) * conf_xmate.cf6;
-    q4_abc.ad_q7 = -Aw(2, 0) * conf_xmate.cf6;
-    q4_abc.bd_q7 = -Bw(2, 0) * conf_xmate.cf6;
-    q4_abc.cd_q7 = -Cw(2, 0) * conf_xmate.cf6;
+    q4_abc.an_q7 = Aw(2, 1) * conf_xmate.cf6_cos;
+    q4_abc.bn_q7 = Bw(2, 1) * conf_xmate.cf6_cos;
+    q4_abc.cn_q7 = Cw(2, 1) * conf_xmate.cf6_cos;
+    q4_abc.ad_q7 = Aw(2, 2) * conf_xmate.cf6_cos;
+    q4_abc.bd_q7 = Bw(2, 2) * conf_xmate.cf6_cos;
+    q4_abc.cd_q7 = Cw(2, 2) * conf_xmate.cf6_cos;
 
     return 0;
 }
 
-void inverse_kinematics_solver::Solve_Jnt(const KDL::JntArray& curJntPose, const Conf_xMate& conf_xmate, const double& targ_Psi,
+void inverse_kinematics_cross_solver::Solve_Jnt(const KDL::JntArray& curJntPose, const Conf_xMate& conf_xmate, const double& targ_Psi,
                                           const Q4_ABC& q4_abc, KDL::JntArray& q) {
     double q1_s = ArcConsineSolver(q4_abc.a_q2, q4_abc.b_q2, q4_abc.c_q2, targ_Psi);
 
@@ -427,36 +424,24 @@ void inverse_kinematics_solver::Solve_Jnt(const KDL::JntArray& curJntPose, const
 
     q(3) = q4_abc.q4;
 
-    double q5_s = ArcConsineSolver(q4_abc.a_q6, q4_abc.b_q6, q4_abc.c_q6, targ_Psi);
+    double q5_s = ArcSineSolver(q4_abc.a_q6, q4_abc.b_q6, q4_abc.c_q6, targ_Psi);
 
     if (fabs(q5_s - 0.0) < 1e-7) {
         // LogE<<"六轴算法奇异";
         q(4) = curJntPose(4);
-        q(5) = q5_s * conf_xmate.cf6;
+        q(5) = q5_s;
         q(6) = curJntPose(6);
     } else {
-        double q4_s =
-            ArcTangentSolver(q4_abc.an_q5, q4_abc.bn_q5, q4_abc.cn_q5, q4_abc.ad_q5, q4_abc.bd_q5, q4_abc.cd_q5, targ_Psi);
-        if (fabs(q4_s - curJntPose(4)) > 1.5) {
-            q(4) = ArcTangentSolver(-q4_abc.an_q5, -q4_abc.bn_q5, -q4_abc.cn_q5, -q4_abc.ad_q5, -q4_abc.bd_q5, -q4_abc.cd_q5,
-                                    targ_Psi);
+        q(4) = ArcTangentSolver(q4_abc.an_q5, q4_abc.bn_q5, q4_abc.cn_q5, q4_abc.ad_q5, q4_abc.bd_q5, q4_abc.cd_q5, targ_Psi);
 
-            q(5) = -ArcConsineSolver(q4_abc.a_q6, q4_abc.b_q6, q4_abc.c_q6, targ_Psi) * conf_xmate.cf6;
+        q(5) = ArcSineSolver(q4_abc.a_q6, q4_abc.b_q6, q4_abc.c_q6, targ_Psi);
 
-            q(6) = ArcTangentSolver(-q4_abc.an_q7, -q4_abc.bn_q7, -q4_abc.cn_q7, -q4_abc.ad_q7, -q4_abc.bd_q7, -q4_abc.cd_q7,
-                                    targ_Psi);
-        } else {
-            q(4) = ArcTangentSolver(q4_abc.an_q5, q4_abc.bn_q5, q4_abc.cn_q5, q4_abc.ad_q5, q4_abc.bd_q5, q4_abc.cd_q5, targ_Psi);
-
-            q(5) = ArcConsineSolver(q4_abc.a_q6, q4_abc.b_q6, q4_abc.c_q6, targ_Psi) * conf_xmate.cf6;
-
-            q(6) = ArcTangentSolver(q4_abc.an_q7, q4_abc.bn_q7, q4_abc.cn_q7, q4_abc.ad_q7, q4_abc.bd_q7, q4_abc.cd_q7, targ_Psi);
-        }
+        q(6) = ArcTangentSolver(q4_abc.an_q7, q4_abc.bn_q7, q4_abc.cn_q7, q4_abc.ad_q7, q4_abc.bd_q7, q4_abc.cd_q7, targ_Psi);
     }
 }
 
-bool inverse_kinematics_solver::GetCurPsi(const KDL::JntArray& curJntPose, double& psi){
-    if(curJntPose.rows() != 7){
+bool inverse_kinematics_cross_solver::GetCurPsi(const KDL::JntArray& curJntPose, double& psi) {
+    if (curJntPose.rows() != 7) {
         return false;
     }
     KDL::Frame curFlanPose;
@@ -464,7 +449,6 @@ bool inverse_kinematics_solver::GetCurPsi(const KDL::JntArray& curJntPose, doubl
     Conf_xMate conf_xmate;
     return Solve_CurPsi_Conf(curJntPose, curFlanPose, conf_xmate, psi);
 }
-
 
 }  // namespace Model
 }  // namespace RokaeApi

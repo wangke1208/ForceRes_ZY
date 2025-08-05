@@ -22,8 +22,7 @@ std::shared_ptr<InitRobot> initrobot_ptr;
 std::shared_ptr<Axis_Convert> axisconvert_ptr;
 std::shared_ptr<DynamicSolver> dynamicsolver_ptr;
 std::shared_ptr<KDL::ChainFkSolverPos_recursive> fkpos_ptr;
-std::shared_ptr<inverse_kinematics_solver> inverse_kinematics_solver_ptr;
-
+std::shared_ptr<IKSolverBase> ik_pos_solver_ptr;
 unsigned int jnt_num;  // 关节数
 bool is_initialized = false;  // 初始化标志
 
@@ -90,8 +89,9 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     axisconvert_ptr = std::make_shared<Axis_Convert>(initrobot_ptr->GetJntNum(), initrobot_ptr.get()->GetMechanicalParams());
     fkpos_ptr = std::make_shared<KDL::ChainFkSolverPos_recursive>(initrobot_ptr->GetChain());
     dynamicsolver_ptr = std::make_shared<DynamicSolver>(initrobot_ptr->GetChain(), initrobot_ptr->GetGravity());
-    inverse_kinematics_solver_ptr =
-        std::make_shared<inverse_kinematics_solver>(initrobot_ptr->GetChain(), initrobot_ptr->GetModelParams());
+    //逆解求解器
+    IKSolverFactory solver_factory(initrobot_ptr->GetChain(), initrobot_ptr->GetModelParams());    
+    ik_pos_solver_ptr = solver_factory.CreateIkSolverPos();
     // 5.初始化参数
     jnt_num = initrobot_ptr->GetJntNum();
     jnt_pos_kdl.resize(jnt_num);
@@ -520,7 +520,7 @@ int GetJointPos(const std::vector<double>& curJnt_origin, const GeneralizedFrame
         return ERROR_SIZE_WRONG;
     }
     VectorToJntArray(curJnt_origin, q_inverse_in_temp);
-    int res = inverse_kinematics_solver_ptr->CartToJnt(q_inverse_in_temp, target_Flan, q_inverse_out_temp);
+    int res = ik_pos_solver_ptr->CartToJnt(q_inverse_in_temp, target_Flan, q_inverse_out_temp);
     if (res != SOLVE_NOERROR) {
         return res;
     }
@@ -530,7 +530,7 @@ int GetJointPos(const std::vector<double>& curJnt_origin, const GeneralizedFrame
 
 int GetCurPsi(const std::vector<double>& curJntPose, double& psi) {
     VectorToJntArray(curJntPose, q_psi_temp);
-    if (inverse_kinematics_solver_ptr->GetCurPsi(q_psi_temp, psi)) {
+    if (ik_pos_solver_ptr->GetCurPsi(q_psi_temp, psi)) {
         return SOLVE_NOERROR;
     } else {
         return OTHER_ERROR;
@@ -657,33 +657,10 @@ void DeinitInterface() {
     initrobot_ptr.reset();
     axisconvert_ptr.reset();
     dynamicsolver_ptr.reset();
-
+    ik_pos_solver_ptr.reset();
     // 重置变量
     jnt_num = DEFAULT_AXIS;
     is_initialized = false;
-
-    tcp_wrench = KDL::Wrench::Zero();
-    gravity_vector = KDL::Vector::Zero();
-    frame_base_in_world = KDL::Frame::Identity();
-    tcp_frame_temp = KDL::Frame::Identity();
-
-    jnt_pos_kdl = KDL::JntArray(DEFAULT_AXIS);
-    jnt_ext_trq = KDL::JntArray(DEFAULT_AXIS);
-    q_inverse_out_temp = KDL::JntArray(DEFAULT_AXIS);
-    q_inverse_in_temp = KDL::JntArray(DEFAULT_AXIS);
-    q_temp = KDL::JntArray(DEFAULT_AXIS);
-    qd_temp = KDL::JntArray(DEFAULT_AXIS);
-    qdd_temp = KDL::JntArray(DEFAULT_AXIS);
-    trq_total_temp = KDL::JntArray(DEFAULT_AXIS);
-    trq_gravity_temp = KDL::JntArray(DEFAULT_AXIS);
-    trq_coriolis_temp = KDL::JntArray(DEFAULT_AXIS);
-    trq_inertia_temp = KDL::JntArray(DEFAULT_AXIS);
-    trq_ext_temp = KDL::JntArray(DEFAULT_AXIS);
-
-    jacobian_temp.resize(DEFAULT_AXIS);
-    inertia_matrix_temp.resize(DEFAULT_AXIS);
-    jacobian_temp.data.setZero();
-    inertia_matrix_temp.data.setZero();
 }
 
 }  // namespace BasicInterface

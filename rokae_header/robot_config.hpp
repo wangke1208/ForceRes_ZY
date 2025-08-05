@@ -79,6 +79,7 @@ struct ModelConfigParams {
     unsigned int AXIS_NUM;
     double MAX_LOAD;
     double MAX_LOAD_TCP_LENGTH;
+    bool IS_WRITST_CROSS;
     std::vector<int> JOINT_TYPE;
     std::vector<int> ROT_AXIS;
     std::vector<double> ROT_ANGLE;

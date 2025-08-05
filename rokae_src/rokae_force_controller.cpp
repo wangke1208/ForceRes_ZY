@@ -16,7 +16,7 @@ namespace RokaeApi {
 namespace External {
 // ================== 外部数据结构与内部数据结构的转换接口 ==================
 inline Model::MechUnitType MechUnitTypeConvert(const External_MechUnitType& external_type) {
-    if (external_type < 0 || external_type > 2) {
+    if (external_type < 0 || external_type > 3) {
         throw std::invalid_argument("Invalid external type: value is unkown");
     }
     return static_cast<Model::MechUnitType>(external_type);

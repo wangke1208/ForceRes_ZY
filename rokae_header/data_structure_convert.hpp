@@ -141,6 +141,8 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
         model_out.coor_orient[i].rot_axis = static_cast<Model::ModelParams::Rot_Axis>(in.model_config_params.ROT_AXIS[i]);
         model_out.coor_orient[i].rot_angle = in.model_config_params.ROT_ANGLE[i];
     }
+    //判断是否是交叉手腕
+    model_out.is_wrist_cross = in.model_config_params.IS_WRITST_CROSS;
     // 1.1惯量参数
     model_out.link_inertia.at(0).mass = 0.0;
     model_out.link_inertia.at(0).centroid.assign(3, 0.0);
