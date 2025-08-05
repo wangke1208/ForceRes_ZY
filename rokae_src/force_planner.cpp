@@ -28,7 +28,7 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
     m_jnt_damp.resize(m_jnt_num, 0.0);
     m_cart_stiff.resize(6, 100.0);
     m_cart_damp.resize(6, 10.0);
-    m_null_stiff.resize(1, 100.0);
+    m_null_stiff.resize(1, 10.0);
 
     // 笛卡尔阻抗力
     m_function_cart_imp_trq.Zero();

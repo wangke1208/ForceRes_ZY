@@ -134,7 +134,7 @@ struct ProtectParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(max_cart_damp, 300.0, 6);
         ADD_PARAM_VECTOR(max_cart_stiff_trq, 60.0, 6);
         ADD_PARAM_VECTOR(max_cart_damp_trq, 20.0, 6);
-        ADD_PARAM_VECTOR(max_null_stiff, 100.0, 1);
+        ADD_PARAM_VECTOR(max_null_stiff, 10.0, 1);
         ADD_PARAM_VECTOR(max_mode_switch_trq, 30.0, jnt_num);
         ADD_PARAM_VECTOR(max_load_mass, 7, 1);
         ADD_PARAM_VECTOR(max_load_tcp_length, 0.3, 1);
@@ -155,7 +155,7 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         ADD_PARAM_VECTOR(joint_damp, 10.0, jnt_num);
         ADD_PARAM_VECTOR(cart_stiff, 100.0, 6);
         ADD_PARAM_VECTOR(cart_damp, 10.0, 6);
-        ADD_PARAM_VECTOR(null_stiff, 100.0, 1);
+        ADD_PARAM_VECTOR(null_stiff, 10.0, 1);
         ADD_PARAM_VECTOR(null_damp, 10.0, 1);
         ADD_PARAM_VECTOR(joint_damp_zeta, 0.707, jnt_num);               //阻抗
         ADD_PARAM_VECTOR(cart_damp_zeta, 0.707, 6);                      //阻抗
@@ -174,7 +174,7 @@ struct FunctionParamsInner : public FcParamsInnerBase {
         std::fill(m_params["joint_damp"].begin(), m_params["joint_damp"].end(), 10.0);
         std::fill(m_params["cart_stiff"].begin(), m_params["cart_stiff"].end(), 100.0);
         std::fill(m_params["cart_damp"].begin(), m_params["cart_damp"].end(), 10.0);
-        std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 100.0);
+        std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 10.0);
         std::fill(m_params["null_damp"].begin(), m_params["null_damp"].end(), 10.0);
         std::fill(m_params["impedence_joint_servo_kp"].begin(), m_params["impedence_joint_servo_kp"].end(), 10);
         std::fill(m_params["impedence_joint_servo_friction"].begin(), m_params["impedence_joint_servo_friction"].end(), 0.4);
@@ -222,8 +222,8 @@ struct FunctionParamsInner : public FcParamsInnerBase {
     bool FixedC(double stiff, double damp) { return SetParam("cart_stiff", stiff, 5) && SetParam("cart_damp", damp, 5); }
 
     void SetCartImpedenceParams() {
-        //阻抗将零空间阻抗设置为100，暂不支持用户自由设置
-        std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 0);
+        //阻抗将零空间阻抗设置为10，暂不支持用户自由设置
+        std::fill(m_params["null_stiff"].begin(), m_params["null_stiff"].end(), 10);
         SetZero("joint_stiff");
         SetZero("joint_damp");
     }
