@@ -5,14 +5,14 @@
  * Information in this file is the intellectual property of Rokae Technology Co., Ltd,
  * And may contains trade secrets that must be stored and viewed confidentially.
  *
- * @file: rokae_force_controller_public.hpp
+ * @file: rokae_force_controller.hpp
  * @date: 2025/4/11
- * @brief: 力控对外接口（瘦头）：仅标准库 + Eigen，不 #include 本仓库其它 rokae_header。
- *         与 rokae_force_controller.hpp 中 RokaeApi::External 声明保持一致，供 SDK 交付时单独分发。
+ * @brief: 力控对外接口（单头）：仅标准库 + Eigen，不 #include 本仓库其它 rokae_header。
+ *         SDK 客户与本仓库示例均包含本文件即可，与 libforce_res.a 链接；实现见 rokae_src/rokae_force_controller.cpp。
  */
 
-#ifndef ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_PUBLIC_HPP_
-#define ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_PUBLIC_HPP_
+#ifndef ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_HPP_
+#define ROKAE_HEADER_ROKAE_FORCE_CONTROLLER_HPP_
 
 #include <Eigen/Dense>
 #include <array>
@@ -425,5 +425,4 @@ int RokaeForce_CalibrateTrqSensor(const std::vector<int8_t>& PDO_0x6061, const s
 }  // namespace External
 
 }  // namespace RokaeApi
-
 #endif

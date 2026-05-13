@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# 在「完整 ForceRes_ZY 仓库根」旁执行本脚本所在目录为 example/ 时，
-# 将编库产物与第三方头复制进 example/，使 example/ 可单独打包复制。
+# 在 Docker 容器 sy_dev 内、挂载后的仓库根执行（与 build_and_sync_example.sh 相同约定，验证路径为 /workspace/ForceRes_ZY）。
+# 将主工程头文件与 3rd 依赖复制进 example/，使 example/ 可单独打包构建 demo。
+# 通常由 build_and_sync_example.sh 或 menu.sh 选 1 在编译成功后调用；也可在容器内已手动编出 libforce_res.a 后单独执行本脚本。
 set -euo pipefail
-EXAMPLE_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "${EXAMPLE_DIR}/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+EXAMPLE_DIR="${REPO_ROOT}/example"
 
 mkdir -p "${EXAMPLE_DIR}/3rd" "${EXAMPLE_DIR}/lib" "${EXAMPLE_DIR}/include"
 
-cp -f "${REPO_ROOT}/rokae_header/rokae_force_controller_public.hpp" "${EXAMPLE_DIR}/include/"
+cp -f "${REPO_ROOT}/rokae_header/rokae_force_controller.hpp" "${EXAMPLE_DIR}/include/"
 
 if [[ -d "${REPO_ROOT}/3rd/eigen" ]]; then
   rm -rf "${EXAMPLE_DIR}/3rd/eigen"
@@ -35,7 +37,7 @@ if [[ -f "${LIB_SRC}" ]]; then
     echo "libforce_res.a 已在 example/lib（与仓库构建输出为同一文件，跳过复制）"
   fi
 else
-  echo "warning: 未找到 ${LIB_SRC}，请先在仓库根执行 cmake 构建主静态库。" >&2
+  echo "warning: 未找到 ${LIB_SRC}，请先执行 ./scripts/menu.sh 1 或在仓库根构建主静态库。" >&2
 fi
 
-echo "sync_from_repo.sh 完成。可在 ${EXAMPLE_DIR} 下执行: cmake -S . -B build && cmake --build build"
+echo "完成。下一步可在 ${EXAMPLE_DIR} 下: cmake -S . -B build && cmake --build build"

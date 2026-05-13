@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 # 将仓库内 example/ 增量同步到目标目录（默认 /workspace/Test）。
-# 使用 rsync：只传输变更文件，不每次整目录重写。
+# 须在 Docker 容器 sy_dev（与编库、填充 example 相同环境）内执行。使用 rsync：只传输变更文件，不每次整目录重写。
 #
-# 用法（请分两行执行，不要把「# 说明」粘在 chmod 同一行，否则 # 可能被当成 chmod 的参数）：
-#   chmod +x scripts/sync_example_to_workspace_test.sh
-#   ./scripts/sync_example_to_workspace_test.sh
-#
-# 指定目标：
-#
+# 用法：在容器内仓库根 ./scripts/menu.sh 选 4；或直接 ./scripts/sync_example_to_workspace_test.sh（首次 chmod +x）。
 # 依赖：rsync（容器 sy_env / 常见 Linux 均有）。
 set -euo pipefail
 

@@ -1,4 +1,4 @@
-#include "rokae_force_controller_public.hpp"
+#include "rokae_force_controller.hpp"
 #include "client_demo_macros.h"
 
 #ifdef _WIN32

@@ -11,6 +11,8 @@
  * @brief:力控对外接口
  */
 #include "rokae_header/rokae_force_controller.hpp"
+#include "rokae_header/basic_interface.hpp"
+#include "rokae_header/data_structure_define.hpp"
 
 namespace RokaeApi {
 namespace External {
