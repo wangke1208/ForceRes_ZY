@@ -1,4 +1,6 @@
 /build/
 /log/
 /example/lib/*.a
+/example/build/
 /example/demos/build/
+/example/3rd/

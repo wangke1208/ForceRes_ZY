@@ -9,6 +9,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# 单配置生成器默认 Release，利于体积与性能
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE
+      "Release"
+      CACHE STRING "Choose Release, Debug, RelWithDebInfo, or MinSizeRel." FORCE)
+endif()
+
 # 仅使用仓库内 3rd/eigen；不完整则配置失败，不尝试下载
 set(EIGEN3_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/3rd/eigen")
 if(NOT EXISTS "${EIGEN3_INCLUDE_DIR}/Eigen/Core")
@@ -28,14 +35,11 @@ endif()
 find_package(Boost REQUIRED)
 find_package(Threads REQUIRED)
 
-# 仅编译业务与 KDL，不包含 example/ 下任何源码
+# 仅编译业务与 KDL 子集，不包含 example/ 下任何源码
 file(GLOB_RECURSE ROKAE_CXX CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/rokae_src/*.cpp")
-file(GLOB_RECURSE KDL_CXX CONFIGURE_DEPENDS
-  "${CMAKE_SOURCE_DIR}/3rd/kdl/*.cpp"
-  "${CMAKE_SOURCE_DIR}/3rd/kdl/*.cxx"
-)
+include("${CMAKE_SOURCE_DIR}/cmake/kdl_sources.cmake")
 
-add_library(force_res STATIC ${ROKAE_CXX} ${KDL_CXX})
+add_library(force_res STATIC ${ROKAE_CXX} ${FORCE_RES_KDL_SOURCES})
 
 # 静态库输出到 example/lib（模拟对外发布目录）
 set_target_properties(
@@ -47,7 +51,7 @@ set_target_properties(
 target_compile_definitions(
   force_res
   PUBLIC SPDLOG_HEADER_ONLY FMT_HEADER_ONLY
-)
+  PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:NDEBUG>)
 
 target_include_directories(
   force_res
@@ -64,5 +68,13 @@ else()
   target_include_directories(force_res PUBLIC ${Boost_INCLUDE_DIRS})
   target_link_libraries(force_res PUBLIC Threads::Threads)
 endif()
+
+# 发布向体积：Release/MinSizeRel 下减小调试节；分段便于 GNU 链接 demo 时 --gc-sections 裁剪
+target_compile_options(
+  force_res
+  PRIVATE
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang,GNU>,$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>>:-g0>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang,GNU>>:-ffunction-sections>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang,GNU>>:-fdata-sections>)
 
 # 根工程不构建 example 内可执行文件；示例见 example/demos

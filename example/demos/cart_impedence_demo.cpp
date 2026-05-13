@@ -1,4 +1,5 @@
-#include "rokae_header/rokae_force_controller.hpp"
+#include "rokae_force_controller_public.hpp"
+#include "client_demo_macros.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -226,7 +227,7 @@ int main() {
             init = false;
         }
 
-        angle = KDL::PI / 4 * (1 - std::cos(KDL::PI / 2 * time));
+        angle = FORCE_RES_EXAMPLE_PI / 4 * (1 - std::cos(FORCE_RES_EXAMPLE_PI / 2 * time));
         delta_z = kRadius * (std::cos(angle) - 1);
         cart_pos_cmd[2] = cart_pos_init[2] + delta_z;
 

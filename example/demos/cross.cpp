@@ -1,4 +1,5 @@
-﻿#include "rokae_header/rokae_force_controller.hpp"
+﻿#include "rokae_force_controller_public.hpp"
+#include "client_demo_macros.h"
 
 #ifdef _WIN32
 #include <crtdbg.h>
@@ -220,7 +221,7 @@ int main() {
     SPD_CONTAINER("关节扭矩", jnt_trq_feedback);
 
     // 4.1获取法兰位置
-    double deg2rad = KDL::PI / 180.0;
+    double deg2rad = FORCE_RES_EXAMPLE_PI / 180.0;
     jnt_pos_rad = {7.520*deg2rad, 2.843*deg2rad,-19.656*deg2rad, -13.860*deg2rad,
                    30.490*deg2rad, -18.125*deg2rad,  -13.978*deg2rad};
 

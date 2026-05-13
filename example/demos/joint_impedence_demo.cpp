@@ -1,4 +1,5 @@
-#include "rokae_header/rokae_force_controller.hpp"
+#include "rokae_force_controller_public.hpp"
+#include "client_demo_macros.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -191,7 +192,7 @@ int main() {
             init = false;
         }
 
-        angle = KDL::PI / 4 * (1 - std::cos(KDL::PI / 2 * time));
+        angle = FORCE_RES_EXAMPLE_PI / 4 * (1 - std::cos(FORCE_RES_EXAMPLE_PI / 2 * time));
         jnt_pos_cmd[6] = jnt_pos_init[6] + angle;
 
         res = RokaeForce_FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd,
