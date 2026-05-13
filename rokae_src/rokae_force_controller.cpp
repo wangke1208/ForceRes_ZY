@@ -122,15 +122,15 @@ int RokaeForce_SetFricGain(const std::vector<int8_t>& PDO_0x6061, const std::vec
 int RokaeForce_SetJointImpedance(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& joint_impedance) {
     return BasicInterface::SetJointImpedance(PDO_0x6061, joint_impedance);
 };
-int RokaeForce_SetCartesianImpedance(const std::vector<int8_t>& PDO_0x6061, const std::array<double, 6>& cartesian_impedance) {
-    return BasicInterface::SetCartImpedance(PDO_0x6061, cartesian_impedance);
-};
+// int RokaeForce_SetCartesianImpedance(const std::vector<int8_t>& PDO_0x6061, const std::array<double, 6>& cartesian_impedance) {
+//     return BasicInterface::SetCartImpedance(PDO_0x6061, cartesian_impedance);
+// };
 
 // ================== 参数设置接口(允许实时设置) ==================
 
-int RokaeForce_SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {
-    return BasicInterface::SetBaseFrameAndGravity(base_poseture);
-}
+// int RokaeForce_SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture) {
+//     return BasicInterface::SetBaseFrameAndGravity(base_poseture);
+// }
 
 // ================== 单独计算接口(可自行输入数据) ==================
 
@@ -147,10 +147,10 @@ int RokaeForce_GetCobotTrq(const std::vector<int16_t>& PDO_0x2401, const std::ve
     return BasicInterface::GetCobotTrq(PDO_0x2401, PDO_0x2402, jnt_trq_feedback);
 }
 
-void RokaeForce_GetTcpWrench(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, const std::vector<double>& jnt_trq_feedback,
-                  const std::vector<double>& jnt_gra_trq, std::array<double, 6>& ext_force) {
-    BasicInterface::GetTcpWrench(RokaeLoadConvert(load), jnt_pos, jnt_trq_feedback, jnt_gra_trq, ext_force);
-}
+// void RokaeForce_GetTcpWrench(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, const std::vector<double>& jnt_trq_feedback,
+//                   const std::vector<double>& jnt_gra_trq, std::array<double, 6>& ext_force) {
+//     BasicInterface::GetTcpWrench(RokaeLoadConvert(load), jnt_pos, jnt_trq_feedback, jnt_gra_trq, ext_force);
+// }
 
 int RokaeForce_GetGraTorque(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, std::vector<double>& trq_gravity) {
     return BasicInterface::GetGraTorque(RokaeLoadConvert(load), jnt_pos, trq_gravity);
@@ -179,51 +179,51 @@ int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& 
     return BasicInterface::GetJointPos(q_init, GF, q_out);
 }
 
-int RokaeForce_GetCurPsi(const std::vector<double>& curJntPose, double& psi) {
-    return BasicInterface::GetCurPsi(curJntPose, psi);
-}
+// int RokaeForce_GetCurPsi(const std::vector<double>& curJntPose, double& psi) {
+//     return BasicInterface::GetCurPsi(curJntPose, psi);
+// }
 
-int RokaeForce_GetFlanPos(const std::vector<double>& jnt_pos,
-                         std::array<double, 16>& flanTobase_pos) {
+// int RokaeForce_GetFlanPos(const std::vector<double>& jnt_pos,
+//                          std::array<double, 16>& flanTobase_pos) {
 
-    return BasicInterface::GetFlanPos(jnt_pos, flanTobase_pos);
-}
-int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
-                         std::array<double, 16>& toolTobase_pos, std::array<double, 6>& tcp_pos) {
-    return BasicInterface::GetTcpPos(RokaeLoadConvert(load), jnt_pos, toolTobase_pos, tcp_pos);
-}
+//     return BasicInterface::GetFlanPos(jnt_pos, flanTobase_pos);
+// }
+// int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
+//                          std::array<double, 16>& toolTobase_pos, std::array<double, 6>& tcp_pos) {
+//     return BasicInterface::GetTcpPos(RokaeLoadConvert(load), jnt_pos, toolTobase_pos, tcp_pos);
+// }
 
-int RokaeForce_GetMassMatrix(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
-    return BasicInterface::GetMassMatrix(RokaeLoadConvert(load), jnt_pos, mass_matrix);
-}
+// int RokaeForce_GetMassMatrix(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix) {
+//     return BasicInterface::GetMassMatrix(RokaeLoadConvert(load), jnt_pos, mass_matrix);
+// }
 
-int RokaeForce_GetTcpJacobian(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
-                              Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
-    return BasicInterface::GetTcpJacobian(RokaeLoadConvert(load), jnt_pos, jacobian);
-}
+// int RokaeForce_GetTcpJacobian(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
+//                               Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
+//     return BasicInterface::GetTcpJacobian(RokaeLoadConvert(load), jnt_pos, jacobian);
+// }
 
-// ================== 获取拖动状态下的实时数据 ==================
+// ================== 获取拖动状态下的实时数据 （暂时都屏蔽了）==================
 
-int RokaeForce_GetAxisPosCurrent(std::vector<double>& jnt_pos_rad) { return BasicInterface::GetAxisPosCurrent(jnt_pos_rad); }
+// int RokaeForce_GetAxisPosCurrent(std::vector<double>& jnt_pos_rad) { return BasicInterface::GetAxisPosCurrent(jnt_pos_rad); }
 
-int RokaeForce_GetAxisVelCurrent(std::vector<double>& jnt_vel_rad) { return BasicInterface::GetAxisVelCurrent(jnt_vel_rad); }
+// int RokaeForce_GetAxisVelCurrent(std::vector<double>& jnt_vel_rad) { return BasicInterface::GetAxisVelCurrent(jnt_vel_rad); }
 
-int RokaeForce_GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback) {
-    return BasicInterface::GetCobotTrqCurrent(jnt_trq_feedback);
-}
+// int RokaeForce_GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback) {
+//     return BasicInterface::GetCobotTrqCurrent(jnt_trq_feedback);
+// }
 
-int RokaeForce_GetTcpWrenchCurrent(std::array<double, 6>& ext_force) { return BasicInterface::GetTcpWrenchCurrent(ext_force); }
+// int RokaeForce_GetTcpWrenchCurrent(std::array<double, 6>& ext_force) { return BasicInterface::GetTcpWrenchCurrent(ext_force); }
 
-int RokaeForce_GetTcpPosCurrent(std::array<double, 6>& tcp_pos) { return BasicInterface::GetTcpPosCurrent(tcp_pos); }
+// int RokaeForce_GetTcpPosCurrent(std::array<double, 6>& tcp_pos) { return BasicInterface::GetTcpPosCurrent(tcp_pos); }
 
-int RokaeForce_GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis,
-                                       Eigen::MatrixXd& mass_matrix) {
-    return BasicInterface::GetDynamicTorqueCurrent(trq_gravity, trq_coriolis, mass_matrix);
-}
+// int RokaeForce_GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis,
+//                                        Eigen::MatrixXd& mass_matrix) {
+//     return BasicInterface::GetDynamicTorqueCurrent(trq_gravity, trq_coriolis, mass_matrix);
+// }
 
-int RokaeForce_GetJacobianCurrent(Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
-    return BasicInterface::GetJacobianCurrent(jacobian);
-}
+// int RokaeForce_GetJacobianCurrent(Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian) {
+//     return BasicInterface::GetJacobianCurrent(jacobian);
+// }
 
 // ================== 其他功能 ==================
 

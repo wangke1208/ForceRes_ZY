@@ -175,23 +175,6 @@ int RokaeForce_SetFricGain(const std::vector<int8_t>& PDO_0x6061, const std::vec
  */
 int RokaeForce_SetJointImpedance(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& joint_impedance_stiffness);
 
-/**
- * @brief 设置笛卡尔阻抗刚度
- * @param[in] PDO_0x6061
- * @param[in] cartesian_impedance_stiffness 笛卡尔阻抗刚度
- * @return
- */
-int RokaeForce_SetCartesianImpedance(const std::vector<int8_t>& PDO_0x6061,
-                                     const std::array<double, 6>& cartesian_impedance_stiffness);
-// ================== 参数设置接口(允许实时设置) ==================
-
-/**
- * @brief 设置基坐标系和重力矢量
- * @param[in] base_poseture 基坐标系方向(x,y,z,a,b,c)单位：x、y、z m，a、b、c 度
- * @return
- */
-int RokaeForce_SetBaseFrameAndGravity(const std::array<double, 6>& base_poseture);
-
 // ================== 单独计算接口(可自行输入数据) ==================
 /**
  * @brief 获取关节位置
@@ -218,18 +201,6 @@ int RokaeForce_GetAxisVel(const std::vector<int>& PDO_0x606C, std::vector<double
  */
 int RokaeForce_GetCobotTrq(const std::vector<int16_t>& PDO_0x2401, const std::vector<int16_t>& PDO_0x2402,
                            std::vector<double>& jnt_trq_feedback);
-
-/**
- * @brief 获取 TCP 力和扭矩
- * @param[in] load 负载信息
- * @param[in] jnt_pos 关节位置(rad/s)
- * @param[in] jnt_trq_feedback 关节扭矩反馈(N.m)
- * @param[in] jnt_gra_trq 关节重力扭矩(N.m)
- * @param[out] ext_force 外部力和扭矩(N & N.m)
- */
-void RokaeForce_GetTcpWrench(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
-                             const std::vector<double>& jnt_trq_feedback, const std::vector<double>& jnt_gra_trq,
-                             std::array<double, 6>& ext_force);
 
 /**
  * @brief 获取重力扭矩
@@ -286,104 +257,6 @@ int RokaeForce_GetTotalTorque(const External_RokaeLoad& load, const std::vector<
 int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& psi, const std::vector<double>& q_init,
                            std::vector<double>& q_out);
 
-/**
- * @brief 获取当前臂角
- * @param[in] curJntPose 机器人当前关节角度
- * @param[out] psi 当前臂角
- * @return 错误码，参考 IkSolveRes 枚举
- */
-int RokaeForce_GetCurPsi(const std::vector<double>& curJntPose, double& psi);
-
-/**
- * @brief 获取Flan位姿
- * @param[in] jnt_pos 关节位置
- * @param[out] flanTobase_pos 法兰到基座的变换矩阵
- * @return 错误码
- */
-int RokaeForce_GetFlanPos(const std::vector<double>& jnt_pos, std::array<double, 16>& flanTobase_pos);
-/**
- * @brief 获取TCP位姿
- * @param[in] load 负载信息
- * @param[in] jnt_pos 关节位置
- * @param[out] toolTobase_pos 工具到基座的变换矩阵
- * @param[out] tcp_pos TCP位姿
- * @return 错误码
- */
-int RokaeForce_GetTcpPos(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
-                         std::array<double, 16>& toolTobase_pos, std::array<double, 6>& tcp_pos);
-
-/**
- * @brief 从关节位置计算质量矩阵
- * @param[in] load 负载参数
- * @param[in] jnt_pos 关节位置
- * @param[out] mass_matrix 关节空间惯性矩阵
- * @return 错误码
- */
-int RokaeForce_GetMassMatrix(const External_RokaeLoad& load, const std::vector<double>& jnt_pos, Eigen::MatrixXd& mass_matrix);
-
-/**
- * @brief 获取 TCP 雅可比矩阵
- * @param[in] load 负载信息
- * @param[in] jnt_pos 关节位置
- * @param[out] jacobian TCP 雅可比矩阵
- * @return 错误码
- */
-int RokaeForce_GetTcpJacobian(const External_RokaeLoad& load, const std::vector<double>& jnt_pos,
-                              Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian);
-
-// ================== 获取拖动状态下的实时数据 ==================
-
-/**
- * @brief 获取当前关节位置
- * @param[out] jnt_pos 用于存储当前关节位置的向量，单位为角度
- * @return 错误码
- */
-int RokaeForce_GetAxisPosCurrent(std::vector<double>& jnt_pos);
-
-/**
- * @brief 获取当前关节速度
- * @param[out] jnt_vel 用于存储当前关节速度的向量，单位为角度/秒
- * @return 错误码
- */
-int RokaeForce_GetAxisVelCurrent(std::vector<double>& jnt_vel);
-
-/**
- * @brief 获取当前协作机器人关节扭矩反馈
- * @param[out] jnt_trq_feedback 关节扭矩反馈
- * @return 错误码
- */
-int RokaeForce_GetCobotTrqCurrent(std::vector<double>& jnt_trq_feedback);
-
-/**
- * @brief 获取当前 TCP（工具中心点）的力和扭矩
- * @param[out] ext_force xyz方向力，rxryrz方向扭矩，单位为N和N.m
- * @return 错误码
- */
-int RokaeForce_GetTcpWrenchCurrent(std::array<double, 6>& ext_force);
-
-/**
- * @brief 获取当前 TCP（工具中心点）的位置
- * @param[out] tcp_pos xyz方向位置，RPY欧拉角旋转角度，单位为m和度
- * @return 错误码
- */
-int RokaeForce_GetTcpPosCurrent(std::array<double, 6>& tcp_pos);
-
-/**
- * @brief 获取当前的重力扭矩、科里奥利力扭矩和惯性矩阵
- * @param[out] trq_gravity 重力矩
- * @param[out] trq_coriolis 科里奥利力扭矩
- * @param[out] mass_matrix 惯性矩阵
- * @return 错误码
- */
-int RokaeForce_GetDynamicTorqueCurrent(std::vector<double>& trq_gravity, std::vector<double>& trq_coriolis,
-                                       Eigen::MatrixXd& mass_matrix);
-
-/**
- * @brief 获取当前的 TCP 雅可比矩阵
- * @param[out] jacobian 用于存储当前 TCP 雅可比矩阵的 Eigen 矩阵
- * @return 错误码
- */
-int RokaeForce_GetJacobianCurrent(Eigen::Matrix<double, 6, Eigen::Dynamic>& jacobian);
 
 // ================== 其他功能 ==================
 /**

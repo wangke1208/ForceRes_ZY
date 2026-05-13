@@ -315,7 +315,7 @@ int ForceControl::FcUpdate(const std::vector<int8_t>& servo_mode_from_servo, con
               fc_jnt_inertia_to_servo.begin());
 
     // 8. 拷贝外部状态数据（加锁保护）
-    FcStatusCopy(m_fc_status_inner);
+    //FcStatusCopy(m_fc_status_inner);
 
     return SOLVE_NOERROR;
 }
