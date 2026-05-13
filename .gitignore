@@ -1,0 +1,4 @@
+/build/
+/log/
+/example/lib/*.a
+/example/demos/build/

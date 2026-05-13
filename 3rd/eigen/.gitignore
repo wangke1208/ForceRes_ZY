@@ -8,8 +8,10 @@ save
 *.old
 *.gmo
 *.qm
-core
-core.*
+# 不要用裸规则 `core`：在大小写不敏感的文件系统上会误匹配 `Eigen/Core`，导致主仓库看不到 Eigen。
+# 仅忽略本目录根下的 core dump 文件。
+/core
+/core.*
 *.bak
 *~
 *build*
