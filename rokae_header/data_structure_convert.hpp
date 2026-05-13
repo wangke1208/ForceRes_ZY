@@ -217,12 +217,6 @@ inline int ConfigurationToRobotParams(const Model::RobotConfiguration& in, Model
     std::copy(in.protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL.begin(),
               in.protect_config_params.SWITCH_THRESHOLD_OF_TORQUE_CONTROL.end(),
               control_out.m_protect_params.max_mode_switch_trq.begin());
-    //传感器动态补偿拟合参数
-    std::copy(in.control_config_params.SENSOR_BIAS_DYNAMIC.begin(), in.control_config_params.SENSOR_BIAS_DYNAMIC.end(), control_out.m_gain_params.sensor_bias_dynamic.begin());
-    std::copy(in.control_config_params.POS_FIX_PARMAS.begin(), in.control_config_params.POS_FIX_PARMAS.end(), control_out.m_gain_params.pos_fix_params.begin());
-    std::copy(in.control_config_params.NEG_FIX_PARMAS.begin(), in.control_config_params.NEG_FIX_PARMAS.end(), control_out.m_gain_params.neg_fix_params.begin());
-    std::copy(in.control_config_params.IS_SUPPORT_SENSOR_FIX.begin(), in.control_config_params.IS_SUPPORT_SENSOR_FIX.end(), control_out.m_gain_params.is_support_sensor_fix.begin());
-
     return SOLVE_NOERROR;
 }
 

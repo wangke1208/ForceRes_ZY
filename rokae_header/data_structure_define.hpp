@@ -452,10 +452,6 @@ struct GainParams {
     std::vector<double> impedence_joint_servo_kp;
     std::vector<double> jnt_imp_damp_zeta;
     std::vector<double> cart_imp_damp_zeta;
-    std::vector<double> sensor_bias_dynamic;
-    std::vector<double> pos_fix_params;
-    std::vector<double> neg_fix_params;
-    std::vector<bool> is_support_sensor_fix;
     GainParams(unsigned int jnt_num = 7)
         : m_jnt_num(jnt_num),
           joint_gain_kp(jnt_num, 1.0),
@@ -468,11 +464,7 @@ struct GainParams {
           impedence_friction_cof_servo(jnt_num, 0.4),
           impedence_joint_servo_kp(jnt_num, 1.0),
           jnt_imp_damp_zeta(jnt_num, 0.5),
-          cart_imp_damp_zeta(6, 0.5),
-          sensor_bias_dynamic(jnt_num, 2500),
-          pos_fix_params(jnt_num * 9, 0.0),
-          neg_fix_params(jnt_num * 9, 0.0),
-          is_support_sensor_fix(jnt_num, false) {}
+          cart_imp_damp_zeta(6, 0.5) {}
 };
 
 struct ControlParams {
@@ -517,7 +509,6 @@ struct FcInner_To_Servo {
     std::vector<int16_t> k_d_reset_by_load;
     std::vector<int16_t> edb_cof;
     std::vector<int16_t> edb_o;
-    std::vector<int16_t> edb_o_fix;
     std::vector<int16_t> fric_cof;
     std::vector<int16_t> jnt_inertia;
 
@@ -532,7 +523,6 @@ struct FcInner_To_Servo {
         ResizeVector(k_d_reset_by_load, jnt_num, static_cast<int16_t>(70));
         ResizeVector(edb_cof, jnt_num, static_cast<int16_t>(100));
         ResizeVector(edb_o, jnt_num, static_cast<int16_t>(0));
-        ResizeVector(edb_o_fix, jnt_num, static_cast<int16_t>(0));
         ResizeVector(fric_cof, jnt_num, static_cast<int16_t>(10));
         ResizeVector(jnt_inertia, jnt_num, static_cast<int16_t>(700));
 
@@ -551,7 +541,6 @@ struct FcInner_To_Servo {
         std::fill(k_d_reset_by_load.begin(), k_d_reset_by_load.end(), 0);
         std::fill(edb_cof.begin(), edb_cof.end(), 0);
         std::fill(edb_o.begin(), edb_o.end(), 0);
-        std::fill(edb_o_fix.begin(), edb_o_fix.end(), 0);
         std::fill(fric_cof.begin(), fric_cof.end(), 0);
         std::fill(jnt_inertia.begin(), jnt_inertia.end(), 0);
     }
@@ -630,11 +619,6 @@ struct FcStatusInner {
     //工具坐标系
     KDL::Frame tool_in_flan;
 
-    //传感器动态拟合
-    std::vector<int> analog_bias_fix;
-    std::vector<int> analog_fix;
-    std::vector<double> torque_fix;
-
     FcStatusInner(unsigned int jnt_num)
         : drag_type(DRAG_JOINT),
           jnt_pos_command(jnt_num),
@@ -683,10 +667,7 @@ struct FcStatusInner {
           jac_command_tcp_in_base(jnt_num),
           mani_measure(0.0),
           jnt_trq_final_cmd(jnt_num),
-          tool_in_flan(KDL::Frame::Identity()),
-          analog_bias_fix(jnt_num),
-          analog_fix(jnt_num),
-          torque_fix(jnt_num) {}
+          tool_in_flan(KDL::Frame::Identity()) {}
 
 #define SET_FC_STATUS_INFO(name) this->name = fc_status_inner.name
     FcStatusInner& operator=(const FcStatusInner fc_status_inner) {
@@ -738,9 +719,6 @@ struct FcStatusInner {
         SET_FC_STATUS_INFO(mani_measure);
         SET_FC_STATUS_INFO(jnt_trq_final_cmd);
         SET_FC_STATUS_INFO(tool_in_flan);
-        SET_FC_STATUS_INFO(analog_bias_fix);
-        SET_FC_STATUS_INFO(analog_fix);
-        SET_FC_STATUS_INFO(torque_fix);
         return *this;
     }
 };

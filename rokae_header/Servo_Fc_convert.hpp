@@ -76,46 +76,6 @@ class Axis_Convert {
     int SetEncoderBias(const std::vector<int>& encoder_bias_set);
 
     /**
-     * @brief 设置动态传感器零点
-     * @param [in] dynamic_bias 动态传感器零点
-     * @return 错误码
-     */
-    int SetDynamicSensorBias(const std::vector<double>& dynamic_bias);
-
-    /**
-     * @brief 设置动态补偿参数
-     * @param [in] positive_fix_params 正向运动拟合参数
-     * @param [in] negative_fix_params 负向运动拟合参数
-     * @param [in] is_support_sensor_fix 是否支持传感器补偿
-
-     * @return 错误码
-     */
-    int SetFixParams(const std::vector<double>& positive_fix_params, const std::vector<double>& negative_fix_params,
-                     const std::vector<bool>& is_support_sensor_fix);
-
-    /**
-     * @brief 计算补偿电压(3次正弦和)
-     * @param [in] jnt_num 第几个关节
-     * @param [in] is_positive 是否正向运动
-     * @param [in] jnt_pos 关节角度
-     * @param [out] error_analog 补偿电压
-     */
-    void CalFixAnalog(const unsigned int jnt_num, const bool& is_positive, const double& jnt_pos, double& error_analog);
-
-    /**
-     * @brief 计算补偿后的零点电压以及关节力矩
-     * @param [in] analog_ch1 通道1实际电压
-     * @param [in] analog_ch2 通道2实际电压
-     * @param [in] jnt_pos 关节角度
-     * @param [in] jnt_vel 关节速度
-     * @param [out] analog_fix 补偿后的电压
-     * @param [out] analog_bias_fix 补偿后的动态零点电压
-     * @param [out] torque_fix 补偿后的力矩
-     */
-    void CalFixTorque(const std::vector<int16_t>& analog_ch1, const std::vector<int16_t>& analog_ch2,
-                      const std::vector<double>& jnt_pos, const std::vector<double>& jnt_vel, std::vector<int>& analog_fix,
-                      std::vector<int>& analog_bias_fix, std::vector<double>& torque_fix);
-    /**
      * @brief 根据关节速度获取伺服电机的速度编码器值
      * @param [in] axis_vel_rad 输入的关节速度（单位：弧度/秒）
      * @param [out] vel_reg_value 伺服电机的速度编码器值
@@ -204,16 +164,6 @@ class Axis_Convert {
     std::vector<double> m_analog_bias;      ///< 传感器偏移量（零点）
     std::vector<double> m_sensor_amplify;   ///< 放大系数（目前默认为1）
     std::vector<double> m_sensor_trq;       ///< 转换后的力矩值
-
-    // 传感器动态补偿
-    std::vector<double> m_sensor_bias_dynamic;            ///< 传感器动态补偿基准零点
-    std::vector<std::array<double, 9>> m_pos_fix_params;  ///< 传感器动态补偿正向运动系数
-    std::vector<std::array<double, 9>> m_neg_fix_params;  ///< 传感器动态补偿负向运动系数
-    std::vector<double> m_gain_bias;                      ///< 传感器动态补偿增益(1代表补偿，0就不补偿)
-    double m_threshold_of_vel_noise;                      ///< 速度反馈噪声阈值
-    std::vector<bool> m_current_vel_is_positive;          ///< 当前速度是否为正
-    std::vector<bool> m_last_vel_is_positive;             ///< 上一次速度是否为正
-    std::vector<double> m_analog_error;                   ///< 补偿的电压误差
 };
 
 /**

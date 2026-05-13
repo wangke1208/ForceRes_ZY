@@ -27,10 +27,7 @@ enum External_MechUnitType { AR5_L, AR5_R, AR5C_L, AR5C_R };
 
 enum External_DragType {
     DRAG_JOINT,       //轴空间拖动（目前只支持这一种）
-    DRAG_CART_TRANS,  //笛卡尔空间仅平移
-    DRAG_CART_ROT,    //笛卡尔空间仅旋转
     IMPEDANCE_JOINT,  //关节阻抗
-    IMPEDANCE_CART    //笛卡尔阻抗
 };
 struct External_RokaeLoad {
     //坐标系参数
@@ -135,26 +132,6 @@ int RokaeForce_SetSensorBias(const std::vector<int8_t>& PDO_0x6061, const std::v
  * @return
  */
 int RokaeForce_SetEncoderOffset(const std::vector<int8_t>& PDO_0x6061, const std::vector<int32_t>& encoder_offset);
-
-/**
- * @brief 设置传感器动态补偿系数
- * @param[in] servo_mode 伺服模式
- * @param[in] dynamic_sensor_bias_baseline 传感器基准电压
- * @param[in] pos_sensor_fix_params 正向拟合参数
- * @param[in] neg_sensor_fix_params 负向拟合参数
- * @return
- */
-int RokaeForce_SetSensorFixParams(const std::vector<int8_t>& servo_mode, const std::vector<double>& dynamic_sensor_bias_baseline,
-                                  const std::vector<double>& pos_sensor_fix_params,
-                                  const std::vector<double>& neg_sensor_fix_params);
-
-/**
- * @brief 设置传感器动态补偿开关
- * @param[in] servo_mode 伺服模式
- * @param[in] is_support_sensor_fix 是否允许开启传感器动态补偿
- * @return
- */
-int RokaeForce_SetSensorDynamicFixSwitch(const std::vector<int8_t>& servo_mode, const std::vector<bool>& is_support_sensor_fix);
 
 /**
  * @brief 设置关节软限位

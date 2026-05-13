@@ -31,7 +31,6 @@ const unsigned int DEFAULT_CART_GAIN_SIZE = 3;
 const unsigned int SIZE_LINK_INERITA = 6;
 const unsigned int SIZE_LINK_CENTROID = 3;
 const unsigned int SIZE_LINK_RD = 3;
-const unsigned int DEFAULT_SENSOR_FIX_SIZE = 9;
 struct ControlConfigParams {
     std::vector<double> CTRL_BANDWIDTH_SERVO_EXEC;  // 拖动带宽
     std::vector<double> CTRL_ZETA_SERVO_EXEC;       // 拖动阻尼比
@@ -44,10 +43,6 @@ struct ControlConfigParams {
     std::vector<double> FRICTION_COF_IMPED;              //阻抗摩擦力补偿
     std::vector<double> JOINT_IMPEDANCE_CTRL_DAMP_ZETA;
     std::vector<double> CART_IMPEDANCE_CTRL_DAMP_ZETA;
-    std::vector<double> SENSOR_BIAS_DYNAMIC;
-    std::vector<double> POS_FIX_PARMAS;
-    std::vector<double> NEG_FIX_PARMAS;
-    std::vector<bool> IS_SUPPORT_SENSOR_FIX;
     ControlConfigParams(unsigned int jnt_num = DEFAULT_AXIS);
     void Resize(unsigned int jnt_num);
 };

@@ -77,6 +77,7 @@ int InitInterface(const Model::MechUnitType& robot_type) {
         std::cerr << "Failed to initialize InitRobot: " << e.what() << std::endl;
         return ERROR_ROBOTTYPE;
     }
+    LOG_INFO("初始化参数模块成功");
 
     // 3.初始化力控模块
     forcecontrol_ptr = std::make_shared<Control::ForceControl>(initrobot_ptr.get());
@@ -84,6 +85,7 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     if (res_forcecontrol != SOLVE_NOERROR) {
         return res_forcecontrol;
     }
+    LOG_INFO("初始化力控模块成功");
 
     // 4.初始化其他模块(用来计算的)
     axisconvert_ptr = std::make_shared<Axis_Convert>(initrobot_ptr->GetJntNum(), initrobot_ptr.get()->GetMechanicalParams());
@@ -115,6 +117,7 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     inertia_matrix_temp.resize(jnt_num);
 
     is_initialized = true;
+    LOG_INFO("整体初始化完成");
     return SOLVE_NOERROR;
 }
 
@@ -224,43 +227,6 @@ int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<in
     if (res2 != SOLVE_NOERROR) {
         return res2;
     }
-    return SOLVE_NOERROR;
-}
-
-int SetSensorFixParams(const std::vector<int8_t>& servo_mode, const std::vector<double>& dynamic_sensor_bias_baseline,
-                       const std::vector<double>& pos_sensor_fix_params, const std::vector<double>& neg_sensor_fix_params) {
-    //判断伺服模式是否处于位置模式
-    if (IsInPositionMode(servo_mode) != true) {
-        return ERROR_SERVO_MODE;
-    }
-    //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() == true) {
-        return ERROR_DRAG_STATUS;
-    }
-
-    //设置动态补偿参数
-    auto is_support_dynamic_fix = initrobot_ptr->GetControlParams().m_gain_params.is_support_sensor_fix;
-    auto res1 = forcecontrol_ptr->SetSensorFIxParams(dynamic_sensor_bias_baseline, pos_sensor_fix_params, neg_sensor_fix_params);
-    auto res2 = axisconvert_ptr->SetFixParams(pos_sensor_fix_params, neg_sensor_fix_params, is_support_dynamic_fix);
-    if (res1 != SOLVE_NOERROR) {
-        return res1;
-    }
-    if (res2 != SOLVE_NOERROR) {
-        return res2;
-    }
-    return SOLVE_NOERROR;
-}
-
-int SetSensorDynamicFixSwitch(const std::vector<int8_t>& servo_mode, const std::vector<bool>& is_support_sensor_fix) {
-    //判断伺服模式是否处于位置模式
-    if (IsInPositionMode(servo_mode) != true) {
-        return ERROR_SERVO_MODE;
-    }
-    //判断是否进行了DragConfig
-    if (forcecontrol_ptr->GetDragStatus() == true) {
-        return ERROR_DRAG_STATUS;
-    }
-    auto res1 = forcecontrol_ptr->SetSensorDynamicFixSwitch(is_support_sensor_fix);
     return SOLVE_NOERROR;
 }
 
