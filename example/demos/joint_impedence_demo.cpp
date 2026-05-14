@@ -2,13 +2,17 @@
 #include "client_demo_macros.h"
 
 #ifdef _WIN32
+#include <crtdbg.h>
 #include <windows.h>
 #endif
 
 using namespace RokaeApi;
 using namespace RokaeApi::External;
+
 int main() {
 #ifdef _WIN32
+    // 内存泄漏检查
+    // _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     SetConsoleOutputCP(CP_UTF8);
 #endif
 
@@ -18,8 +22,9 @@ int main() {
     // 1.Deinit，防止有内存残留
     RokaeForce_Deinit();
 
-    // 2.建立机器人模型(7轴机器人)
-    res = RokaeForce_InitByModelName("AR5-3_0.7R-W4C1C5-S2");
+    // 2.建立机器人模型(左臂)
+    std::array<double,3> base_rot = {-90,0.0,0.0}; //基座标系旋转角度
+    res = RokaeForce_InitByModelName("AR5-5_0.8L-W4C1C5-ZY2",base_rot);
     if (res != 0) {
         LOG_ERROR("机器人初始化失败,错误码为 {}", res);
         return -1;
@@ -41,7 +46,7 @@ int main() {
 
     // 2.设置传感器线性度
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<double> sensor_linearity = {2.25, 2.2, 2.35, 2.25, 2.25, 2.25, 2.26};
+    std::vector<double> sensor_linearity = {2.111447, 2.025197, 2.241651, -2.163994, 1.668150, 2.269543, -2.287792};
     res = RokaeForce_SetSensorLinearity(PDO_0x6061, sensor_linearity);
     if (res != 0) {
         LOG_ERROR("传感器线性度设置失败,错误码为 {}", res);
@@ -101,8 +106,8 @@ int main() {
 
     // 6.设置力控软限位
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<double> soft_limit_low = {-178, -120, -178, -80, -178, -110, -180};
-    std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 110, 180};
+    std::vector<double> soft_limit_low = {-178, -120, -178, -60, -178, -50, -50};
+    std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 50, 50};
 
     res = RokaeForce_SetSoftLimit(PDO_0x6061, soft_limit_low, soft_limit_high);
     if (res != 0) {
@@ -135,7 +140,7 @@ int main() {
     std::vector<int16_t> PDO_0x2402 = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
     External_DragType drag_type = External_DragType::IMPEDANCE_JOINT;
 
-    bool is_command_by_user = false;
+    bool is_command_by_user = false;   //这里一定要给false，关节阻抗暂时用不到这个，这个是纯由客户去进行力矩指令的计算与下发
     res = RokaeForce_DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type, is_command_by_user);
     if (res != 0) {
         LOG_ERROR("力控配置出错,错误码为 {}", res);
@@ -168,26 +173,25 @@ int main() {
     double time = 0;
     double angle = 0.0;
     std::vector<double> jnt_pos_init(7);           //弧度
-    std::vector<double> jnt_pos_cmd(7);  //轴空间关节指令
+    std::vector<double> jnt_pos_cmd_from_user(7);  //轴空间关节指令
     std::vector<double> jnt_trq_cmd_from_user(7);
-    jnt_trq_cmd_from_user = {5, 5, 5, 5, 5, 5, 5};
-    std::array<double, 6> cart_cmd_zero{}; //笛卡尔空间指令随便给个值即可，不参与计算
+    jnt_trq_cmd_from_user = {5, 5, 5, 5, 5, 5, 5};   //随便给一个值就行，不起作用
+    std::array<double, 6> cart_cmd_zero{0,0,0,0,0,0}; //笛卡尔空间指令随便给个值即可，不参与计算
     while (time < continue_time) {
         time += step_time;
         if (init) {
             RokaeForce_GetAxisPos(PDO_0x6064, jnt_pos_init);
-            jnt_pos_cmd = jnt_pos_init;
             init = false;
         }
 
-        angle = FORCE_RES_EXAMPLE_PI / 4 * (1 - std::cos(FORCE_RES_EXAMPLE_PI / 2 * time));
-        jnt_pos_cmd[6] = jnt_pos_init[6] + angle;
+        jnt_pos_cmd_from_user = jnt_pos_init;  //对于纯关节阻抗不叠加运动的，位置指令永远下发初始值即可，且必须这样下发
 
-        res = RokaeForce_FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd,
+        res = RokaeForce_FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd_from_user,
                                   cart_cmd_zero, jnt_trq_cmd_from_user, PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202,
                                   PDO_0x2203, PDO_0x2204, PDO_0x2205, PDO_0x2206);
         if (res != 0) {
             LOG_ERROR("力控指令更新出错,不允许下发给伺服，错误码为 {}", res);
+            //如果出现异常，返回非0值，请立刻下电切模式，并调用 RokaeForce_FcStop 和 RokaeForce_Deinit
             return -1;
         }
     }
