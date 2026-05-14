@@ -24,7 +24,7 @@ namespace External {
 // ================== 数据结构定义 ==================
 
 enum External_DragType {
-    DRAG_JOINT,       //轴空间拖动（目前只支持这一种）
+    DRAG_JOINT,       //轴空间拖动
     IMPEDANCE_JOINT,  //关节阻抗
 };
 struct External_RokaeLoad {
@@ -250,15 +250,13 @@ int RokaeForce_GetTotalTorque(const External_RokaeLoad& load, const std::vector<
                               std::vector<double>& trq_total);
 
 /**
- * @brief 获取TCP位姿
- * @param[in] CartPos 目标笛卡尔空间位姿
- * @param[in] psi 目标臂角
- * @param[in] q_init 机器人初始关节角度
- * @param[out] q_out 目标关节角度
+ * @brief 获取Flan位姿
+ * @param[in] jnt_pos 关节位置
+ * @param[out] flanTobase_pos 法兰到基座的变换矩阵
  * @return 错误码
  */
-int RokaeForce_GetJointPos(const std::array<double, 16>& CartPos, const double& psi, const std::vector<double>& q_init,
-                           std::vector<double>& q_out);
+int RokaeForce_GetFlanPos(const std::vector<double>& jnt_pos, std::array<double, 16>& flanTobase_pos);
+
 
 
 // ================== 其他功能 ==================

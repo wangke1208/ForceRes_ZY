@@ -186,6 +186,14 @@ int main() {
     RokaeForce_GetCobotTrq(PDO_0x2401, PDO_0x2402, jnt_trq_feedback);
     SPD_CONTAINER("关节扭矩", jnt_trq_feedback);
 
+    // 4获取法兰位置
+    jnt_pos_rad = {0.296593860275310, -0.898769273561546, 0.584200027815005, 0.902798731779078,
+                   0.961683122710855, 1.232172335421783,  -0.296175634890271};
+    std::array<double, 16> flanTobase_pos;
+    RokaeForce_GetFlanPos(jnt_pos_rad, flanTobase_pos);
+    SPD_CONTAINER("flanTobase_pos为:", flanTobase_pos);
+
+
     // 5.动力学部分
     std::vector<double> trq_temp(7);
     jnt_pos_rad = {1.553482913072114, -2.071310550762818, -0.776741456536057, 0.517827637690704,
