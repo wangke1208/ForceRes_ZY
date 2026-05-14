@@ -41,3 +41,4 @@ else
 fi
 
 echo "完成。下一步可在 ${EXAMPLE_DIR} 下: cmake -S . -B build && cmake --build build"
+echo "      demo 可执行文件在 ${EXAMPLE_DIR}/build/demos/（目标列表见 example/demos/CMakeLists.txt）。"

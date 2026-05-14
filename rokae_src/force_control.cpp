@@ -556,7 +556,7 @@ int ForceControl::SetCartImpedance(const std::array<double, 6>& cart_stiffness) 
 
 int ForceControl::ResetKpByLoad(const RokaeLoad& load) {
     double load_scale = load.m_rokae_load_inertia.GetCOG().Norm() * load.m_rokae_load_inertia.mass /
-                        (m_load_tcp_length_limit[0] * m_load_mass_limit[0]);
+                        (m_load_tcp_length_limit[0] * m_load_mass_limit[0] * 2);
     for (unsigned int i = 0; i < m_jnt_num; i++) {
         m_kp_set_by_load[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_gain_kp[i] * m_kp_gain_set[i];
         m_kp_set_by_load[i] *= (1 - load_scale);

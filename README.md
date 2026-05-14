@@ -77,7 +77,7 @@ cmake --build build -j$(nproc)
 cd /workspace/ForceRes_ZY/example
 cmake -S . -B build -G Ninja
 cmake --build build -j$(nproc)
-# 可执行文件在 example/build/demos/ 下，例如 ./build/demos/joint_drag_test
+# 可执行文件在 example/build/demos/ 下，例如 ./build/demos/joint_drag_test、./build/demos/joint_drag_test_with_load、./build/demos/robot_cfg_model_init_smoke
 ```
 
 将 **`example/` 整目录**（含同步后的 `3rd/`、`lib/`、`include/`）复制到其它机器后，在相同 **GCC + Boost** 环境下重复 `cd example && cmake ...` 即可。详见 **`example/README.md`**。

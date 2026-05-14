@@ -29,7 +29,7 @@ cd /workspace/ForceRes_ZY
 cd /workspace/ForceRes_ZY/example
 cmake -S . -B build -G Ninja
 cmake --build build -j$(nproc)
-# 可执行文件在 build/demos/ 下，例如 ./build/demos/joint_drag_test、./build/demos/robot_cfg_model_init_smoke（内嵌机型初始化冒烟）
+# 可执行文件在 build/demos/ 下，例如 ./build/demos/joint_drag_test、./build/demos/joint_drag_test_with_load、./build/demos/joint_impedence_demo、./build/demos/robot_cfg_model_init_smoke（内嵌机型初始化冒烟）
 ```
 
 要求：与编 `libforce_res.a` 时相同量级的 **GCC**、**CMake 3.20+**、系统 **Boost**、**pthread**。**静态库与可执行文件须为同一目标架构**（例如均为 `aarch64` Linux）。
