@@ -1,15 +1,22 @@
-# Demo 可执行文件
+# Demo 目录说明
 
-源文件在本目录；**不由根目录 CMake 编译**，而在 **`example/` 根** 的 `CMakeLists.txt` 中通过 `add_subdirectory(demos)` 统一配置。
+本目录源码由**工程根**的 `CMakeLists.txt` 通过 `add_subdirectory(demos)` 参与构建；生成可执行文件在 **`build/demos/`**。推荐用工程根下的 **`script/build&run.sh`**（见根目录 **`README.md`**）。
 
-在已生成 `example/lib/libforce_res.a` 并完成同步（`./scripts/menu.sh` 选 1 或 2）后，在容器内执行：
+## 各文件作用
+
+| 文件 | 作用 |
+|------|------|
+| `joint_drag_test.cpp` | **空载**轴空间拖动示例：模型与力控相关初始化后，使用默认（零）负载参数进行拖动与力控流程演示。 |
+| `joint_drag_test_with_load.cpp` | **带载**轴空间拖动示例：在 `joint_drag_test` 基础上显式设置末端负载（质量、质心、惯量等），标定与动力学计算均按带载工况。 |
+| `client_demo_macros.h` | Demo 专用日志与打印宏（基于 spdlog），避免依赖完整工程里的日志头文件；各 `*_demo.cpp` 会 `#include` 它。 |
+| `CMakeLists.txt` | 声明本目录下各可执行目标、头文件路径与链接库；**实际会参与编译的 demo 以其中 `add_force_res_demo(...)` 列表为准**，且需存在同名 `.cpp`。 |
+
+自行构建示例：
 
 ```bash
-cd /workspace/ForceRes_ZY/example
+cd <工程根目录>
 cmake -S . -B build -G Ninja
 cmake --build build -j$(nproc)
 ```
 
-可执行文件在 **`example/build/demos/`** 下（例如 `joint_drag_test`、`joint_drag_test_with_load`、`joint_impedence_demo`、`robot_cfg_model_init_smoke`）。
-
-具体目标列表以本目录 **`CMakeLists.txt`** 为准。
+接口用法与业务参数**以指导书为准**。
