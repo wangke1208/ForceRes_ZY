@@ -15,6 +15,7 @@
 # ----- 构建 / CMake -----
 CMakeCache.txt
 CMakeFiles/
+build_mac/
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json

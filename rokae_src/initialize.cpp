@@ -14,21 +14,71 @@
 
 #include "rokae_header/initialize.hpp"
 
+#include <stdexcept>
+
+#include "rokae_header/robot_cfg_loader.hpp"
+
 namespace RokaeApi {
 
-InitRobot::InitRobot(const Model::MechUnitType& robot_type)
-    : InitRobot(robot_type, std::array<double, 3>{0.0, 0.0, 0.0}) {}
+namespace {
 
-InitRobot::InitRobot(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg)
+KDL::Rotation MakeBaseRotationFromXyzDeg(const std::array<double, 3>& base_rotation_xyz_deg) {
+    return KDL::Rotation::RotZ(base_rotation_xyz_deg[2] * DEG_TO_RAD) *
+           KDL::Rotation::RotY(base_rotation_xyz_deg[1] * DEG_TO_RAD) *
+           KDL::Rotation::RotX(base_rotation_xyz_deg[0] * DEG_TO_RAD);
+}
+
+}  // namespace
+
+InitRobot::InitRobot(Model::RobotConfiguration&& robot_configuration, const Model::MechUnitType& robot_type,
+                     const std::array<double, 3>& base_rotation_xyz_deg)
     : m_robot_type(robot_type),
-      m_robot_config(robot_type),
+      m_robot_config(std::move(robot_configuration)),
       m_jnt_num(m_robot_config.model_config_params.AXIS_NUM),
       m_model_param(m_jnt_num + 1),
       m_control_param(m_jnt_num),
       m_mechanical_params(m_jnt_num),
-      m_base_R_world_from_base(KDL::Rotation::RotZ(base_rotation_xyz_deg[2] * DEG_TO_RAD) *
-                               KDL::Rotation::RotY(base_rotation_xyz_deg[1] * DEG_TO_RAD) *
-                               KDL::Rotation::RotX(base_rotation_xyz_deg[0] * DEG_TO_RAD)) {
+      m_chain(),
+      m_base_R_world_from_base(MakeBaseRotationFromXyzDeg(base_rotation_xyz_deg)),
+      m_gravity() {
+    m_gravity = m_base_R_world_from_base.Inverse() * KDL::Vector(0.0, 0.0, -9.81);
+}
+
+InitRobot::InitRobot(const std::string& model_name)
+    : InitRobot(model_name, std::array<double, 3>{0.0, 0.0, 0.0}) {}
+
+InitRobot::InitRobot(const std::string& model_name, const std::array<double, 3>& base_rotation_xyz_deg)
+    : m_robot_type(Model::MechUnitType::AR5C_L),
+      m_robot_config(DEFAULT_AXIS),
+      m_jnt_num(DEFAULT_AXIS),
+      m_model_param(DEFAULT_AXIS + 1),
+      m_control_param(DEFAULT_AXIS),
+      m_mechanical_params(DEFAULT_AXIS),
+      m_chain(),
+      m_base_R_world_from_base(MakeBaseRotationFromXyzDeg(base_rotation_xyz_deg)),
+      m_gravity() {
+    Model::MechUnitType mt{};
+    int e = ParseMechUnitFromModelName(model_name, mt);
+    if (e != SOLVE_NOERROR) {
+        throw std::runtime_error("ParseMechUnitFromModelName failed");
+    }
+    std::string json;
+    e = ResolveRobotCfgJson(model_name, json);
+    if (e != SOLVE_NOERROR) {
+        throw std::runtime_error("ResolveRobotCfgJson failed");
+    }
+    Model::RobotConfiguration cfg(DEFAULT_AXIS);
+    e = LoadRobotConfigurationFromJsonString(json, cfg);
+    if (e != SOLVE_NOERROR) {
+        throw std::runtime_error("LoadRobotConfigurationFromJsonString failed");
+    }
+    m_robot_type = mt;
+    m_robot_config = std::move(cfg);
+    m_jnt_num = m_robot_config.model_config_params.AXIS_NUM;
+    m_model_param = Model::ModelParams(m_jnt_num + 1);
+    m_control_param = Control::ControlParams(m_jnt_num);
+    m_mechanical_params = Model::MechanicalParams(m_jnt_num);
+    m_base_R_world_from_base = MakeBaseRotationFromXyzDeg(base_rotation_xyz_deg);
     m_gravity = m_base_R_world_from_base.Inverse() * KDL::Vector(0.0, 0.0, -9.81);
 }
 

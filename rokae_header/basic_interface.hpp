@@ -14,9 +14,9 @@
 #ifndef ROKAE_HEADER_BASIC_INTERFACE_HPP_
 #define ROKAE_HEADER_BASIC_INTERFACE_HPP_
 
-#include <memory>
-
 #include <array>
+#include <memory>
+#include <string>
 
 #include "rokae_header/data_structure_convert.hpp"
 #include "rokae_header/force_control.hpp"
@@ -27,19 +27,19 @@ namespace RokaeApi {
 namespace BasicInterface {
 
 /**
- * @brief 初始化整个系统，包括参数模块、力控模块等
- * @param robot_type 机器人的类型
+ * @brief 初始化整个系统（按机型名字符串从内嵌 robot_cfg 加载）
+ * @param model_name 与厂商仓库 robot_cfg 下目录名一致，例如 AR5-3_0.7R-W4C1C5-S2
  * @return 初始化结果，参考 SolverRes 枚举
  */
-int InitInterface(const Model::MechUnitType& robot_type);
+int InitInterfaceByModelName(const std::string& model_name);
 
 /**
- * @brief 初始化整个系统（含基座相对世界姿态，用于重力方向）
- * @param robot_type 机器人类型
- * @param base_rotation_xyz_deg 基座相对世界：绕固定世界 X、再 Y、再 Z 的转角（度），与 SetBaseFrameAndGravity 仅旋转时一致；平移视为 0
+ * @brief 初始化整个系统（机型名 + 基座相对世界旋转）
+ * @param model_name 机型目录名
+ * @param base_rotation_xyz_deg 基座相对世界：绕固定世界 X、再 Y、再 Z 的转角（度）
  * @return 初始化结果，参考 SolverRes 枚举
  */
-int InitInterface(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg);
+int InitInterfaceByModelName(const std::string& model_name, const std::array<double, 3>& base_rotation_xyz_deg);
 
 /**
  * @brief 清空初始化数据，释放空间

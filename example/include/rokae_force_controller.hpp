@@ -23,8 +23,6 @@ namespace RokaeApi {
 namespace External {
 // ================== 数据结构定义 ==================
 
-enum External_MechUnitType { AR5_L, AR5_R, AR5C_L, AR5C_R };
-
 enum External_DragType {
     DRAG_JOINT,       //轴空间拖动（目前只支持这一种）
     IMPEDANCE_JOINT,  //关节阻抗
@@ -41,19 +39,16 @@ struct External_RokaeLoad {
 // ================== 初始化整体模块 ==================
 
 /**
- * @brief 初始化力控模块
- * @param [in] robot_type 机器人类型，参考枚举External_MechUnitType
- * @return 错误码，成功返回SOLVE_NOERROR，失败返回相应的错误码
- */
-int RokaeForce_Init(const External_MechUnitType& robot_type);
-
-/**
- * @brief 初始化力控模块，并指定基座相对世界坐标系的旋转（绕固定世界 X、Y、Z 依次，单位度；基座原点仍与世界原点重合）
- * @param robot_type 机器人类型
- * @param base_rotation_xyz_deg 绕世界 X、Y、Z 的转角（度），建议每分量在 [-180, 180] 内
+ * @brief 按机型名字符串初始化力控模块（配置从内嵌 robot_cfg 解析）
+ * @param model_name 与厂商构建时所打包的 robot_cfg 目录名一致，例如 AR5-3_0.7R-W4C1C5-S2
  * @return 错误码，成功返回 SOLVE_NOERROR
  */
-int RokaeForce_Init(const External_MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg);
+int RokaeForce_InitByModelName(const char* model_name);
+
+/**
+ * @brief 按机型名初始化，并指定基座相对世界坐标系的旋转（绕固定世界 X、Y、Z 依次，单位度）
+ */
+int RokaeForce_InitByModelName(const char* model_name, const std::array<double, 3>& base_rotation_xyz_deg);
 
 /**
  * @brief 反初始化力控模块，释放相关资源

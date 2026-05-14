@@ -14,15 +14,11 @@
 #include "rokae_header/basic_interface.hpp"
 #include "rokae_header/data_structure_define.hpp"
 
+#include <string>
+
 namespace RokaeApi {
 namespace External {
 // ================== 外部数据结构与内部数据结构的转换接口 ==================
-inline Model::MechUnitType MechUnitTypeConvert(const External_MechUnitType& external_type) {
-    if (external_type < 0 || external_type > 3) {
-        throw std::invalid_argument("Invalid external type: value is unkown");
-    }
-    return static_cast<Model::MechUnitType>(external_type);
-}
 
 inline Control::DragType DragTypeConvert(const External_DragType& external_type) {
     if (external_type < 0 || external_type > 4) {
@@ -47,21 +43,19 @@ inline RokaeLoad RokaeLoadConvert(const External_RokaeLoad& external_load) {
 
 // ================== 初始化模块接口 ==================
 
-int RokaeForce_Init(const External_MechUnitType& robot_type) {
-    try {
-        return BasicInterface::InitInterface(MechUnitTypeConvert(robot_type));
-    } catch (const std::exception& e) {
-        std::cerr << "[RokaeForce_Init] Exception: " << e.what() << std::endl;
-        return ERROR_ROBOTTYPE;  // 统一错误码
-    }
+int RokaeForce_InitByModelName(const char* model_name) {
+    return RokaeForce_InitByModelName(model_name, std::array<double, 3>{0.0, 0.0, 0.0});
 }
 
-int RokaeForce_Init(const External_MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg) {
+int RokaeForce_InitByModelName(const char* model_name, const std::array<double, 3>& base_rotation_xyz_deg) {
+    if (model_name == nullptr) {
+        return ERROR_ROBOT_CFG_PARSE;
+    }
     try {
-        return BasicInterface::InitInterface(MechUnitTypeConvert(robot_type), base_rotation_xyz_deg);
+        return BasicInterface::InitInterfaceByModelName(std::string(model_name), base_rotation_xyz_deg);
     } catch (const std::exception& e) {
-        std::cerr << "[RokaeForce_Init] Exception: " << e.what() << std::endl;
-        return ERROR_ROBOTTYPE;
+        std::cerr << "[RokaeForce_InitByModelName] Exception: " << e.what() << std::endl;
+        return ERROR_ROBOT_CFG_PARSE;
     }
 }
 

@@ -80,7 +80,11 @@ enum SolverRes {
     ERROR_DRAGTYPE = -16,
     ERROR_SERVO_MODE = -17,
     ERROR_ALREADY_INIT = -18,
-    ERROR_IMPEDENCE_PARAMS = -19
+    ERROR_IMPEDENCE_PARAMS = -19,
+    /** 机型名未在内嵌表中找到（且未命中开发路径 cfg） */
+    ERROR_ROBOT_CFG_MODEL_NOT_FOUND = -20,
+    /** robot_cfg JSON 解析失败或必填字段/数组长度与轴数不一致 */
+    ERROR_ROBOT_CFG_PARSE = -21
 };
 
 enum IkSolveRes {
@@ -95,8 +99,6 @@ enum IkSolveRes {
 
 namespace Model {
 enum MechUnitType {
-    AR5_L,
-    AR5_R,
     AR5C_L,
     AR5C_R
 };

@@ -34,12 +34,23 @@ endif()
 
 find_package(Boost REQUIRED)
 find_package(Threads REQUIRED)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+file(GLOB_RECURSE FORCE_RES_ROBOT_CFG_FILES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/robot_cfg/*/*.cfg")
+
+set(FORCE_RES_EMBEDDED_CFG_CPP "${CMAKE_BINARY_DIR}/generated/embedded_robot_cfgs.cpp")
+add_custom_command(
+  OUTPUT ${FORCE_RES_EMBEDDED_CFG_CPP}
+  COMMAND ${Python3_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/cmake/embed_robot_cfgs.py" "${CMAKE_SOURCE_DIR}/robot_cfg"
+          "${FORCE_RES_EMBEDDED_CFG_CPP}"
+  DEPENDS "${CMAKE_SOURCE_DIR}/scripts/cmake/embed_robot_cfgs.py" ${FORCE_RES_ROBOT_CFG_FILES}
+  COMMENT "Embedding robot_cfg JSON")
 
 # 仅编译业务与 KDL 子集，不包含 example/ 下任何源码
 file(GLOB_RECURSE ROKAE_CXX CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/rokae_src/*.cpp")
-include("${CMAKE_SOURCE_DIR}/cmake/kdl_sources.cmake")
+include("${CMAKE_SOURCE_DIR}/scripts/cmake/kdl_sources.cmake")
 
-add_library(force_res STATIC ${ROKAE_CXX} ${FORCE_RES_KDL_SOURCES})
+add_library(force_res STATIC ${ROKAE_CXX} ${FORCE_RES_KDL_SOURCES} ${FORCE_RES_EMBEDDED_CFG_CPP})
 
 # 静态库输出到 example/lib（模拟对外发布目录）
 set_target_properties(
@@ -51,7 +62,8 @@ set_target_properties(
 target_compile_definitions(
   force_res
   PUBLIC SPDLOG_HEADER_ONLY FMT_HEADER_ONLY
-  PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:NDEBUG>)
+  PRIVATE $<$<OR:$<CONFIG:Release>,$<CONFIG:MinSizeRel>>:NDEBUG>
+          $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:FORCE_RES_ROBOT_CFG_DEV_PATH>)
 
 target_include_directories(
   force_res
@@ -77,4 +89,4 @@ target_compile_options(
     $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang,GNU>>:-ffunction-sections>
     $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:AppleClang,Clang,GNU>>:-fdata-sections>)
 
-# 根工程不构建 example 内可执行文件；示例见 example/demos
+# 根工程不构建 example 内可执行文件；示例与冒烟程序见 example/demos

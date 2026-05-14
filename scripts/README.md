@@ -30,3 +30,12 @@ chmod +x scripts/menu.sh   # 首次
 | `sync_example_to_workspace_test.sh` | 仅 rsync 到外部目录；可设 `EXAMPLE_SYNC_DEST` |
 
 详见各脚本文件头注释。
+
+## `scripts/cmake/`（根工程 CMake 引用）
+
+| 文件 | 说明 |
+|------|------|
+| `kdl_sources.cmake` | 定义 `FORCE_RES_KDL_SOURCES`，供根目录 `CMakeLists.txt` `include` |
+| `embed_robot_cfgs.py` | 构建期扫描 `robot_cfg/`，生成内嵌 JSON 的 `embedded_robot_cfgs.cpp`（**仅厂商编库需要 Python3**，客户 SDK 不含） |
+
+将二者放在 `scripts/cmake/` 下，与可执行的 shell 流程同在一棵「构建脚本」目录里，避免根下单独 `cmake/` 目录过少、语义又混用的问题。

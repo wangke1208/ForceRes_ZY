@@ -12,6 +12,9 @@
  */
 
 #include "rokae_header/basic_interface.hpp"
+
+#include "rokae_header/robot_cfg_loader.hpp"
+
 using namespace RokaeApi::Control;
 namespace RokaeApi {
 
@@ -49,11 +52,11 @@ KDL::Frame flan_frame_temp;
 KDL::Jacobian jacobian_temp;
 KDL::JntSpaceInertiaMatrix inertia_matrix_temp;
 
-int InitInterface(const Model::MechUnitType& robot_type) {
-    return InitInterface(robot_type, std::array<double, 3>{0.0, 0.0, 0.0});
+int InitInterfaceByModelName(const std::string& model_name) {
+    return InitInterfaceByModelName(model_name, std::array<double, 3>{0.0, 0.0, 0.0});
 }
 
-int InitInterface(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg) {
+int InitInterfaceByModelName(const std::string& model_name, const std::array<double, 3>& base_rotation_xyz_deg) {
     if (is_initialized) return ERROR_ALREADY_INIT;
 
     // 0.初始化日志模块
@@ -77,16 +80,35 @@ int InitInterface(const Model::MechUnitType& robot_type, const std::array<double
         }
     }
 
+    Model::MechUnitType mt{};
+    int r = ParseMechUnitFromModelName(model_name, mt);
+    if (r != SOLVE_NOERROR) {
+        return r;
+    }
+    std::string json;
+    r = ResolveRobotCfgJson(model_name, json);
+    if (r != SOLVE_NOERROR) {
+        if (r == ERROR_ROBOT_CFG_MODEL_NOT_FOUND) {
+            LOG_ERROR("输入机型有误");
+        }
+        return r;
+    }
+    Model::RobotConfiguration cfg(DEFAULT_AXIS);
+    r = LoadRobotConfigurationFromJsonString(json, cfg);
+    if (r != SOLVE_NOERROR) {
+        return r;
+    }
+
     // 2.初始化参数模块
     try {
-        initrobot_ptr = std::make_shared<InitRobot>(robot_type, base_rotation_xyz_deg);
+        initrobot_ptr = std::make_shared<InitRobot>(std::move(cfg), mt, base_rotation_xyz_deg);
         auto res_initialize = initrobot_ptr->CreateModels();
         if (res_initialize != SOLVE_NOERROR) {
             return res_initialize;
         }
     } catch (const std::exception& e) {
         std::cerr << "Failed to initialize InitRobot: " << e.what() << std::endl;
-        return ERROR_ROBOTTYPE;
+        return ERROR_ROBOT_CFG_PARSE;
     }
     LOG_INFO("初始化参数模块成功");
 

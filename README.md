@@ -32,7 +32,7 @@ CMake **不在配置阶段联网**；`3rd/eigen` 须完整，否则 `cmake` 直�
 |------|------|
 | `rokae_header/` | 头文件；**SDK 对外单头**为 **`rokae_header/rokae_force_controller.hpp`**（仅标准库 + Eigen，不拉其它 `rokae_header`；实现见 `rokae_src/rokae_force_controller.cpp`） |
 | `rokae_src/` | 实现 |
-| `cmake/` | **`kdl_sources.cmake`**：编入 `libforce_res.a` 的 KDL 源文件最小列表 |
+| `scripts/cmake/` | **`kdl_sources.cmake`**（KDL 最小源列表）、**`embed_robot_cfgs.py`**（构建期内嵌 `robot_cfg`）；由根 `CMakeLists.txt` 引用 |
 | `scripts/` | 主入口 **[`menu.sh`](scripts/menu.sh)**（交互选 1～4）；子脚本含 `build_and_sync_example.sh`、`sync_example_from_repo.sh` 等，见 **[`scripts/README.md`](scripts/README.md)** |
 | `example/` | **可单独复制**的 SDK 示例包：`CMakeLists.txt`、`demos/`；打包前在 **容器 `sy_dev` 内**仓库根运行 **[`scripts/menu.sh`](scripts/menu.sh)** 选 **1**（或按 [`scripts/README.md`](scripts/README.md) 单独调用子脚本，见 `example/README.md`） |
 | `example/lib/` | 根工程生成的 **`libforce_res.a`**（`.a` 默认不提交 Git） |
@@ -65,7 +65,7 @@ cmake --build build -j$(nproc)
 ### 静态库体积说明
 
 - **Release**：单配置生成器若未指定 `CMAKE_BUILD_TYPE`，根工程会**默认 `Release`**；显式使用 `-DCMAKE_BUILD_TYPE=Release` 可得到较小 `.a`（对 `force_res` 启用 `NDEBUG`、`-g0`、`-ffunction-sections` / `-fdata-sections`）。
-- **KDL**：仅编译 [`cmake/kdl_sources.cmake`](cmake/kdl_sources.cmake) 中列出的子集（Chain / 动力学 / FK / Jac / RNE 等），不再整库 `GLOB` 全部 KDL 源，以显著减小归档体积。
+- **KDL**：仅编译 [`scripts/cmake/kdl_sources.cmake`](scripts/cmake/kdl_sources.cmake) 中列出的子集（Chain / 动力学 / FK / Jac / RNE 等），不再整库 `GLOB` 全部 KDL 源，以显著减小归档体积。
 - **可选进一步缩小**：对发布用 `.a` 执行 `strip --strip-unneeded`（不利于后续用该 `.a` 调试）；或尝试 `-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON`（LTO，编译更慢）。
 - **测量**：[`scripts/measure_lib_size.sh`](scripts/measure_lib_size.sh) 或 **`./scripts/menu.sh` 选 3** 可打印 `libforce_res.a` 字节数与 `ls -lh`。
 

@@ -99,7 +99,6 @@ struct RobotConfiguration {
     ModelConfigParams model_config_params;
 
     RobotConfiguration(unsigned int jnt_num = DEFAULT_AXIS);
-    RobotConfiguration(MechUnitType robot_type);
     void Resize(unsigned int jnt_num);
 };
 }  // namespace Model

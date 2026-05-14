@@ -15,6 +15,7 @@
 #define ROKAE_HEADER_INITIALIZE_H
 
 #include <array>
+#include <string>
 
 #include "3rd/kdl/chain.hpp"
 #include "rokae_header/data_structure_convert.hpp"
@@ -30,22 +31,23 @@ namespace RokaeApi {
 class InitRobot {
    public:
     /**
-     * @brief 构造函数，初始化机器人类型（基座与世界系对齐，重力在基座系为 (0,0,-9.81) m/s²）
-     * @param robot_type 机器人类型
+     * @brief 构造函数：按机型名字符串从内嵌 robot_cfg 加载（基座与世界系对齐）
+     * @param model_name 与仓库 robot_cfg 目录名一致，例如 AR5-3_0.7R-W4C1C5-S2
      */
-    explicit InitRobot(const Model::MechUnitType& robot_type);
+    explicit InitRobot(const std::string& model_name);
 
     /**
-     * @brief 构造函数：指定基座相对世界坐标系的姿态（仅旋转），用于在基座系下设置重力方向
-     *
-     * 约定：绕**世界坐标系**固定轴依次旋转：先绕世界 X，再绕世界 Y，再绕世界 Z，角度单位为度。
-     * 世界系重力为 (0, 0, -9.81) m/s²；基座系重力为 R^{-1} * g_world，其中 R = RotZ(rz)*RotY(ry)*RotX(rx)
-     *（与 SetBaseFrameAndGravity 中仅旋转、平移为 0 时的姿态一致）。
-     *
-     * @param robot_type 机器人类型
+     * @brief 构造函数：按机型名加载，并指定基座相对世界坐标系的姿态（仅旋转）
+     * @param model_name 机型目录名
      * @param base_rotation_xyz_deg 绕世界 X、Y、Z 的转角（度）
      */
-    InitRobot(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg);
+    InitRobot(const std::string& model_name, const std::array<double, 3>& base_rotation_xyz_deg);
+
+    /**
+     * @brief 由已解析的 RobotConfiguration 与构型枚举构造（供 BasicInterface 等内部路径使用）
+     */
+    InitRobot(Model::RobotConfiguration&& robot_configuration, const Model::MechUnitType& robot_type,
+              const std::array<double, 3>& base_rotation_xyz_deg);
 
     /**
      * @brief 析构函数

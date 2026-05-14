@@ -22,8 +22,7 @@ int main() {
     RokaeForce_Deinit();
 
     // 2.建立机器人模型(右臂)
-    auto mechUnitType = External_MechUnitType::AR5_R;
-    res = RokaeForce_Init(mechUnitType, std::array<double, 3>{90.0, 0.0, 0.0});
+    res = RokaeForce_InitByModelName("AR5-3_0.7R-W4C1C5-S2", std::array<double, 3>{90.0, 0.0, 0.0});
     if (res != 0) {
         LOG_ERROR("机器人初始化失败,错误码为 {}", res);
         return -1;
