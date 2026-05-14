@@ -163,7 +163,7 @@ int main() {
     PDO_0x6064 = {6949648, 4472474, 42722, 4417213, -33679, 5121324, -43168};
     std::vector<double> jnt_pos_rad(7);
     RokaeForce_GetAxisPos(PDO_0x6064, jnt_pos_rad);
-    SPD_CONTAINER("关节位置", jnt_pos_rad);
+    SPD_CONTAINER_JNT_POS_DEG("关节位置", jnt_pos_rad);
 
     // 2.获取关节速度
     std::vector<int32_t> PDO_0x606C = {1071, -80, -648, -20, -6, 560, 0};

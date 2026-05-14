@@ -52,3 +52,21 @@ const DemoSpdlogInit k_demo_spdlog_init{};
         }                                                                                                    \
         spdlog::info("{} {}", TAG, oss.str());                                                               \
     } while (0)
+
+/** 关节位置：库接口为弧度，打印为角度（度） */
+#define FORCE_RES_RAD_TO_DEG(rad) ((rad)*180.0 / FORCE_RES_EXAMPLE_PI)
+
+#define SPD_CONTAINER_JNT_POS_DEG(TAG, RAD_CONTAINER)                                                        \
+    do {                                                                                                     \
+        std::ostringstream oss;                                                                              \
+        auto it = std::begin(RAD_CONTAINER);                                                                 \
+        auto end_iter = std::end(RAD_CONTAINER);                                                             \
+        if (it != end_iter) {                                                                                \
+            oss << FORCE_RES_RAD_TO_DEG(*it);                                                                \
+            ++it;                                                                                            \
+        }                                                                                                    \
+        for (; it != end_iter; ++it) {                                                                       \
+            oss << ", " << FORCE_RES_RAD_TO_DEG(*it);                                                        \
+        }                                                                                                    \
+        spdlog::info("{} {} (deg)", TAG, oss.str());                                                         \
+    } while (0)

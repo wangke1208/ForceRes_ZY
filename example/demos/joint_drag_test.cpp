@@ -45,7 +45,7 @@ int main() {
 
     // 2.设置传感器线性度
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<double> sensor_linearity = {2.25, 1.9, 2.25, 2.05, 2.05, 1.75, 2.25};
+    std::vector<double> sensor_linearity = {2.25, 1.9, 2.25, 2.05, 2.05, -1.75, 2.25};
     res = RokaeForce_SetSensorLinearity(PDO_0x6061, sensor_linearity);
     if (res != 0) {
         LOG_ERROR("传感器线性度设置失败,错误码为 {}", res);
@@ -131,8 +131,8 @@ int main() {
 
     // 6.设置力控软限位
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    std::vector<double> soft_limit_low = {-178, -120, -178, -80, -178, -110, -180};
-    std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 110, 180};
+    std::vector<double> soft_limit_low = {-178, -120, -178, -60, -178, -55, -90};
+    std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 55, 90};
 
     res = RokaeForce_SetSoftLimit(PDO_0x6061, soft_limit_low, soft_limit_high);
     if (res != 0) {
@@ -171,7 +171,7 @@ int main() {
     PDO_0x6064 = {2264203, 2998975, -4816393, 5852998, -630057, 5115652, 827438};
     std::vector<double> jnt_pos_rad(7);
     RokaeForce_GetAxisPos(PDO_0x6064, jnt_pos_rad);
-    SPD_CONTAINER("关节位置", jnt_pos_rad);
+    SPD_CONTAINER_JNT_POS_DEG("关节位置", jnt_pos_rad);
 
     // 2.获取关节速度
     std::vector<int32_t> PDO_0x606C = {1071, -80, -648, -20, -6, 560, 0};

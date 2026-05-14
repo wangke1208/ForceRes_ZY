@@ -16,7 +16,7 @@
 namespace RokaeApi {
 namespace Protect {
 
-constexpr double kLimitThreshold = 9.5 * 0.017453292519943295769236907684886127;
+constexpr double kLimitThreshold = 5 * 0.017453292519943295769236907684886127;
 
 ForceProtect::ForceProtect(unsigned int axis_num, Control::FcParamsInner* fc_params_inner)
     : m_axis_num(axis_num), m_fc_params_inner_ptr(fc_params_inner) {}

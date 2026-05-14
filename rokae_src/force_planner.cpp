@@ -65,8 +65,8 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
     fc_params_inner_ptr->m_function_params.GetParams("soft_limit_damp", m_protect_force_damp);
 
     // 初始化角度阈值常量
-    m_pre_protect_angle = 5 * KDL::deg2rad;
-    m_jnt_pos_safety_threshold = 10 * KDL::deg2rad;
+    m_pre_protect_angle = 2 * KDL::deg2rad;
+    m_jnt_pos_safety_threshold = 3 * KDL::deg2rad;
  }
  
  // --------------------- 析构函数 ---------------------
