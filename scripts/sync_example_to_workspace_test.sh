@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # 将仓库内 example/ 增量同步到目标目录（默认 /workspace/Test）。
+# 源为整个 example/ 目录内容，含 demos/、script/、CMakeLists.txt 等；须在 Docker 容器 sy_dev（与编库、填充 example 相同环境）内执行。
 # 须在 Docker 容器 sy_dev（与编库、填充 example 相同环境）内执行。使用 rsync：只传输变更文件，不每次整目录重写。
 #
 # 用法：在容器内仓库根 ./scripts/menu.sh 选 4；或直接 ./scripts/sync_example_to_workspace_test.sh（首次 chmod +x）。
@@ -43,7 +44,7 @@ mkdir -p "${DST}"
 # -a: 归档（权限、时间等），仅传输差异
 # 源与目标末尾 /：同步 example 目录「内容」到目标目录内
 # 未使用 --delete：目标上多出来的文件保留（纯增量）；若需与 example 完全一致可改为加 --delete
-echo "增量同步: ${SRC} -> ${DST}/"
+echo "增量同步: ${SRC} -> ${DST}/（含 script/、demos/ 等）"
 rsync -a "${SRC}" "${DST}/"
 
 echo "完成。"

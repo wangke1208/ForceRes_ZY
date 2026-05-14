@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # 在 Docker 容器 sy_dev 内、挂载后的仓库根执行（与 build_and_sync_example.sh 相同约定，验证路径为 /workspace/ForceRes_ZY）。
 # 将主工程头文件与 3rd 依赖复制进 example/，使 example/ 可单独打包构建 demo。
+# 仅覆盖 include/、3rd/、lib/；不删除 example 内其它已跟踪内容（如 demos/ 源码、script/ 宿主机辅助脚本等）。
 # 通常由 build_and_sync_example.sh 或 menu.sh 选 1 在编译成功后调用；也可在容器内已手动编出 libforce_res.a 后单独执行本脚本。
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -42,3 +43,4 @@ fi
 
 echo "完成。下一步可在 ${EXAMPLE_DIR} 下: cmake -S . -B build && cmake --build build"
 echo "      demo 可执行文件在 ${EXAMPLE_DIR}/build/demos/（目标列表见 example/demos/CMakeLists.txt）。"
+echo "      example/script/ 等目录本脚本不删除；整包复制 example/ 或 ./scripts/menu.sh 选 4 rsync 时会一并带上。"

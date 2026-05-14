@@ -18,7 +18,7 @@ chmod +x scripts/menu.sh   # 首次
 | 1 | 调用 `build_and_sync_example.sh`：CMake 编 `libforce_res.a`，**成功后再**填充 `example/` |
 | 2 | 调用 `sync_example_from_repo.sh`：只拷头文件与 `3rd/` 等进 `example/` |
 | 3 | 调用 `measure_lib_size.sh`：打印 `example/lib/libforce_res.a` 大小 |
-| 4 | 调用 `sync_example_to_workspace_test.sh`：`rsync` 将 `example/` 增量同步到测试目录（默认 `/workspace/Test` 等，见脚本内说明） |
+| 4 | 调用 `sync_example_to_workspace_test.sh`：`rsync` 将 `example/` 增量同步到测试目录（默认 `/workspace/Test` 等，见脚本内说明；**含 `script/`、`demos/` 等整包内容**） |
 
 ## 子脚本（可单独调用）
 

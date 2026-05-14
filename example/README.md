@@ -38,7 +38,7 @@ cmake --build build -j$(nproc)
 
 ## 复制到其它机器
 
-将 **`example/` 整目录**（须已含 `3rd/eigen`、`3rd/spdlog`、`include/rokae_force_controller.hpp`、`lib/libforce_res.a`、`demos/`）打包复制；在 **相同或兼容的 Linux + GCC + Boost** 下执行上节「仅在 example 内」的 `cmake` 步骤即可。
+将 **`example/` 整目录**（须已含 `3rd/eigen`、`3rd/spdlog`、`include/rokae_force_controller.hpp`、`lib/libforce_res.a`、`demos/`；可选带 `script/` 等辅助脚本）打包复制；在 **相同或兼容的 Linux + GCC + Boost** 下执行上节「仅在 example 内」的 `cmake` 步骤即可。
 
 **不要**只复制空壳：至少要有 `3rd/`、`lib/*.a`、`include/` 下的 `rokae_force_controller.hpp`。
 
@@ -50,5 +50,6 @@ cmake --build build -j$(nproc)
 | `lib/` | `libforce_res.a`（同步自仓库根构建产物） |
 | `3rd/eigen`、`3rd/spdlog` | 编译 demo 所需头（与主工程版本一致） |
 | `demos/` | 各 `main` 与 `client_demo_macros.h`（日志宏，不随商业 SDK 交付时可删） |
+| `script/` | 宿主机侧辅助脚本（如 `sy_dev.sh`：在已运行容器内清 build、编 demo、运行）；**菜单 4** `rsync` 整包 `example/` 时会一并同步到目标目录 |
 
 更细的对外 API 说明见 **`include/README.md`**（若存在）。
