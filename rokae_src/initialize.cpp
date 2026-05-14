@@ -17,14 +17,19 @@
 namespace RokaeApi {
 
 InitRobot::InitRobot(const Model::MechUnitType& robot_type)
+    : InitRobot(robot_type, std::array<double, 3>{0.0, 0.0, 0.0}) {}
+
+InitRobot::InitRobot(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg)
     : m_robot_type(robot_type),
       m_robot_config(robot_type),
       m_jnt_num(m_robot_config.model_config_params.AXIS_NUM),
       m_model_param(m_jnt_num + 1),
       m_control_param(m_jnt_num),
-      m_mechanical_params(m_jnt_num) {
-    m_gravity = KDL::Vector(0, 0, -9.81);  //用来构建动力学解算器的重力矩
-    m_chain = KDL::Chain();
+      m_mechanical_params(m_jnt_num),
+      m_base_R_world_from_base(KDL::Rotation::RotZ(base_rotation_xyz_deg[2] * DEG_TO_RAD) *
+                               KDL::Rotation::RotY(base_rotation_xyz_deg[1] * DEG_TO_RAD) *
+                               KDL::Rotation::RotX(base_rotation_xyz_deg[0] * DEG_TO_RAD)) {
+    m_gravity = m_base_R_world_from_base.Inverse() * KDL::Vector(0.0, 0.0, -9.81);
 }
 
 int InitRobot::CreateModels() {

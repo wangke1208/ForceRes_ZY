@@ -56,6 +56,15 @@ int RokaeForce_Init(const External_MechUnitType& robot_type) {
     }
 }
 
+int RokaeForce_Init(const External_MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg) {
+    try {
+        return BasicInterface::InitInterface(MechUnitTypeConvert(robot_type), base_rotation_xyz_deg);
+    } catch (const std::exception& e) {
+        std::cerr << "[RokaeForce_Init] Exception: " << e.what() << std::endl;
+        return ERROR_ROBOTTYPE;
+    }
+}
+
 void RokaeForce_Deinit() { BasicInterface::DeinitInterface(); }
 
 // ================== 力控算法接口 ==================

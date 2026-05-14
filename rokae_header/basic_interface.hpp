@@ -16,6 +16,8 @@
 
 #include <memory>
 
+#include <array>
+
 #include "rokae_header/data_structure_convert.hpp"
 #include "rokae_header/force_control.hpp"
 #include "rokae_header/robot_config.hpp"
@@ -30,6 +32,14 @@ namespace BasicInterface {
  * @return 初始化结果，参考 SolverRes 枚举
  */
 int InitInterface(const Model::MechUnitType& robot_type);
+
+/**
+ * @brief 初始化整个系统（含基座相对世界姿态，用于重力方向）
+ * @param robot_type 机器人类型
+ * @param base_rotation_xyz_deg 基座相对世界：绕固定世界 X、再 Y、再 Z 的转角（度），与 SetBaseFrameAndGravity 仅旋转时一致；平移视为 0
+ * @return 初始化结果，参考 SolverRes 枚举
+ */
+int InitInterface(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg);
 
 /**
  * @brief 清空初始化数据，释放空间

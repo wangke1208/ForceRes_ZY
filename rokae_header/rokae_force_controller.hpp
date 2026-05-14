@@ -48,6 +48,14 @@ struct External_RokaeLoad {
 int RokaeForce_Init(const External_MechUnitType& robot_type);
 
 /**
+ * @brief 初始化力控模块，并指定基座相对世界坐标系的旋转（绕固定世界 X、Y、Z 依次，单位度；基座原点仍与世界原点重合）
+ * @param robot_type 机器人类型
+ * @param base_rotation_xyz_deg 绕世界 X、Y、Z 的转角（度），建议每分量在 [-180, 180] 内
+ * @return 错误码，成功返回 SOLVE_NOERROR
+ */
+int RokaeForce_Init(const External_MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg);
+
+/**
  * @brief 反初始化力控模块，释放相关资源
  * 此函数用于在完成力控操作后，释放初始化过程中分配的资源，
  * 重置相关状态，以便后续再次初始化或结束程序。

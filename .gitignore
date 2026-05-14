@@ -1,6 +1,68 @@
+# ----- 本仓库原有规则 -----
 /build/
 /log/
 /example/lib/*.a
 /example/build/
 /example/demos/build/
 /example/3rd/
+
+# ----- macOS -----
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ----- 构建 / CMake -----
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+cmake-build-*/
+out/
+*.ninja
+.ninja_deps
+.ninja_log
+
+# ----- 编译产物 -----
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.lib
+*.dll
+*.dylib
+*.exe
+*.out
+*.app
+
+# ----- 调试与覆盖率 -----
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.gcda
+*.gcno
+*.gcov
+
+# ----- 编辑器 / IDE -----
+# 如需忽略整个 VS Code 配置目录，取消下一行注释：
+# .vscode/
+*.code-workspace
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.cproject
+.settings/
+
+# ----- 其他 -----
+*.log
+.cache/
+*.tmp
+*.bak

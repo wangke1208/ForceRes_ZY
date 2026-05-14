@@ -50,6 +50,10 @@ KDL::Jacobian jacobian_temp;
 KDL::JntSpaceInertiaMatrix inertia_matrix_temp;
 
 int InitInterface(const Model::MechUnitType& robot_type) {
+    return InitInterface(robot_type, std::array<double, 3>{0.0, 0.0, 0.0});
+}
+
+int InitInterface(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg) {
     if (is_initialized) return ERROR_ALREADY_INIT;
 
     // 0.初始化日志模块
@@ -66,9 +70,16 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     LOG_INFO("Algorithm    ver: {}", VERSION);
     LOG_INFO("=========================================================");
 
+    for (double v : base_rotation_xyz_deg) {
+        if (v > 180.0 || v < -180.0) {
+            LOG_ERROR("旋转参数超出正负180度限制");
+            return ERROR_EULER_PARAMS;
+        }
+    }
+
     // 2.初始化参数模块
     try {
-        initrobot_ptr = std::make_shared<InitRobot>(robot_type);
+        initrobot_ptr = std::make_shared<InitRobot>(robot_type, base_rotation_xyz_deg);
         auto res_initialize = initrobot_ptr->CreateModels();
         if (res_initialize != SOLVE_NOERROR) {
             return res_initialize;
@@ -99,8 +110,9 @@ int InitInterface(const Model::MechUnitType& robot_type) {
     jnt_pos_kdl.resize(jnt_num);
     jnt_ext_trq.resize(jnt_num);
     tcp_wrench.Zero();
-    frame_base_in_world.Identity();
+    frame_base_in_world = initrobot_ptr->GetRobotBaseFrameInWorld();
     gravity_vector = initrobot_ptr->GetGravity();
+    forcecontrol_ptr->SetBaseFrameAndGravity(frame_base_in_world, gravity_vector);
     q_inverse_out_temp.resize(jnt_num);
     q_inverse_in_temp.resize(jnt_num);
     q_psi_temp.resize(jnt_num);

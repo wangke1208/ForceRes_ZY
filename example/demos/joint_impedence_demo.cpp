@@ -51,17 +51,7 @@ int main() {
         LOG_INFO("传感器线性度设置成功");
     }
 
-    // 3.设置基坐标系&重力矩
-    std::array<double, 6> base_frame = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    res = RokaeForce_SetBaseFrameAndGravity(base_frame);
-    if (res != 0) {
-        LOG_ERROR("基坐标系设置失败,错误码为: = {}", res);
-        return -1;
-    } else {
-        LOG_INFO("基坐标系设置成功");
-    }
-
-    // 4.设置负载参数
+    // 3.设置负载参数
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     External_RokaeLoad load_input;
     //动力学参数
@@ -127,14 +117,14 @@ int main() {
 
     // 8.设置摩擦力增益接口(阻抗不支持改变摩擦力增益，调用该接口无效)
 
-    // 9.设置轴空间阻抗刚度
+    // 9.设置关节阻抗刚度
     std::vector<double> joint_stiffness = {2000, 2000, 1500, 1500, 500, 500, 500};
     res = RokaeForce_SetJointImpedance(PDO_0x6061,joint_stiffness);
     if (res != 0) {
-        LOG_ERROR("笛卡尔阻抗刚度设置失败,错误码为 {}", res);
+        LOG_ERROR("关节阻抗刚度设置失败,错误码为 {}", res);
         return -1;
     } else {
-        LOG_INFO("笛卡尔阻抗刚度设置成功");
+        LOG_INFO("关节阻抗刚度设置成功");
     }
 
 
@@ -182,8 +172,7 @@ int main() {
     std::vector<double> jnt_pos_cmd(7);  //轴空间关节指令
     std::vector<double> jnt_trq_cmd_from_user(7);
     jnt_trq_cmd_from_user = {5, 5, 5, 5, 5, 5, 5};
-    std::array<double, 6> cart_cmd_zero; //笛卡尔空间指令随便给个值即可，不参与计算
-    std::array<double, 6> init_pos;
+    std::array<double, 6> cart_cmd_zero{}; //笛卡尔空间指令随便给个值即可，不参与计算
     while (time < continue_time) {
         time += step_time;
         if (init) {

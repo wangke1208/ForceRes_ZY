@@ -55,17 +55,6 @@ int main() {
         SPD_CONTAINER("传感器线性度设置成功，当前线性度值为：", sensor_linearity);
     }
 
-    // 3.设置基坐标系&重力矩
-    // std::array<double, 6> base_frame = {0.011,-0.032,0.021, 12.0, -44.0, 123.0};
-    std::array<double, 6> base_frame = {0,0,0,0,0,0};
-    res = RokaeForce_SetBaseFrameAndGravity(base_frame);
-    if (res != 0) {
-        LOG_ERROR("基坐标系设置失败,错误码为: = {}", res);
-        return -1;
-    } else {
-        SPD_CONTAINER("基坐标系设置成功,当前基坐标系参数: ", base_frame);
-    }
-
     // 4.设置负载参数
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     External_RokaeLoad load_input;  //默认无负载
@@ -138,7 +127,7 @@ int main() {
     std::vector<double> soft_limit_low = {-178, -120, -178, -80, -178, -110, -180};
     std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 110, 180};
 
-    //res = RokaeForce_SetSoftLimit(PDO_0x6061, soft_limit_low, soft_limit_high);
+    res = RokaeForce_SetSoftLimit(PDO_0x6061, soft_limit_low, soft_limit_high);
     if (res != 0) {
         LOG_ERROR("力控软限位设置失败,错误码为 {}", res);
         return -1;
@@ -190,46 +179,6 @@ int main() {
     RokaeForce_GetCobotTrq(PDO_0x2401, PDO_0x2402, jnt_trq_feedback);
     SPD_CONTAINER("关节扭矩", jnt_trq_feedback);
 
-    // 4.1获取法兰位置
-    double deg2rad = FORCE_RES_EXAMPLE_PI / 180.0;
-    jnt_pos_rad = {7.520*deg2rad, 2.843*deg2rad,-19.656*deg2rad, -13.860*deg2rad,
-                   30.490*deg2rad, -18.125*deg2rad,  -13.978*deg2rad};
-
-    std::array<double, 16> flanTobase_pos;
-    RokaeForce_GetFlanPos(jnt_pos_rad, flanTobase_pos);
-    SPD_CONTAINER("flanTobase_pos为:", flanTobase_pos);
-
-    // 4.2获取TCP位置
-
-    std::array<double, 6> tcp_pos;
-    std::array<double, 16> toolTobase_pos;
-    RokaeForce_GetTcpPos(load_input, jnt_pos_rad, toolTobase_pos, tcp_pos);
-    SPD_CONTAINER("toolTobase_pos为:", toolTobase_pos);
-    SPD_CONTAINER("TCP位置为:", tcp_pos);
-
-    //4.逆解接口
-    //4.1臂角求解
-    double cur_psi = 0.0;
-    jnt_pos_rad = {7.520*deg2rad, 2.843*deg2rad,-19.656*deg2rad, -13.860*deg2rad,
-                   30.490*deg2rad, -18.125*deg2rad,  -13.978*deg2rad};
-    int res_psi = RokaeForce_GetCurPsi(jnt_pos_rad, cur_psi);
-    if (res_psi == 0) {
-        LOG_INFO("求解臂角成功，当前的psi值为: {}", cur_psi);
-    } else {
-        LOG_ERROR("求解臂角失败,错误码为: {}", res_psi);
-    }
-
-    //4.2 逆解接口
-    std::array<double, 16> flan_pos_target = flanTobase_pos;
-    double psi_tar = cur_psi;
-    std::vector<double> q_out(7);
-    int res_inverse = RokaeForce_GetJointPos(flan_pos_target, psi_tar, jnt_pos_rad, q_out);
-    if (res_inverse != 0) {
-        LOG_ERROR("逆解失败,错误码为：{}", res_inverse);
-    } else {
-        SPD_CONTAINER("逆解成功,逆解结果为 :", q_out);
-    }
-
     // 5.动力学部分
     std::vector<double> trq_temp(7);
     jnt_pos_rad = {1.553482913072114, -2.071310550762818, -0.776741456536057, 0.517827637690704,
@@ -249,18 +198,6 @@ int main() {
     RokaeForce_GetTotalTorque(load_input, jnt_pos_rad, jnt_vel_rad, jnt_acc_rad, trq_temp);
     SPD_CONTAINER("全力矩:", trq_temp);
 
-    //6.雅可比矩阵
-    Eigen::Matrix<double, 6, Eigen::Dynamic> jacobian;
-    jnt_pos_rad = {0.000000000000000, 0.523598775598299, 0.000000000000000, 1.047197551196598,
-                   0.000000000000000, 1.570796326794897, 0.000000000000000};
-    RokaeForce_GetTcpJacobian(load_input, jnt_pos_rad, jacobian);
-    SPD_EIGEN_MATRIX(jacobian);
-
-    //7.质量阵
-    Eigen::MatrixXd mass_matrix(6,6);
-    RokaeForce_GetMassMatrix(load_input, jnt_pos_rad, mass_matrix);
-    SPD_EIGEN_MATRIX(mass_matrix);
-
     // 8.0.给定负载参数
     External_RokaeLoad load_input_real;
     //动力学参数
@@ -271,12 +208,6 @@ int main() {
     //坐标系参数
     load_input_real.position_offset = {0.02, -0.01, 0.015};
     load_input_real.posture_rpy = {60, 30, -90};
-
-    // 8.1.获取TCP位置(带负载)
-    jnt_pos_rad = {-0.000000000000000, 0.355592129828050, 0.000000000000000, 0.711184259656100,
-                   0.000000000000000,  1.066776389484150, 0.000000000000000};
-    RokaeForce_GetTcpPos(load_input_real, jnt_pos_rad, toolTobase_pos, tcp_pos);
-    SPD_CONTAINER("TCP位置为:", tcp_pos);
 
     // 8.2.动力学部分(带负载)
     jnt_pos_rad = {0.555828337827665, -1.684328296447471, 1.094813392690856, -0.370552225218444,
@@ -296,23 +227,13 @@ int main() {
     RokaeForce_GetTotalTorque(load_input_real, jnt_pos_rad, jnt_vel_rad, jnt_acc_rad, trq_temp);
     SPD_CONTAINER("全力矩:", trq_temp);
 
-    // 8.3.雅可比矩阵(带负载)
-    jnt_pos_rad = {0.575958653158129, -1.745329251994330, 1.134464013796314, -0.383972435438752,
-                   1.867502299633933, 1.570796326794897,  -0.575146497002030};
-    RokaeForce_GetTcpJacobian(load_input_real, jnt_pos_rad, jacobian);
-    SPD_EIGEN_MATRIX(jacobian);
-
-    // 8.4.质量阵(带负载)
-    RokaeForce_GetMassMatrix(load_input_real, jnt_pos_rad, mass_matrix);
-    SPD_EIGEN_MATRIX(mass_matrix);
-
     // ---------------------------力控算法部分-----------------------
     // 1.设置力控模式，配置力控内部参数
     PDO_0x6064 = {6465032, 1243857,422208, 6773478, 153135, 3241717, -1397951};
     PDO_0x6061 = {8, 8, 8, 8, 8, 8};
     PDO_0x2401 = {2529, 2312, 2443, 1865, 2548, 2581, 2384};
     PDO_0x2402 = {2622, 2224, 2504, 2359, 2817, 2164, 2593};
-    External_DragType drag_type = External_DragType::DRAG_CART_ROT;
+    External_DragType drag_type = External_DragType::DRAG_JOINT;
     bool is_command_by_user = false;  //指令不由用户发送
     res = RokaeForce_DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type, is_command_by_user);
     if (res != 0) {
@@ -383,36 +304,6 @@ int main() {
         SPD_CONTAINER("PDO_0x2205 = ", PDO_0x2205);
         SPD_CONTAINER("PDO_0x2206 = ", PDO_0x2206);
     }
-    // 3. 力控内部状态获取
-    std::vector<double> current_jnt_pos(7);
-    RokaeForce_GetAxisPosCurrent(current_jnt_pos);
-    SPD_CONTAINER("获取当前关节位置为：", current_jnt_pos);
-
-    std::vector<double> current_jnt_vel(7);
-    RokaeForce_GetAxisVelCurrent(current_jnt_vel);
-    SPD_CONTAINER("获取当前关节速度为：", current_jnt_vel);
-
-    std::vector<double> current_jnt_trq(7);
-    RokaeForce_GetCobotTrqCurrent(current_jnt_trq);
-    SPD_CONTAINER("获取当前关节力矩为：", current_jnt_trq);
-
-    std::array<double, 6> ext_wrench;
-    RokaeForce_GetTcpWrenchCurrent(ext_wrench);
-    SPD_CONTAINER("获取当前TCP wrench为：", ext_wrench);
-
-    RokaeForce_GetTcpPosCurrent(tcp_pos);
-    SPD_CONTAINER("获取当前TCP位置为：", tcp_pos);
-
-    std::vector<double> trq_gravity(7);
-    std::vector<double> trq_coriolis(7);
-    RokaeForce_GetDynamicTorqueCurrent(trq_gravity, trq_coriolis, mass_matrix);
-    SPD_CONTAINER("获取当前重力力矩为：", trq_gravity);
-    SPD_CONTAINER("获取当前科氏力矩为：", trq_coriolis);
-    SPD_EIGEN_MATRIX(mass_matrix);
-
-
-    RokaeForce_GetJacobianCurrent(jacobian);
-
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     RokaeForce_FcStop(PDO_0x6061);
 

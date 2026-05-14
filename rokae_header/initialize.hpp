@@ -14,6 +14,8 @@
 #ifndef ROKAE_HEADER_INITIALIZE_H
 #define ROKAE_HEADER_INITIALIZE_H
 
+#include <array>
+
 #include "3rd/kdl/chain.hpp"
 #include "rokae_header/data_structure_convert.hpp"
 #include "rokae_header/robot_config.hpp"
@@ -28,10 +30,22 @@ namespace RokaeApi {
 class InitRobot {
    public:
     /**
-     * @brief 构造函数，初始化机器人类型
+     * @brief 构造函数，初始化机器人类型（基座与世界系对齐，重力在基座系为 (0,0,-9.81) m/s²）
      * @param robot_type 机器人类型
      */
     explicit InitRobot(const Model::MechUnitType& robot_type);
+
+    /**
+     * @brief 构造函数：指定基座相对世界坐标系的姿态（仅旋转），用于在基座系下设置重力方向
+     *
+     * 约定：绕**世界坐标系**固定轴依次旋转：先绕世界 X，再绕世界 Y，再绕世界 Z，角度单位为度。
+     * 世界系重力为 (0, 0, -9.81) m/s²；基座系重力为 R^{-1} * g_world，其中 R = RotZ(rz)*RotY(ry)*RotX(rx)
+     *（与 SetBaseFrameAndGravity 中仅旋转、平移为 0 时的姿态一致）。
+     *
+     * @param robot_type 机器人类型
+     * @param base_rotation_xyz_deg 绕世界 X、Y、Z 的转角（度）
+     */
+    InitRobot(const Model::MechUnitType& robot_type, const std::array<double, 3>& base_rotation_xyz_deg);
 
     /**
      * @brief 析构函数
@@ -101,6 +115,11 @@ class InitRobot {
      */
     void SetGravity(const KDL::Vector& gravity_in) { m_gravity = gravity_in; }
 
+    /**
+     * @brief 基座在世界系下的位姿：平移为 0，旋转与构造时传入的 XYZ 固定轴转角一致
+     */
+    KDL::Frame GetRobotBaseFrameInWorld() const { return KDL::Frame(m_base_R_world_from_base, KDL::Vector(0, 0, 0)); }
+
    private:
     Model::MechUnitType m_robot_type;             ///< 机器人类型
     Model::RobotConfiguration m_robot_config;     ///< 从配置文件读取的机器人配置
@@ -109,7 +128,8 @@ class InitRobot {
     Control::ControlParams m_control_param;       ///< 控制参数
     Model::MechanicalParams m_mechanical_params;  ///< 机械参数
     KDL::Chain m_chain;                           ///< 机器人链
-    KDL::Vector m_gravity;                        ///< 重力矢量
+    KDL::Rotation m_base_R_world_from_base;       ///< 基座到世界旋转：v_world = R * v_base（固定轴 X→Y→Z）
+    KDL::Vector m_gravity;                        ///< 重力矢量（基座系）
 };
 
 }  // namespace RokaeApi

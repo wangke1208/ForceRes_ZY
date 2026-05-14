@@ -11,6 +11,7 @@ int main() {
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
 #endif
+
     // ---------------------------模型初始化部分-----------------------
     int res = 0;
 
@@ -31,7 +32,6 @@ int main() {
     // 1.设置编码器零点
     std::vector<int8_t> PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<int32_t> encoder_offset = {6954651, -20169, 42141, -209178, -33577, 383115, -38823};
-
     res = RokaeForce_SetEncoderOffset(PDO_0x6061, encoder_offset);
     if (res != 0) {
         LOG_ERROR("编码器零点设置失败,错误码为 {}", res);
@@ -51,17 +51,7 @@ int main() {
         LOG_INFO("传感器线性度设置成功");
     }
 
-    // 3.设置基坐标系&重力矩
-    std::array<double, 6> base_frame = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-    res = RokaeForce_SetBaseFrameAndGravity(base_frame);
-    if (res != 0) {
-        LOG_ERROR("基坐标系设置失败,错误码为: = {}", res);
-        return -1;
-    } else {
-        LOG_INFO("基坐标系设置成功");
-    }
-
-    // 4.设置负载参数
+    // 3.设置负载参数
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     External_RokaeLoad load_input;
     //动力学参数
@@ -79,7 +69,7 @@ int main() {
         LOG_INFO("负载参数设置成功");
     }
 
-    // 4.2传感器零点标定
+    // 4.传感器零点标定
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<int32_t> PDO_0x6064 = {20000, 20000, 20000, 20000, 20000, 20000, 20000};
     //传感器数据
@@ -102,7 +92,6 @@ int main() {
 
     // 5.传感器零点设置
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    sensor_bias = {2567, 2590, 2450, 2317, 2710, 2528, 2472};
     res = RokaeForce_SetSensorBias(PDO_0x6061, sensor_bias);
     if (res != 0) {
         LOG_ERROR("传感器零点设置失败,错误码为 {}", res);
@@ -128,16 +117,15 @@ int main() {
 
     // 8.设置摩擦力增益接口(阻抗不支持改变摩擦力增益，调用该接口无效)
 
-    // 9.设置笛卡尔空间阻抗刚度
-    std::array<double,6> cart_stiffness = {3000, 3000, 3000, 300, 300, 300};
-    res = RokaeForce_SetCartesianImpedance(PDO_0x6061,cart_stiffness);
+    // 9.设置关节阻抗刚度
+    std::vector<double> joint_stiffness = {2000, 2000, 1500, 1500, 500, 500, 500};
+    res = RokaeForce_SetJointImpedance(PDO_0x6061, joint_stiffness);
     if (res != 0) {
-        LOG_ERROR("笛卡尔阻抗刚度设置失败,错误码为 {}", res);
+        LOG_ERROR("关节阻抗刚度设置失败,错误码为 {}", res);
         return -1;
     } else {
-        LOG_INFO("笛卡尔阻抗刚度设置成功");
+        LOG_INFO("关节阻抗刚度设置成功");
     }
-
 
     // ---------------------------力控算法部分-----------------------
     // 1.设置力控模式，配置力控内部参数
@@ -145,7 +133,8 @@ int main() {
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<int16_t> PDO_0x2401 = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
     std::vector<int16_t> PDO_0x2402 = {2500, 2500, 2500, 2500, 2500, 2500, 2500};
-    External_DragType drag_type = External_DragType::IMPEDANCE_CART;
+    External_DragType drag_type = External_DragType::IMPEDANCE_JOINT;
+
     bool is_command_by_user = false;
     res = RokaeForce_DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type, is_command_by_user);
     if (res != 0) {
@@ -175,56 +164,31 @@ int main() {
 
     bool init = true;
     double continue_time = 5;
-    double step_time = 0.5;
+    double step_time = 0.001;
     double time = 0;
-    double kRadius = 0.2;
     double angle = 0.0;
-    double delta_z = 0.0;
     std::vector<double> jnt_pos_init(7);           //弧度
-    std::array<double, 16U> cart_frame_init;       //变换矩阵
-    std::array<double, 6U> cart_pos_init;          // TCP位姿
-
-    std::vector<double> jnt_pos_cmd_zero(7);  //轴空间关节指令给默认值，不参与计算
-    std::array<double, 6> cart_pos_cmd;       //笛卡尔空间指令
-    std::vector<double> jnt_trq_cmd_from_user(7);  //力矩指令
-    jnt_trq_cmd_from_user = {0, 0, 0, 0, 0, 0, 0};
+    std::vector<double> jnt_pos_cmd(7);           //轴空间关节指令
+    std::vector<double> jnt_trq_cmd_from_user(7);
+    jnt_trq_cmd_from_user = {5, 5, 5, 5, 5, 5, 5};
+    std::array<double, 6> cart_cmd_zero{};  // 笛卡尔指令占位，关节阻抗下不参与计算
     while (time < continue_time) {
         time += step_time;
         if (init) {
-            RokaeForce_GetAxisPos(PDO_0x6064, jnt_pos_init);  //这里假设反馈值不变，实际上肯定是变的
-            RokaeForce_GetTcpPos(load_input, jnt_pos_init, cart_frame_init, cart_pos_init);
-            cart_pos_cmd = cart_pos_init;
+            RokaeForce_GetAxisPos(PDO_0x6064, jnt_pos_init);
+            jnt_pos_cmd = jnt_pos_init;
             init = false;
         }
 
         angle = FORCE_RES_EXAMPLE_PI / 4 * (1 - std::cos(FORCE_RES_EXAMPLE_PI / 2 * time));
-        delta_z = kRadius * (std::cos(angle) - 1);
-        cart_pos_cmd[2] = cart_pos_init[2] + delta_z;
+        jnt_pos_cmd[6] = jnt_pos_init[6] + angle;
 
-        res = RokaeForce_FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd_zero,
-                                  cart_pos_cmd, jnt_trq_cmd_from_user, PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202, PDO_0x2203,
-                                  PDO_0x2204, PDO_0x2205, PDO_0x2206);
+        res = RokaeForce_FcUpdate(PDO_0x6061, PDO_0x2401, PDO_0x2402, PDO_0x2406, PDO_0x6064, PDO_0x606C, jnt_pos_cmd,
+                                  cart_cmd_zero, jnt_trq_cmd_from_user, PDO_0x6071, PDO_0x60B2, PDO_0x2201, PDO_0x2202,
+                                  PDO_0x2203, PDO_0x2204, PDO_0x2205, PDO_0x2206);
         if (res != 0) {
             LOG_ERROR("力控指令更新出错,不允许下发给伺服，错误码为 {}", res);
             return -1;
-        } else {
-            LOG_INFO("力控指令更新成功");
-            LOG_INFO("PDO_0x6071 = {},{},{},{},{},{},{}", PDO_0x6071[0], PDO_0x6071[1], PDO_0x6071[2], PDO_0x6071[3],
-                     PDO_0x6071[4], PDO_0x6071[5], PDO_0x6071[6]);
-            LOG_INFO("PDO_0x60B2 = {},{},{},{},{},{},{}", PDO_0x60B2[0], PDO_0x60B2[1], PDO_0x60B2[2], PDO_0x60B2[3],
-                     PDO_0x60B2[4], PDO_0x60B2[5], PDO_0x60B2[6]);
-            LOG_INFO("PDO_0x2201 = {},{},{},{},{},{},{}", PDO_0x2201[0], PDO_0x2201[1], PDO_0x2201[2], PDO_0x2201[3],
-                     PDO_0x2201[4], PDO_0x2201[5], PDO_0x2201[6]);
-            LOG_INFO("PDO_0x2202 = {},{},{},{},{},{},{}", PDO_0x2202[0], PDO_0x2202[1], PDO_0x2202[2], PDO_0x2202[3],
-                     PDO_0x2202[4], PDO_0x2202[5], PDO_0x2202[6]);
-            LOG_INFO("PDO_0x2203 = {},{},{},{},{},{},{}", PDO_0x2203[0], PDO_0x2203[1], PDO_0x2203[2], PDO_0x2203[3],
-                     PDO_0x2203[4], PDO_0x2203[5], PDO_0x2203[6]);
-            LOG_INFO("PDO_0x2204 = {},{},{},{},{},{},{}", PDO_0x2204[0], PDO_0x2204[1], PDO_0x2204[2], PDO_0x2204[3],
-                     PDO_0x2204[4], PDO_0x2204[5], PDO_0x2204[6]);
-            LOG_INFO("PDO_0x2205 = {},{},{},{},{},{},{}", PDO_0x2205[0], PDO_0x2205[1], PDO_0x2205[2], PDO_0x2205[3],
-                     PDO_0x2205[4], PDO_0x2205[5], PDO_0x2205[6]);
-            LOG_INFO("PDO_0x2206 = {},{},{},{},{},{},{}", PDO_0x2206[0], PDO_0x2206[1], PDO_0x2206[2], PDO_0x2206[3],
-                     PDO_0x2206[4], PDO_0x2206[5], PDO_0x2206[6]);
         }
     }
 
@@ -232,7 +196,7 @@ int main() {
 
     // 4.内部状态重置
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
-    res = RokaeForce_FcStop(PDO_0x6061);    
+    res = RokaeForce_FcStop(PDO_0x6061);
     if (res != 0) {
         LOG_ERROR("FcStop出错,错误码为 {}", res);
         return -1;
