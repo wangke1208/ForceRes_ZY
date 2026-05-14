@@ -20,5 +20,3 @@ endfunction()
 
 add_force_res_demo(joint_drag_test)
 add_force_res_demo(joint_drag_test_with_load)
-add_force_res_demo(joint_impedence_demo)
-add_force_res_demo(robot_cfg_model_init_smoke)
