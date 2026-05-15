@@ -14,9 +14,9 @@
 #ifndef ROKAE_HEADER_VERSION_HPP_
 #define ROKAE_HEADER_VERSION_HPP_
 namespace RokaeApi {
-const char* const VERSION = "v1.0.6";
+const char* const VERSION = "v1.0.0";
 
-// v1.0版本：添加基本轴空间拖动功能，无保护功能。
+// v1.0版本：添加基本轴空间拖动和基础阻抗功能，无保护功能。
 
 }  // namespace RokaeApi
 

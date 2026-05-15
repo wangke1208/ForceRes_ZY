@@ -30,7 +30,7 @@ int ForceProtect::TrqErrorProtect(const std::vector<double>& sensor_feedback_trq
     for (unsigned int i = 0; i < m_axis_num; i++) {
         if (std::abs(sensor_feedback_trq[i] - model_trq[i]) >
             m_fc_params_inner_ptr->m_protect_params.m_params["max_mode_switch_trq"][i]) {
-            //return ERROR_EXCESSIVE_TORQUE;
+            return ERROR_EXCESSIVE_TORQUE;
         }
     }
 
