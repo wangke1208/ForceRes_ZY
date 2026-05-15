@@ -10,12 +10,6 @@ using namespace RokaeApi;
 using namespace RokaeApi::External;
 
 int main() {
-#ifdef _WIN32
-    // 内存泄漏检查
-    // _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    SetConsoleOutputCP(CP_UTF8);
-#endif
-
     // ---------------------------模型初始化部分-----------------------
     int res = 0;
 
@@ -233,8 +227,8 @@ int main() {
     // 1. 设置力控模式，配置力控内部参数
     PDO_0x6064 = {33598299, 60836546, 143610735, 69876043, 164768509, 108187583, 160591964};
     PDO_0x6061 = {8, 8, 8, 8, 8, 8};
-    PDO_0x2401 = {2074, 2360, 2380, 2516, 2461, 2481, 2444};
-    PDO_0x2402 = {2074, 2360, 2380, 2516, 2461, 2481, 2444};
+    PDO_0x2401 = {1525, 2351, 1815, 2521, 2457, 2482, 1888};
+    PDO_0x2402 = {1525, 2351, 1815, 2521, 2457, 2482, 1888};
     External_DragType drag_type = External_DragType::DRAG_JOINT;
     bool is_command_by_user = false;  // 指令不由用户发送
     res = RokaeForce_DragConfig(PDO_0x6064, PDO_0x6061, PDO_0x2401, PDO_0x2402, drag_type, is_command_by_user);

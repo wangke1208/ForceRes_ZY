@@ -10,12 +10,6 @@ using namespace RokaeApi;
 using namespace RokaeApi::External;
 
 int main() {
-#ifdef _WIN32
-    // 内存泄漏检查
-    // _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    SetConsoleOutputCP(CP_UTF8);
-#endif
-
     // ---------------------------模型初始化部分-----------------------
     int res = 0;
 
