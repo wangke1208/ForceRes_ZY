@@ -135,10 +135,10 @@ int ForceControl::DragConfig(const std::vector<int32_t>& pos_encoder_from_servo,
     }
 
     // 4. 检查是否处于软限位保护范围内
-    if (m_force_protect_ptr->IsInForceControlArea(VectorToJntArray(jnt_pos_rad_temp), m_joint_range_max_inner,
-                                                  m_joint_range_min_inner)) {
-        return ERROR_DRAG_START_POS;
-    }
+    // if (m_force_protect_ptr->IsInForceControlArea(VectorToJntArray(jnt_pos_rad_temp), m_joint_range_max_inner,
+    //                                               m_joint_range_min_inner)) {
+    //     return ERROR_DRAG_START_POS;
+    // }
 
     // 5. 拖动类型判断及设置阻抗参数
     if (drag_type < 0 || drag_type > 4) {
