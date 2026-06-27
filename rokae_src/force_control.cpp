@@ -88,14 +88,14 @@ int ForceControl::Fcinit() {
         [this]() { return SetMaxTrqErrorThreshold(m_init_robot_ptr->GetControlParams().m_protect_params.max_mode_switch_trq); },
         [this]() { return SetKpGain(m_kp_gain_set); },
         [this]() { return SetFricGain(m_fri_gain_set); },
-        [this]() { return ResetKpByLoad(m_load); },
-        [this]() { return ResetFricByLoad(m_load); },
-        [this]() { return SetZetaGain(m_init_robot_ptr->GetControlParams().m_gain_params.joint_damp_zeta); },
-        [this]() { return SetImpedenceGain(DragType::DRAG_JOINT); },
         [this]() {
             return SetLoadLimit(m_init_robot_ptr->GetModelParams().max_load,
                                 m_init_robot_ptr->GetModelParams().max_load_tcp_length);
-        }};
+        },
+        [this]() { return ResetKpByLoad(m_load); },
+        [this]() { return ResetFricByLoad(m_load); },
+        [this]() { return SetZetaGain(m_init_robot_ptr->GetControlParams().m_gain_params.joint_damp_zeta); },
+        [this]() { return SetImpedenceGain(DragType::DRAG_JOINT); }};
 
     for (const auto& call : func_calls) {
         int ret = call();
@@ -364,11 +364,9 @@ int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const
     if (joint_range_min.size() != m_jnt_num || joint_range_max.size() != m_jnt_num) {
         return ERROR_SIZE_WRONG;
     }
-    // 数据有效性检查
+    // 数据有效性检查：下限 < 0，上限 > 0，且下限 < 上限
     for (unsigned int i = 0; i < m_jnt_num; ++i) {
-        if (joint_range_min[i] > 0 || joint_range_max[i] < 0 || joint_range_max[i] <= joint_range_min[i] ||
-            joint_range_min[i] < m_init_robot_ptr->GetModelParams().joint_range_min_new[i] ||
-            joint_range_max[i] > m_init_robot_ptr->GetModelParams().joint_range_max_new[i]) {
+        if (joint_range_min[i] >= 0 || joint_range_max[i] <= 0 || joint_range_min[i] >= joint_range_max[i]) {
             return ERROR_SOFT_LIMIT_PARAMS;
         }
     }
@@ -379,9 +377,6 @@ int ForceControl::SetSoftLimit(const std::vector<double>& joint_range_min, const
     }
     m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_min", m_joint_range_min_inner);
     m_fc_params_inner_ptr->m_hardware_params.SetParam("joint_angle_limit_max", m_joint_range_max_inner);
-
-    // 软限位设置到规划器中
-    m_force_planner_ptr->SetSoftLimit(m_joint_range_min_inner, m_joint_range_max_inner);
     return SOLVE_NOERROR;
 }
 
@@ -555,8 +550,11 @@ int ForceControl::SetCartImpedance(const std::array<double, 6>& cart_stiffness) 
 }
 
 int ForceControl::ResetKpByLoad(const RokaeLoad& load) {
-    double load_scale = load.m_rokae_load_inertia.GetCOG().Norm() * load.m_rokae_load_inertia.mass /
-                        (m_load_tcp_length_limit[0] * m_load_mass_limit[0] * 2);
+    double load_scale = 0.0;
+    if (m_load_mass_limit[0] > 0.0 && m_load_tcp_length_limit[0] > 0.0) {
+        load_scale = load.m_rokae_load_inertia.GetCOG().Norm() * load.m_rokae_load_inertia.mass /
+                     (m_load_tcp_length_limit[0] * m_load_mass_limit[0] * 2);
+    }
     for (unsigned int i = 0; i < m_jnt_num; i++) {
         m_kp_set_by_load[i] = m_init_robot_ptr->GetControlParams().m_gain_params.joint_gain_kp[i] * m_kp_gain_set[i];
         m_kp_set_by_load[i] *= (1 - load_scale);
@@ -566,16 +564,21 @@ int ForceControl::ResetKpByLoad(const RokaeLoad& load) {
 }
 
 int ForceControl::ResetFricByLoad(const RokaeLoad& load) {
-    // 调节范围为0~1
-    double load_fric_scale = load.m_rokae_load_inertia.mass / m_load_mass_limit[0];
+    // 调节范围为0~1；0.5 对应 cfg 默认摩擦系数，1.0 为最大，0.0 为关闭
+    double load_fric_scale = 0.0;
+    if (m_load_mass_limit[0] > 0.0) {
+        load_fric_scale = load.m_rokae_load_inertia.mass / m_load_mass_limit[0];
+    }
 
     for (unsigned int i = 0; i < m_jnt_num; i++) {
-        if (m_fri_gain_set[i] >= 0.5 && m_fri_gain_set[i] <= 1) {
-            m_fri_set_by_load[i] = ((m_fri_gain_set[i] - 0.5) / 0.5) *
-                                       (1 - m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i]) +
-                                   m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i];
-        } else if (m_fri_gain_set[i] >= 0) {
-            m_fri_set_by_load[i] = m_fri_set_by_load[i] - ((0.5 - m_fri_gain_set[i]) / 0.5) * m_fri_set_by_load[i];
+        const double base = m_init_robot_ptr->GetControlParams().m_gain_params.friction_cof_servo[i];
+        const double gain = m_fri_gain_set[i];
+        if (gain >= 0.5) {
+            m_fri_set_by_load[i] = ((gain - 0.5) / 0.5) * (1.0 - base) + base;
+        } else if (gain >= 0.0) {
+            m_fri_set_by_load[i] = (gain / 0.5) * base;
+        } else {
+            m_fri_set_by_load[i] = 0.0;
         }
         m_fri_set_by_load[i] -= load_fric_scale * m_fri_set_by_load[i] / 2;
     }

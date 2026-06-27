@@ -51,22 +51,6 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
     m_function_jnt_zero_trq.resize(m_jnt_num);
     m_function_jnt_zero_trq.data.setZero();
 
-    // 初始化关节软限位边界相关向量
-    m_lower_bound.resize(m_jnt_num, -180 * KDL::deg2rad);
-    m_upper_bound.resize(m_jnt_num, 180 * KDL::deg2rad);
-    m_lower_monitor_bound.resize(m_jnt_num, -180 * KDL::deg2rad);
-    m_upper_monitor_bound.resize(m_jnt_num, 180 * KDL::deg2rad);
-
-    // 初始化软限位保护力相关向量
-    m_protect_force_damp.resize(m_jnt_num);
-    m_protect_force_stiff.resize(m_jnt_num);
-    m_function_jnt_limit_trq.resize(m_jnt_num);
-    fc_params_inner_ptr->m_function_params.GetParams("soft_limit_stiff", m_protect_force_stiff);
-    fc_params_inner_ptr->m_function_params.GetParams("soft_limit_damp", m_protect_force_damp);
-
-    // 初始化角度阈值常量
-    m_pre_protect_angle = 2 * KDL::deg2rad;
-    m_jnt_pos_safety_threshold = 3 * KDL::deg2rad;
  }
  
  // --------------------- 析构函数 ---------------------
@@ -82,14 +66,11 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
      } else {
          CartImpedanceUpdate(m_function_imp_trq);
      }
-     // 2.关节保护力
-     JointLimitProtectUpdate(m_function_jnt_limit_trq);
-     // 3.动力学补偿
+     // 2.动力学补偿
      m_function_jnt_gravity = FC->jnt_gravity_trq_measure;
-     // 4.惯量
-     // 5.合力
+     // 3.合力
      for (unsigned int i = 0; i < m_jnt_num; i++) {
-         FC->jnt_trq_final_cmd(i) = m_function_jnt_gravity(i) + m_function_imp_trq(i) + m_function_jnt_limit_trq(i);
+         FC->jnt_trq_final_cmd(i) = m_function_jnt_gravity(i) + m_function_imp_trq(i);
      }
      return;
  }
@@ -144,47 +125,6 @@ ForcePlanner::ForcePlanner(InitRobot* init_robot_ptr, FcStatusInner* fc_status_p
 
  }
  
- // --------------------- 关节保护力更新 ---------------------
- void ForcePlanner::JointLimitProtectUpdate(KDL::JntArray& protect_torque) {
-     for (unsigned int i = 0; i < m_jnt_num; i++) {
-         if (FC->jnt_pos_measure(i) > m_upper_monitor_bound[i]) {
-             protect_torque(i) = -m_protect_force_stiff[i] *
-                                     std::min(FC->jnt_pos_measure(i) - m_upper_monitor_bound[i], m_jnt_pos_safety_threshold) -
-                                 m_protect_force_damp[i] * FC->jnt_vel_measure(i);
-         }
-         else if (FC->jnt_pos_measure(i) < m_lower_monitor_bound[i]) {
-             protect_torque(i) = m_protect_force_stiff[i] *
-                                     std::min(m_lower_monitor_bound[i] - FC->jnt_pos_measure(i), m_jnt_pos_safety_threshold) -
-                                 m_protect_force_damp[i] * FC->jnt_vel_measure(i);
-         }
-         else if (FC->jnt_pos_measure(i) > (m_upper_monitor_bound[i] - m_pre_protect_angle)) {
-             protect_torque(i) = 0.0;
-         }
-         else if (FC->jnt_pos_measure(i) < (m_lower_monitor_bound[i] + m_pre_protect_angle)) {
-             protect_torque(i) = 0.0;
-         }
-         else {
-             protect_torque(i) = 0.0;
-         }
-     }
- }
- 
- // --------------------- 软限位设置 ---------------------
- void ForcePlanner::SetSoftLimit(const std::vector<double>& joint_range_min_input,
-                                 const std::vector<double>& joint_range_max_input) {
-     if (joint_range_min_input.size() != m_jnt_num || joint_range_max_input.size() != m_jnt_num) {
-         return;
-     }
-     for (unsigned int i = 0; i < m_jnt_num; i++) {
-         //弧度
-         m_lower_bound[i] = joint_range_min_input[i];
-         m_upper_bound[i] = joint_range_max_input[i];
-         m_lower_monitor_bound[i] = m_lower_bound[i] + m_jnt_pos_safety_threshold;
-         m_upper_monitor_bound[i] = m_upper_bound[i] - m_jnt_pos_safety_threshold;
-     }
-     return;
- }
-
  void ForcePlanner::UpdateParams() {
      m_fc_params_inner_ptr->m_function_params.GetParams("cart_stiff", m_cart_stiff);
      m_fc_params_inner_ptr->m_function_params.GetParams("cart_damp", m_cart_damp);
