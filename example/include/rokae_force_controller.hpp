@@ -129,6 +129,25 @@ int RokaeForce_SetSensorLinearity(const std::vector<int8_t>& PDO_0x6061, const s
 int RokaeForce_SetSensorBias(const std::vector<int8_t>& PDO_0x6061, const std::vector<double>& analog_bias);
 
 /**
+ * @brief 设置各轴用户自定义旋转方向（方向系数）
+ *
+ * 按关节设置旋转方向是否与 Rokae 定义方向一致。未调用本接口时，库内默认各轴方向系数为 1（与 Rokae 定义方向一致）。
+ *
+ * @param[in] PDO_0x6061 各轴伺服模式（须均为位置模式，与其它参数设置接口相同）
+ * @param[in] is_direction_right 各轴方向，长度须等于关节数
+ *        - true：保持与 Rokae 定义方向一致（内部系数 +1）
+ *        - false：相对 Rokae 定义方向取反（内部系数 -1，编码器换算、传感器力矩等相关量按设计取反）
+ *
+ * @note 调用时机：须在 RokaeForce_CalibrateTrqSensor、RokaeForce_SetSensorBias 之前调用；建议在
+ *       RokaeForce_SetEncoderOffset 之后立即调用。亦须在 RokaeForce_DragConfig 之前；拖动进行中不可改。
+ * @note 影响范围：关节位置/速度编解码、传感器力矩换算、零点辨识相关换算等；力矩下发 trq_cmd 不乘本系数。
+ * @note edb_cof 使用绝对值，方向取反不改变其数值。
+ *
+ * @return 错误码；SOLVE_NOERROR(0) 表示成功
+ */
+int RokaeForce_SetDirectionCoef(const std::vector<int8_t>& PDO_0x6061, const std::vector<bool>& is_direction_right);
+
+/**
  * @brief 设置编码器零点
  * @param[in] PDO_0x6061
  * @param[in] encoder_offset 编码器零点

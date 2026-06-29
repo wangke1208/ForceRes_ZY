@@ -142,6 +142,14 @@ class ForceControl {
     int SetSensorBias(const std::vector<double>& analog_bias);
 
     /**
+     * @brief 设置用户自定义旋转方向
+     * @param[in] is_direction_right 各轴方向：true 保持与 Rokae 定义方向一致，false 相对 Rokae 定义方向取反；长度须等于关节数
+     * @note 须在传感器零点标定/设置之前调用；建议在 SetEncoderOffset 之后立即调用
+     * @return 错误码
+     */
+    int SetDirectionCoef(const std::vector<bool>& is_direction_right);
+
+    /**
      * @brief 设置机械零点
      *
      * 此函数用于设置关节位置编码器的偏移参数。

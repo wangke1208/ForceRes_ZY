@@ -243,6 +243,27 @@ int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<doubl
     return SOLVE_NOERROR;
 }
 
+int SetDirectionCoef(const std::vector<int8_t>& servo_mode, const std::vector<bool>& is_direction_right) {
+    //判断伺服模式是否处于位置模式
+    if (IsInPositionMode(servo_mode) != true) {
+        return ERROR_SERVO_MODE;
+    }
+    //判断是否进行了DragConfig
+    if (forcecontrol_ptr->GetDragStatus() == true) {
+        return ERROR_DRAG_STATUS;
+    }
+    //设置用户自定义旋转方向
+    auto res1 = forcecontrol_ptr->SetDirectionCoef(is_direction_right);
+    auto res2 = axisconvert_ptr->SetDirectionCoef(is_direction_right);
+    if (res1 != SOLVE_NOERROR) {
+        return res1;
+    }
+    if (res2 != SOLVE_NOERROR) {
+        return res2;
+    }
+    return SOLVE_NOERROR;
+}
+
 int SetEncoderOffset(const std::vector<int8_t>& servo_mode, const std::vector<int32_t>& encoder_offset) {
     //判断伺服模式是否处于位置模式
     if (IsInPositionMode(servo_mode) != true) {

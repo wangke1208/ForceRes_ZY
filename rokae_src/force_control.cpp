@@ -347,6 +347,17 @@ int ForceControl::SetSensorBias(const std::vector<double>& analog_bias) {
     return SOLVE_NOERROR;
 }
 
+int ForceControl::SetDirectionCoef(const std::vector<bool>& is_direction_right) {
+    if (m_jnt_num != is_direction_right.size()) {
+        return ERROR_SIZE_WRONG;
+    }
+    int res = m_servo_fc_convert_ptr->SetDirectionCoef(is_direction_right);
+    if (res != SOLVE_NOERROR) {
+        return res;
+    }
+    return SOLVE_NOERROR;
+}
+
 int ForceControl::SetEncoderOffset(const std::vector<int32_t>& encoder_offset) {
     if (m_jnt_num != encoder_offset.size()) {
         return ERROR_SIZE_WRONG;

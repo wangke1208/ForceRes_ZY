@@ -38,7 +38,18 @@ int main() {
         SPD_CONTAINER("编码器零点设置成功，当前的零点值为: ", encoder_offset);
     }
 
-    // 2. 设置传感器线性度
+    // 2. 设置用户自定义旋转方向（须在传感器零点标定/设置之前；建议编码器零点设置后立即调用）
+    PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
+    std::vector<bool> is_direction_right = {true, true, true, true, true, true, true};
+    res = RokaeForce_SetDirectionCoef(PDO_0x6061, is_direction_right);
+    if (res != 0) {
+        LOG_ERROR("用户自定义旋转方向设置失败,错误码为 {}", res);
+        return -1;
+    } else {
+        SPD_CONTAINER("用户自定义旋转方向设置成功，当前方向为：", is_direction_right);
+    }
+
+    // 3. 设置传感器线性度
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<double> sensor_linearity = {2.111447, 2.025197, 2.241651, -2.163994, 1.668150, 2.269543, -2.287792};
     res = RokaeForce_SetSensorLinearity(PDO_0x6061, sensor_linearity);
@@ -49,7 +60,7 @@ int main() {
         SPD_CONTAINER("传感器线性度设置成功，当前线性度值为：", sensor_linearity);
     }
 
-    // 3. 设置负载参数
+    // 4. 设置负载参数
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     External_RokaeLoad load_input;
     res = RokaeForce_SetFcLoad(PDO_0x6061, load_input);
@@ -64,7 +75,7 @@ int main() {
         SPD_CONTAINER("负载姿态偏移: ", load_input.posture_rpy);
     }
 
-    // 4. 传感器零点标定
+    // 5. 传感器零点标定
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<int32_t> PDO_0x6064 = {33598299, 60836546, 143610735, 69876043, 164768509, 108187583, 160591964};
     // 传感器数据
@@ -101,7 +112,7 @@ int main() {
         SPD_CONTAINER("传感器零点标定成功，当前传感器零点标定值为: ", sensor_bias);
     }
 
-    // 5. 传感器零点设置
+    // 6. 传感器零点设置
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     res = RokaeForce_SetSensorBias(PDO_0x6061, sensor_bias);
     if (res != 0) {
@@ -111,7 +122,7 @@ int main() {
         SPD_CONTAINER("传感器零点设置成功，当前传感器零点值为: ", sensor_bias);
     }
 
-    // 6. 设置力控软限位
+    // 7. 设置力控软限位
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<double> soft_limit_low = {-178, -120, -178, -60, -178, -50, -50};
     std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 50, 50};
@@ -125,7 +136,7 @@ int main() {
         SPD_CONTAINER("力控软限位设置成功，当前软限位下限为：", soft_limit_low);
     }
 
-    // 7. 设置力控增益接口（可选）
+    // 8. 设置力控增益接口（可选）
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<double> kp_gain_set = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     res = RokaeForce_SetKpGain(PDO_0x6061, kp_gain_set);
@@ -136,7 +147,7 @@ int main() {
         SPD_CONTAINER("力控增益设置成功，当前kp增益值为：", kp_gain_set);
     }
 
-    // 8. 设置摩擦力增益接口（可选）
+    // 9. 设置摩擦力增益接口（可选）
     std::vector<double> fric_gain_set = {0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5};
 
     res = RokaeForce_SetFricGain(PDO_0x6061, fric_gain_set);

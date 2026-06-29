@@ -116,6 +116,15 @@ int SetSensorLinearity(const std::vector<int8_t>& servo_mode, const std::vector<
 int SetSensorBias(const std::vector<int8_t>& servo_mode, const std::vector<double>& analog_bias);
 
 /**
+ * @brief 设置用户自定义旋转方向
+ * @param[in] servo_mode 伺服模式数据（须均为位置模式）
+ * @param[in] is_direction_right 各轴方向：true 保持与 Rokae 定义方向一致，false 相对 Rokae 定义方向取反
+ * @note 须在 CalibrateTrqSensor、SetSensorBias 之前调用；建议在 SetEncoderOffset 之后立即调用
+ * @return 错误码
+ */
+int SetDirectionCoef(const std::vector<int8_t>& servo_mode, const std::vector<bool>& is_direction_right);
+
+/**
  * @brief 设置编码器零点
  * @param[in] servo_mode 伺服模式数据
  * @param[in] encoder_offset 编码器偏移值

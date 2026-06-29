@@ -32,7 +32,8 @@ Axis_Convert::Axis_Convert(unsigned int axis_num, const Model::MechanicalParams&
     m_sensor_trq.resize(m_axis_num);
     m_jnt_to_encoder_scale.resize(m_axis_num);
     m_encoder_to_jnt_scale.resize(m_axis_num);
-
+    m_is_direction_right.resize(m_axis_num,true);
+    m_direction_coef.resize(m_axis_num,1.0);
     //赋初值
     std::copy(mec_params_input.encoder_offset.cbegin(), mec_params_input.encoder_offset.cend(),
               m_motorside_encoder_offset.begin());
@@ -66,13 +67,24 @@ int Axis_Convert::SetEncoderBias(const std::vector<int>& encoder_bias_set) {
     return SOLVE_NOERROR;
 }
 
+int Axis_Convert::SetDirectionCoef(const std::vector<bool>& is_direction_right) {
+    if (is_direction_right.size() != m_axis_num) {
+        return ERROR_SIZE_WRONG;
+    }
+    std::copy(is_direction_right.cbegin(), is_direction_right.cend(), m_is_direction_right.begin());
+    for (uint32_t i = 0; i < m_axis_num; i++) {
+        m_direction_coef[i] = is_direction_right[i] ? 1.0 : -1.0;
+    }
+    return SOLVE_NOERROR;
+}
+
 /****************************************电机相关************************************ */
 
 int Axis_Convert::GetEncoderValue(const std::vector<double>& jnt_pos_rad, std::vector<int>& encoder_value) {
     int res = SOLVE_NOERROR;
     for (uint32_t i = 0; i < m_axis_num; i++) {
         encoder_value[i] =
-            jnt_pos_rad[i] * m_motorside_reduce_ratio[i] * m_jnt_to_encoder_scale[i] + m_motorside_encoder_offset[i];
+            jnt_pos_rad[i] * m_motorside_reduce_ratio[i] * m_direction_coef[i] * m_jnt_to_encoder_scale[i] + m_motorside_encoder_offset[i];
     }
     return res;
 }
@@ -84,7 +96,7 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, std::vector<
     //临时针对中秒抖动问题加一个保护，编码器突然跳变到0附近，则不更新位置(只针对力矩模式下)
     for (unsigned i = 0; i < m_axis_num; i++) {
         jnt_pos_rad[i] =
-            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_ratio[i]);
+            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / (m_motorside_reduce_ratio[i] * m_direction_coef[i]));
     }
     return SOLVE_NOERROR;
 }
@@ -95,7 +107,7 @@ int Axis_Convert::GetAxisPos(const std::vector<int>& encoder_value, KDL::JntArra
     }
     for (unsigned i = 0; i < m_axis_num; i++) {
         jnt_pos_rad(i) =
-            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / m_motorside_reduce_ratio[i]);
+            ((encoder_value[i] - m_motorside_encoder_offset[i]) * m_encoder_to_jnt_scale[i] / (m_motorside_reduce_ratio[i] * m_direction_coef[i]));
     }
     return SOLVE_NOERROR;
 }
@@ -106,7 +118,7 @@ int Axis_Convert::GetVelRegValueForServo(const std::vector<double>& axis_vel_rad
     }
 
     for (uint32_t i = 0; i < m_axis_num; ++i) {
-        vel_reg_value[i] = static_cast<int16_t>(axis_vel_rad[i] * m_motorside_reduce_ratio[i] * 30 / PI);
+        vel_reg_value[i] = static_cast<int16_t>(axis_vel_rad[i] * m_motorside_reduce_ratio[i] * m_direction_coef[i] * 30 / PI);
     }
     return SOLVE_NOERROR;
 }
@@ -117,7 +129,7 @@ int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, std::vec
     }
 
     for (unsigned int i = 0; i < m_axis_num; i++) {
-        jnt_vel_rad[i] = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_ratio[i]);
+        jnt_vel_rad[i] = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_ratio[i] * m_direction_coef[i]);
     }
     return SOLVE_NOERROR;
 }
@@ -127,7 +139,7 @@ int Axis_Convert::GetAxisVel(const std::vector<int>& encoder_vel_value, KDL::Jnt
     }
 
     for (unsigned int i = 0; i < m_axis_num; i++) {
-        jnt_vel_rad(i) = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_ratio[i]);
+        jnt_vel_rad(i) = (encoder_vel_value[i] * PI * 2 / 60 / m_motorside_reduce_ratio[i] * m_direction_coef[i]);
     }
     return SOLVE_NOERROR;
 }
@@ -136,7 +148,7 @@ int Axis_Convert::GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std:
                               std::vector<double>& jnt_sensor_feedback) {
     for (uint32_t i = 0; i < m_axis_num; i++) {
         jnt_sensor_feedback[i] =
-            ((analog_ch1[i] + analog_ch2[i]) / 2 - m_analog_bias[i]) / 1000.0 * m_analog2trq[i] / m_sensor_amplify[i];
+            ((analog_ch1[i] + analog_ch2[i]) / 2 - m_analog_bias[i]) / 1000.0 * (m_analog2trq[i] * m_direction_coef[i])/ m_sensor_amplify[i];
     }
 
     return SOLVE_NOERROR;
@@ -145,7 +157,7 @@ int Axis_Convert::GetCobotTrq(const std::vector<int16_t>& analog_ch1, const std:
                               KDL::JntArray& jnt_sensor_feedback) {
     for (uint32_t i = 0; i < m_axis_num; i++) {
         jnt_sensor_feedback(i) =
-            ((analog_ch1[i] + analog_ch2[i]) / 2 - m_analog_bias[i]) / 1000.0 * m_analog2trq[i] / m_sensor_amplify[i];
+            ((analog_ch1[i] + analog_ch2[i]) / 2 - m_analog_bias[i]) / 1000.0 * (m_analog2trq[i] * m_direction_coef[i])/ m_sensor_amplify[i];
     }
 
     return SOLVE_NOERROR;
@@ -189,7 +201,7 @@ int Axis_Convert::GetAnalogBias(const KDL::JntArray& trq_gra_jntarray, const std
     }
     for (unsigned int i = 0; i < m_axis_num; i++) {
         analog_bias[i] =
-            analog_average[i] - (trq_gra_jntarray(i) * m_sensor_amplify[i] * 1000 * m_analog2trq_low[i]) / m_analog2trq_high[i];
+            analog_average[i] - (trq_gra_jntarray(i) * m_sensor_amplify[i] * 1000 * (m_analog2trq_low[i] * m_direction_coef[i])) / m_analog2trq_high[i];
         //传感器零点一般不会超过2.5V±50%的误差，如果超过，就意味着传感器失效或负载信息错误。
         if ((analog_bias[i] > SENSOR_ZERO_POINT_MAX) or (analog_bias[i] < SENSOR_ZERO_POINT_MIN)) {
             //辨识失败均返回0
@@ -239,7 +251,7 @@ void Servo_Fc_Convert::FcData2ServoData(const bool& is_impedence_type, const Con
         fc_inner_servo_data.trq_feedforward[i] =
             (int16_t)(m_zero_feedforward_trq[i] * 1000 / (m_rated_torque[i] * m_motorside_reduce_ratio[i]));
         fc_inner_servo_data.k_d[i] = (int16_t)(fc_params_inner->m_function_params.m_params.at("joint_servo_dmap_kv")[i] * 100);
-        fc_inner_servo_data.edb_cof[i] = (int16_t)(2.25 / fabs(m_analog2trq_low[i]) * 100.0);
+        fc_inner_servo_data.edb_cof[i] = (int16_t)(2.25 / fabs(m_analog2trq_low[i] * m_direction_coef[i]) * 100.0);
         fc_inner_servo_data.edb_cof[i] = (fc_inner_servo_data.edb_cof[i] < 90) ? 90 : fc_inner_servo_data.edb_cof[i];
         fc_inner_servo_data.edb_o[i] = (int16_t)((m_analog_bias[i] - 2500) / 1000.0 / 2.25 * m_analog2trq_high[i] * 100);
         fc_inner_servo_data.jnt_inertia[i] = (int16_t)(fc_status_inner.jnt_inertia(i) * 100);

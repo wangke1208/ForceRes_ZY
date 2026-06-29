@@ -44,7 +44,18 @@ int main() {
         LOG_INFO("编码器零点设置成功");
     }
 
-    // 2.设置传感器线性度
+    // 2.设置用户自定义旋转方向（须在传感器零点标定/设置之前；建议编码器零点设置后立即调用）
+    PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
+    std::vector<bool> is_direction_right = {true, true, true, true, true, true, true};
+    res = RokaeForce_SetDirectionCoef(PDO_0x6061, is_direction_right);
+    if (res != 0) {
+        LOG_ERROR("用户自定义旋转方向设置失败,错误码为 {}", res);
+        return -1;
+    } else {
+        LOG_INFO("用户自定义旋转方向设置成功");
+    }
+
+    // 3.设置传感器线性度
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<double> sensor_linearity = {2.111447, 2.025197, 2.241651, -2.163994, 1.668150, 2.269543, -2.287792};
     res = RokaeForce_SetSensorLinearity(PDO_0x6061, sensor_linearity);
@@ -55,7 +66,7 @@ int main() {
         LOG_INFO("传感器线性度设置成功");
     }
 
-    // 3.设置负载参数
+    // 4.设置负载参数
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     External_RokaeLoad load_input;
     //动力学参数
@@ -73,7 +84,7 @@ int main() {
         LOG_INFO("负载参数设置成功");
     }
 
-    // 4.传感器零点标定
+    // 5.传感器零点标定
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<int32_t> PDO_0x6064 = {20000, 20000, 20000, 20000, 20000, 20000, 20000};
     //传感器数据
@@ -94,7 +105,7 @@ int main() {
         LOG_INFO("传感器零点标定成功");
     }
 
-    // 5.传感器零点设置
+    // 6.传感器零点设置
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     res = RokaeForce_SetSensorBias(PDO_0x6061, sensor_bias);
     if (res != 0) {
@@ -104,7 +115,7 @@ int main() {
         LOG_INFO("传感器零点设置成功");
     }
 
-    // 6.设置力控软限位
+    // 7.设置力控软限位
     PDO_0x6061 = {8, 8, 8, 8, 8, 8, 8};
     std::vector<double> soft_limit_low = {-178, -120, -178, -60, -178, -50, -50};
     std::vector<double> soft_limit_high = {178, 120, 178, 145, 178, 50, 50};
@@ -117,11 +128,11 @@ int main() {
         LOG_INFO("力控软限位设置成功");
     }
 
-    // 7.设置力控增益接口(阻抗不支持改变增益，调用该接口无效)
+    // 8.设置力控增益接口(阻抗不支持改变增益，调用该接口无效)
 
-    // 8.设置摩擦力增益接口(阻抗不支持改变摩擦力增益，调用该接口无效)
+    // 9.设置摩擦力增益接口(阻抗不支持改变摩擦力增益，调用该接口无效)
 
-    // 9.设置关节阻抗刚度
+    // 10.设置关节阻抗刚度
     std::vector<double> joint_stiffness = {2000, 2000, 1500, 1500, 500, 500, 500};
     res = RokaeForce_SetJointImpedance(PDO_0x6061,joint_stiffness);
     if (res != 0) {

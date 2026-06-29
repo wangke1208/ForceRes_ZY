@@ -102,6 +102,10 @@ int RokaeForce_SetSensorBias(const std::vector<int8_t>& PDO_0x6061, const std::v
     return BasicInterface::SetSensorBias(PDO_0x6061, analog_bias);
 }
 
+int RokaeForce_SetDirectionCoef(const std::vector<int8_t>& PDO_0x6061, const std::vector<bool>& is_direction_right) {
+    return BasicInterface::SetDirectionCoef(PDO_0x6061, is_direction_right);
+}
+
 int RokaeForce_SetEncoderOffset(const std::vector<int8_t>& PDO_0x6061, const std::vector<int32_t>& encoder_offset) {
     return BasicInterface::SetEncoderOffset(PDO_0x6061, encoder_offset);
 }

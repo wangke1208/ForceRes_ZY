@@ -76,6 +76,13 @@ class Axis_Convert {
     int SetEncoderBias(const std::vector<int>& encoder_bias_set);
 
     /**
+     * @brief 设置用户自定义旋转方向
+     * @param [in] is_direction_right 各轴方向：true 保持与 Rokae 定义方向一致（系数 +1），false 相对 Rokae 定义方向取反（系数 -1）
+     * @return 错误码
+     */
+    int SetDirectionCoef(const std::vector<bool>& is_direction_right);
+
+    /**
      * @brief 根据关节速度获取伺服电机的速度编码器值
      * @param [in] axis_vel_rad 输入的关节速度（单位：弧度/秒）
      * @param [out] vel_reg_value 伺服电机的速度编码器值
@@ -164,6 +171,10 @@ class Axis_Convert {
     std::vector<double> m_analog_bias;      ///< 传感器偏移量（零点）
     std::vector<double> m_sensor_amplify;   ///< 放大系数（目前默认为1）
     std::vector<double> m_sensor_trq;       ///< 转换后的力矩值
+
+    //用户自定义旋转方向(同时影响减速比和线性度)
+    std::vector<bool> m_is_direction_right;  /// true：与 Rokae 定义方向一致；false：相对 Rokae 定义方向取反
+    std::vector<double> m_direction_coef;    ///用户自定义旋转方向系数(同时影响减速比和线性度)
 };
 
 /**
